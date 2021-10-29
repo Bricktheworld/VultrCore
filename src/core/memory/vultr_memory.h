@@ -9,11 +9,11 @@ namespace Vultr
 
     struct GameMemory
     {
-        u64 permanent_storage_size = 0;
-        void *permanent_storage = nullptr;
+        // u64 permanent_storage_size = 0;
+        // void *permanent_storage = nullptr;
 
-        u64 temporary_storage_size = 0;
-        void *temporary_storage = nullptr;
+        // u64 temporary_storage_size = 0;
+        // void *temporary_storage = nullptr;
     };
 
     GameMemory *game_mem_alloc(u64 perm_storage_size, u64 temp_storage_size);

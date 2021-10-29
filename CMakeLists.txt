@@ -27,15 +27,13 @@ if(WIN32)
   endif()
 endif(WIN32)
 
-include_directories(src vendor ../VTL/include)
-
 
 if(UNIX)
   # add_library(Vultr SHARED ${Vultr_SRC})
   add_executable(Vultr ${Vultr_SRC})
   target_link_libraries(Vultr PUBLIC GL glfw3 X11 Xxf86vm Xrandr pthread Xi dl freetype ${ASSIMP_LIBRARIES})
   target_precompile_headers(Vultr PUBLIC pch.h)
-  target_include_directories(Vultr PUBLIC include vendor)
+  target_include_directories(Vultr PUBLIC src vendor)
   # add_subdirectory(tests)
 endif(UNIX)
 
