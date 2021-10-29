@@ -1,0 +1,11 @@
+build/
+VultrHelper
+VultrHelper.exe
+*.generated.h
+*.generated.cpp
+CMakeFiles/
+.cache/
+.idea/
+cmake-build-debug/
+.vs/
+out/

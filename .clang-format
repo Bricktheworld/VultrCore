@@ -1,0 +1,9 @@
+BasedOnStyle: Microsoft
+ColumnLimit: 215
+SortIncludes: false
+AlwaysBreakTemplateDeclarations: Yes
+NamespaceIndentation: All
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+IndentCaseLabels: true
