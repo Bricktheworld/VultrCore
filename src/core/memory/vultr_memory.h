@@ -3,20 +3,87 @@
 
 namespace Vultr
 {
+    /*
+     * Present at the beginning of every block of memory
+     * */
+    struct MemoryHeader
+    {
+        // 8 Bytes dedicated to a header which just indicates the size of the chunk.
+        // Low bit stores whether it is allocated or not. 1 = Allocated, 0 = Freed.
+        u64 size = 0;
+
+        // NOTE(Brandon): The following members are only valid if the memory block is free.
+        void *left_child = nullptr;
+        void *right_child = nullptr;
+
+        // Low bit stores color. 1 = red, 0 = black
+        void *parent = nullptr;
+    };
+
+    /*
+     * Describes a section within a memory arena's allocated memory
+     * */
+    struct MemoryBlock
+    {
+        // Size in bytes of the memory block
+        u64 size = 0;
+
+        // Pointer to actual memory in block
+        void *data = nullptr;
+
+        // Whether memory block has been allocated
+        bool allocated = false;
+
+        // Pointer to next block _header_
+        void *next_block = nullptr;
+    };
+
     struct MemoryArena
     {
+        // TODO(Brandon): Add support for 32 bit alignment (8 bytes)
+        u8 alignment = 16;
+        MemoryBlock head;
+
+        // Internal memory chunk which should NOT be accessed
+        void *_memory_chunk = nullptr;
     };
 
-    struct GameMemory
-    {
-        // u64 permanent_storage_size = 0;
-        // void *permanent_storage = nullptr;
+    /*
+     * Allocate a chunk of memory from the OS and put it in a `MemoryArena`.
+     * @param u64 size: Size in bytes of how much space the memory arena should have.
+     *
+     * @return MemoryArena *: The memory arena object.
+     *
+     * @error The method will return nullptr if there it is unable to allocate the memory arena. This should be handled properly.
+     * */
+    MemoryArena *alloc_mem_arena(u64 size, u8 alignment = 16);
 
-        // u64 temporary_storage_size = 0;
-        // void *temporary_storage = nullptr;
-    };
+    /*
+     * Allocate a chunk of memory from a `MemoryArena`.
+     * @param MemoryArena *arena: The memory arena to allocate from.
+     * @param u64 size: The size of memory to allocate.
+     *
+     * @return void *: The memory that can now be used.
+     *
+     * @error The method will return nullptr if there is no memory chunk available to allocate.
+     *
+     * @no_thread_safety
+     * */
+    void *mem_arena_alloc(MemoryArena *arena, u64 size);
 
-    GameMemory *game_mem_alloc(u64 perm_storage_size, u64 temp_storage_size);
-    void game_mem_free(GameMemory *game_mem);
+    /*
+     * Free a chunk of memory from a `MemoryArena`.
+     * @param MemoryArena *mem: The memory arena to free from.
+     * @param void *data: The data to free.
+     *
+     * @no_thread_safety
+     * */
+    void mem_arena_free(MemoryArena *arena, void *data);
+
+    /*
+     * Free a `MemoryArena` from the OS.
+     * @param MemoryArena *mem: The memory arena to be freed.
+     * */
+    void mem_arena_free(MemoryArena *mem);
 
 } // namespace Vultr

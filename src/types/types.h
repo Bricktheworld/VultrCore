@@ -15,10 +15,7 @@ typedef int16_t s16;
 typedef int8_t s8;
 typedef float f32;
 typedef double f64;
-
-// #ifndef internal
-// #define internal static
-// #endif
+typedef char byte;
 
 #define U8Max 255
 #define U16Max 65535
@@ -29,6 +26,51 @@ typedef double f64;
 #define U64Max ((u64)-1)
 #define F32Max FLT_MAX
 #define F32Min -FLT_MAX
+
+#ifdef DEBUG
+
+#ifdef _WIN32
+
+// TODO(Brandon): Figure out windows equivalent debug break
+#define DEBUG_BREAK()
+#elif __linux__
+#include <signal.h>
+#define DEBUG_BREAK() raise(SIGTRAP)
+#else
+#define DEBUG_BREAK()
+#endif // Platform
+
+#else
+#define DEBUG_BREAK()
+#endif // DEBUG
+
+#ifdef DEBUG
+#define Assert(condition, message)                                                                                                                                                                                    \
+    if (!(condition))                                                                                                                                                                                                 \
+    {                                                                                                                                                                                                                 \
+        fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                         \
+        fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
+        fprintf(stderr, "Press (I)gnore / (D)ebug / (A)bort:\n");                                                                                                                                                     \
+        char input = getchar();                                                                                                                                                                                       \
+        switch (input)                                                                                                                                                                                                \
+        {                                                                                                                                                                                                             \
+            case 'I':                                                                                                                                                                                                 \
+                printf("Ignoring assertion...\n");                                                                                                                                                                    \
+                break;                                                                                                                                                                                                \
+            case 'D':                                                                                                                                                                                                 \
+                printf("Debugging...\n");                                                                                                                                                                             \
+                DEBUG_BREAK();                                                                                                                                                                                        \
+                break;                                                                                                                                                                                                \
+            case 'A':                                                                                                                                                                                                 \
+            default:                                                                                                                                                                                                  \
+                printf("Aborting.\n");                                                                                                                                                                                \
+                abort();                                                                                                                                                                                              \
+                break;                                                                                                                                                                                                \
+        }                                                                                                                                                                                                             \
+    }
+#else
+#define Assert(condition, message)
+#endif
 
 inline constexpr u64 Kilobyte(u64 val)
 {

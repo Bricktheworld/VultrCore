@@ -1,37 +1,44 @@
 #include "vultr_memory.h"
+
 namespace Vultr
 {
-    GameMemory *game_mem_alloc(u64 perm_storage_size, u64 temp_storage_size)
+    MemoryArena *alloc_mem_arena(u64 size, u8 alignment)
     {
-        auto *mem = static_cast<GameMemory *>(malloc(sizeof(GameMemory)));
+        // NOTE(Brandon): These should really be the only two places where malloc and free are ever called throughout the lifetime of the program.
+        // Every other dynamic allocation should be done through the memory arenas.
+
+        // TODO(Brandon): Replace malloc with a more performant, platform specific, method
+        auto *mem = static_cast<MemoryArena *>(malloc(sizeof(MemoryArena)));
+
         if (mem == nullptr)
         {
             return nullptr;
         }
+        mem->_memory_chunk = malloc(size);
+        mem->alignment = alignment;
 
-        mem->permanent_storage_size = perm_storage_size;
-        mem->permanent_storage = malloc(perm_storage_size);
-        if (mem->permanent_storage == nullptr)
-        {
-            free(mem);
-            return nullptr;
-        }
+        MemoryBlock head;
+        head.allocated = false;
+        head.data = mem->_memory_chunk;
 
-        mem->temporary_storage_size = temp_storage_size;
-        mem->temporary_storage = malloc(temp_storage_size);
-        if (mem->temporary_storage == nullptr)
-        {
-            free(mem->permanent_storage);
-            free(mem);
-            return nullptr;
-        }
+        // Subtract the size of the memory header because this will exist at all times
+        head.size = size - sizeof(MemoryHeader);
+
+        mem->head = head;
 
         return mem;
     }
-    void game_mem_free(GameMemory *game_mem)
+
+    void *mem_arena_alloc(MemoryArena *arena, u64 size)
     {
-        free(game_mem->permanent_storage);
-        free(game_mem->temporary_storage);
-        free(game_mem);
+    }
+
+    void mem_arena_free(MemoryArena *arena, void *data)
+    {
+    }
+
+    void mem_arena_free(MemoryArena *mem)
+    {
+        free(mem);
     }
 } // namespace Vultr
