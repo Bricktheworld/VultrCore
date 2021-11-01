@@ -1,5 +1,4 @@
-#ifdef _WIN32
-#include <platform/entry_point/win32_main.cpp>
-#elif __linux__
-#include <platform/entry_point/linux_main.cpp>
-#endif
+#include <math/math.cpp>
+#include <filesystem/filesystem.cpp>
+#include <core/memory/vultr_memory.cpp>
+#include <render/render.cpp>

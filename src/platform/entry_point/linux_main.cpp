@@ -1,4 +1,4 @@
-#include "../../core/memory/vultr_memory.h"
+#include <types/types.h>
 
 namespace Vultr
 {

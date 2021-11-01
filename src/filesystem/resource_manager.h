@@ -4,8 +4,8 @@
 #include <render/types/texture.h>
 #include <render/types/shader.h>
 #include <render/types/mesh.h>
-#include <queue.h>
-#include <dynamic_array.h>
+#include <types/queue.h>
+#include <types/dynamic_array.h>
 
 namespace Vultr
 {

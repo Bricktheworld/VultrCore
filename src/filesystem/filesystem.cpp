@@ -784,3 +784,7 @@ namespace Vultr
         delete[] buf;
     }
 } // namespace Vultr
+
+#include "importers/mesh_importer.cpp"
+#include "importers/shader_importer.cpp"
+#include "importers/texture_importer.cpp"

@@ -3,6 +3,25 @@
 
 namespace Vultr
 {
+    // TODO(Brandon): Remove these.
+#define RED 1
+#define BLACK 0
+    struct Node
+    {
+        u32 data = 0;
+        bool color = RED;
+        Node *left = nullptr;
+        Node *right = nullptr;
+        Node *parent = nullptr;
+    };
+
+    struct RBTree
+    {
+        Node *root = nullptr;
+    };
+
+    void rbt_insert(RBTree *tree, Node *n);
+
     /*
      * Present at the beginning of every block of memory
      * */
