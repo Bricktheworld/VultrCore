@@ -29,7 +29,6 @@ namespace Vultr
         return mem;
     }
 
-    // TODO(Brandon): Make sure parent assigning is correct.
     static bool is_red(Node *n)
     {
         if (n == nullptr)
@@ -47,6 +46,13 @@ namespace Vultr
         if (n == nullptr)
             return;
         n->color = 1 - n->color;
+    }
+
+    static void color_flip(Node *h)
+    {
+        flip_color(h);
+        flip_color(h->left);
+        flip_color(h->right);
     }
 
     static void assign_left(Node *h, Node *n)
@@ -99,9 +105,7 @@ namespace Vultr
 
         if (is_red(h->left) && is_red(h->right))
         {
-            flip_color(h);
-            flip_color(h->left);
-            flip_color(h->right);
+            color_flip(h);
         }
 
         if (n->data < h->data)
@@ -143,8 +147,90 @@ namespace Vultr
 
     Node *rbt_delete(Node *h, Node *n);
     void rbt_delete(RBTree *t, Node *n);
+
+    static Node *move_red_left(Node *h)
+    {
+        color_flip(h);
+        if (is_red(h->right->left))
+        {
+            h->right = rotate_right(h->right);
+            h = rotate_left(h);
+            color_flip(h);
+        }
+        return h;
+    }
+
+    static Node *move_red_right(Node *h)
+    {
+        color_flip(h);
+        if (is_red(h->left->left))
+        {
+            h = rotate_right(h);
+            color_flip(h);
+        }
+        return h;
+    }
+
+    static Node *fixup(Node *h)
+    {
+        if (is_red(h->right))
+        {
+            h = rotate_left(h);
+        }
+
+        if (is_red(h->left) && h->left != nullptr && is_red(h->left->left))
+        {
+            h = rotate_right(h);
+        }
+
+        if (is_red(h->left) && is_red(h->right))
+        {
+            color_flip(h);
+        }
+
+        return h;
+    }
+
     static Node *delete_imp(Node *h, Node *n)
     {
+        if (n->data < h->data)
+        {
+            if (is_black(h->left) && h->left != nullptr && is_black(h->left->left))
+            {
+                h = move_red_left(h);
+            }
+            h->left = rbt_delete(h->left, n);
+        }
+        else
+        {
+            if (is_red(h->left))
+            {
+                h = rotate_right(h);
+            }
+            if (n->data == h->data)
+            {
+                // TODO(Brandon): This is a memory leak, but I don't care right now.
+                // This implementation will be different in the allocator anyway because
+                // this will be essentially a bucket containing multiple memory blocks of the same size.
+                // All we need to do is remove if it is the same memory address.
+                return nullptr;
+            }
+            if (is_black(h->right) && h->right != nullptr && is_black(h->right->left))
+            {
+                h = move_red_right(h);
+            }
+
+            if (n->data == h->data)
+            {
+                // TODO(Brandon): Figure this shit out.
+            }
+            else
+            {
+                h->right = rbt_delete(h->right, n);
+            }
+        }
+
+        return fixup(h);
     }
 
     Node *rbt_delete(Node *h, Node *n)
@@ -155,6 +241,9 @@ namespace Vultr
 
     void rbt_delete(RBTree *t, Node *n)
     {
+        t->root = rbt_delete(t->root, n);
+        t->root->color = BLACK;
+        t->root->parent = nullptr;
     }
 
     void *mem_arena_alloc(MemoryArena *arena, u64 size)
