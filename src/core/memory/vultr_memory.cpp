@@ -32,41 +32,59 @@ namespace Vultr
     // TODO(Brandon): Make sure parent assigning is correct.
     static bool is_red(Node *n)
     {
+        if (n == nullptr)
+            return false;
         return n->color == RED;
     }
 
     static bool is_black(Node *n)
     {
-        return n->color == BLACK;
+        return !is_red(n);
     }
 
     static void flip_color(Node *n)
     {
+        if (n == nullptr)
+            return;
         n->color = 1 - n->color;
+    }
+
+    static void assign_left(Node *h, Node *n)
+    {
+        h->left = n;
+        if (h->left != nullptr)
+        {
+            h->left->parent = h;
+        }
+    }
+
+    static void assign_right(Node *h, Node *n)
+    {
+        h->right = n;
+        if (h->right != nullptr)
+        {
+            h->right->parent = h;
+        }
     }
 
     static Node *rotate_left(Node *h)
     {
         auto *x = h->right;
-        h->right = x->left;
-        h->right->parent = h;
-        x->left = h;
-        x->left->parent = x;
+        assign_right(h, x->left);
+        assign_left(x, h);
         x->color = h->color;
         h->color = RED;
-        return h;
+        return x;
     }
 
     static Node *rotate_right(Node *h)
     {
         auto *x = h->left;
-        h->left = x->right;
-        h->left->parent = h;
-        x->right = h;
-        x->right->parent = x;
+        assign_left(h, x->right);
+        assign_right(x, h);
         x->color = h->color;
         h->color = RED;
-        return h;
+        return x;
     }
 
     Node *rbt_insert(Node *h, Node *n);
@@ -75,12 +93,15 @@ namespace Vultr
     {
         if (h == nullptr)
         {
+            n->color = RED;
             return n;
         }
 
         if (is_red(h->left) && is_red(h->right))
         {
             flip_color(h);
+            flip_color(h->left);
+            flip_color(h->right);
         }
 
         if (n->data < h->data)
@@ -110,14 +131,30 @@ namespace Vultr
     Node *rbt_insert(Node *h, Node *n)
     {
         h = insert_imp(h, n);
-        h->color = BLACK;
-        h->parent = nullptr;
         return h;
     }
 
     void rbt_insert(RBTree *t, Node *n)
     {
         t->root = rbt_insert(t->root, n);
+        t->root->color = BLACK;
+        t->root->parent = nullptr;
+    }
+
+    Node *rbt_delete(Node *h, Node *n);
+    void rbt_delete(RBTree *t, Node *n);
+    static Node *delete_imp(Node *h, Node *n)
+    {
+    }
+
+    Node *rbt_delete(Node *h, Node *n)
+    {
+        h = delete_imp(h, n);
+        return h;
+    }
+
+    void rbt_delete(RBTree *t, Node *n)
+    {
     }
 
     void *mem_arena_alloc(MemoryArena *arena, u64 size)
