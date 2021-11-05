@@ -44,6 +44,8 @@ typedef char byte;
 #define DEBUG_BREAK()
 #endif // DEBUG
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 #ifdef DEBUG
 #define Assert(condition, message)                                                                                                                                                                                    \
     if (!(condition))                                                                                                                                                                                                 \

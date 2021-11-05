@@ -20,7 +20,12 @@ namespace Vultr
         Node *root = nullptr;
     };
 
+    Node *rbt_insert(Node *h, Node *n);
     void rbt_insert(RBTree *tree, Node *n);
+    Node *rbt_delete(Node *h, Node *n);
+    void rbt_delete(RBTree *t, Node *n);
+    Node *rbt_search(RBTree *t, u32 data);
+    u32 rbt_height(RBTree *t);
 
     /*
      * Present at the beginning of every block of memory

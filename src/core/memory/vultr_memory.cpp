@@ -93,6 +93,59 @@ namespace Vultr
         return x;
     }
 
+    static Node *search_impl(Node *h, u32 data)
+    {
+        if (h == nullptr)
+            return nullptr;
+
+        if (data < h->data)
+        {
+            return search_impl(h->left, data);
+        }
+        else if (data > h->data)
+        {
+            return search_impl(h->right, data);
+        }
+        else
+        {
+            return h;
+        }
+    }
+
+    Node *rbt_search(RBTree *t, u32 data)
+    {
+        return search_impl(t->root, data);
+    }
+
+    static u32 height_impl(Node *h)
+    {
+        if (h == nullptr)
+        {
+            return 0;
+        }
+        else
+        {
+            return 1 + MAX(height_impl(h->left), height_impl(h->right));
+        }
+    }
+
+    u32 rbt_height(RBTree *t)
+    {
+        return height_impl(t->root);
+    }
+
+    static Node *min(Node *h)
+    {
+        if (h->left != nullptr)
+        {
+            return min(h->left);
+        }
+        else
+        {
+            return h;
+        }
+    }
+
     Node *rbt_insert(Node *h, Node *n);
     void rbt_insert(RBTree *t, Node *n);
     static Node *insert_imp(Node *h, Node *n)
@@ -191,6 +244,24 @@ namespace Vultr
         return h;
     }
 
+    static Node *delete_min(Node *h)
+    {
+        if (h->left == nullptr)
+        {
+            // TODO(Brandon): Memory leak.
+            return nullptr;
+        }
+
+        if (is_black(h->left) && h->left != nullptr && is_black(h->left->left))
+        {
+            h = move_red_left(h);
+        }
+
+        h->left = delete_min(h->left);
+
+        return fixup(h);
+    }
+
     static Node *delete_imp(Node *h, Node *n)
     {
         if (n->data < h->data)
@@ -223,6 +294,8 @@ namespace Vultr
             if (n->data == h->data)
             {
                 // TODO(Brandon): Figure this shit out.
+                h->data = min(h)->data;
+                h->right = delete_min(h->right);
             }
             else
             {
