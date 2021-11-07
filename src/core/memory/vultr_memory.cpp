@@ -1,123 +1,106 @@
 #include "vultr_memory.h"
+#include <types/types.h>
 
 namespace Vultr
 {
-    MemoryArena *alloc_mem_arena(u64 size, u8 alignment)
+    // mb = memory block
+    // rbt = red-black tree
+    // l = left
+    // ll = left left
+    // r = right
+#define RED 1
+#define BLACK 0
+
+#define FREE 0
+#define ALLOCATED 1
+
+#define INITIALIZED_BIT 0
+#define ALLOCATION_BIT 1
+#define COLOR_BIT 2
+#define HEADER_SIZE (sizeof(MemoryBlock) - sizeof(FreeMemory))
+#define ASSERT_MB_INITIALIZED(block) ASSERT(BIT_IS_HIGH(block->size, INITIALIZED_BIT), "Memory block has not been initialized! Please call `init_free_mb` first!")
+#define ASSERT_MB_FREE(block) ASSERT(BIT_IS_LOW(block->size, COLOR_BIT), "Memory block is not free!")
+#define ASSERT_MB_ALLOCATED(block) ASSERT(BIT_IS_HIGH(block->size, COLOR_BIT), "Memory block has not been allocated!")
+
+    // Bit hack magic to manipulate lowest 3 bits of our size.
+    // This is possible because alignment is 8 bytes minimum so the lowest 3 bits (1, 2, 4) will always be rounded to 0.
+    // These can then be used to hold our initialization flag, allocation flag, and color bit
+    static u64 get_mb_size(MemoryBlock *block) { return block->size & ~0x3; }
+    static void *get_mb_memory(MemoryBlock *block)
     {
-        // NOTE(Brandon): These should really be the only two places where malloc and free are ever called throughout the lifetime of the program.
-        // Every other dynamic allocation should be done through the memory arenas.
-
-        // TODO(Brandon): Replace malloc with a more performant, platform specific, method
-        auto *mem = static_cast<MemoryArena *>(malloc(sizeof(MemoryArena)));
-
-        if (mem == nullptr)
-        {
-            return nullptr;
-        }
-        mem->_memory_chunk = malloc(size);
-        mem->alignment = alignment;
-
-        MemoryBlock head;
-        head.allocated = false;
-        head.data = mem->_memory_chunk;
-
-        // Subtract the size of the memory header because this will exist at all times
-        head.size = size - sizeof(MemoryHeader);
-
-        mem->head = head;
-
-        return mem;
+        ASSERT_MB_ALLOCATED(block);
+        return block + HEADER_SIZE;
     }
-
-    static bool is_red(Node *n)
+    static void set_mb_allocated(MemoryBlock *block) { block->size |= 1UL << ALLOCATION_BIT; }
+    static void set_mb_free(MemoryBlock *block) { block->size &= ~(1UL << ALLOCATION_BIT); }
+    static void set_mb_color(MemoryBlock *block, u8 color) { block->size = (block->size & ~(1UL << COLOR_BIT)) | (color << COLOR_BIT); }
+    static void set_mb_black(MemoryBlock *block) { block->size &= ~(1UL << COLOR_BIT); }
+    static void set_mb_red(MemoryBlock *block) { block->size |= 1UL << COLOR_BIT; }
+    static bool is_red(MemoryBlock *block)
     {
-        if (n == nullptr)
+        if (block == nullptr)
             return false;
-        return n->color == RED;
+        return BIT_IS_HIGH(block->size, COLOR_BIT);
     }
-
-    static bool is_black(Node *n)
+    static bool is_black(MemoryBlock *block) { return !is_red(block); }
+    static void flip_color(MemoryBlock *block)
     {
-        return !is_red(n);
-    }
-
-    static void flip_color(Node *n)
-    {
-        if (n == nullptr)
+        if (block == nullptr)
             return;
-        n->color = 1 - n->color;
+        block->size ^= (1UL << COLOR_BIT);
+    }
+    static void color_flip(MemoryBlock *block)
+    {
+        ASSERT_MB_FREE(block);
+        flip_color(block);
+        flip_color(block->free.left);
+        flip_color(block->free.right);
     }
 
-    static void color_flip(Node *h)
+    static MemoryBlock *get_left(MemoryBlock *block) { return block->free.left; }
+    static MemoryBlock *get_right(MemoryBlock *block) { return block->free.right; }
+    static void assign_right(MemoryBlock *dest, MemoryBlock *src) { dest->free.right = src; }
+    static void assign_left(MemoryBlock *dest, MemoryBlock *src) { dest->free.left = src; }
+    static MemoryBlock *rbt_insert(MemoryBlock *h, MemoryBlock *n);
+    static void insert_free_mb(MemoryBlock *block, MemoryArena *arena)
     {
-        flip_color(h);
-        flip_color(h->left);
-        flip_color(h->right);
+        ASSERT_MB_INITIALIZED(block);
+        ASSERT_MB_FREE(block);
+        arena->free_root = rbt_insert(arena->free_root, block);
+        set_mb_black(arena->free_root);
     }
+    MemoryBlock *rbt_delete(MemoryBlock *h, MemoryBlock *n);
 
-    static void assign_left(Node *h, Node *n)
+    static MemoryBlock *mb_best_match(MemoryBlock *h, u64 size)
     {
-        h->left = n;
-        if (h->left != nullptr)
-        {
-            h->left->parent = h;
-        }
-    }
+        // If h is a leaf, then we can assume it is the closest block to the size we need so we can just split it
 
-    static void assign_right(Node *h, Node *n)
-    {
-        h->right = n;
-        if (h->right != nullptr)
-        {
-            h->right->parent = h;
-        }
-    }
-
-    static Node *rotate_left(Node *h)
-    {
-        auto *x = h->right;
-        assign_right(h, x->left);
-        assign_left(x, h);
-        x->color = h->color;
-        h->color = RED;
-        return x;
-    }
-
-    static Node *rotate_right(Node *h)
-    {
-        auto *x = h->left;
-        assign_left(h, x->right);
-        assign_right(x, h);
-        x->color = h->color;
-        h->color = RED;
-        return x;
-    }
-
-    static Node *search_impl(Node *h, u32 data)
-    {
         if (h == nullptr)
             return nullptr;
 
-        if (data < h->data)
+        if (size < get_mb_size(h))
         {
-            return search_impl(h->left, data);
+            auto *l = get_left(h);
+            if (l == nullptr)
+                return h;
+
+            return mb_best_match(l, size);
         }
-        else if (data > h->data)
+        else if (size > get_mb_size(h))
         {
-            return search_impl(h->right, data);
+            auto *r = get_right(h);
+            if (r == nullptr)
+                return h;
+
+            return mb_best_match(r, size);
         }
-        else
+        else // if(size == get_mb_size(h))
         {
             return h;
         }
     }
 
-    Node *rbt_search(RBTree *t, u32 data)
-    {
-        return search_impl(t->root, data);
-    }
-
-    static u32 height_impl(Node *h)
+    static u32 get_height(MemoryBlock *h)
     {
         if (h == nullptr)
         {
@@ -125,20 +108,17 @@ namespace Vultr
         }
         else
         {
-            return 1 + MAX(height_impl(h->left), height_impl(h->right));
+            auto *l = get_left(h);
+            auto *r = get_right(h);
+            return 1 + MAX(get_height(l), get_height(r));
         }
     }
-
-    u32 rbt_height(RBTree *t)
+    static MemoryBlock *min(MemoryBlock *h)
     {
-        return height_impl(t->root);
-    }
-
-    static Node *min(Node *h)
-    {
-        if (h->left != nullptr)
+        auto *l = get_left(h);
+        if (l != nullptr)
         {
-            return min(h->left);
+            return min(l);
         }
         else
         {
@@ -146,189 +126,248 @@ namespace Vultr
         }
     }
 
-    Node *rbt_insert(Node *h, Node *n);
-    void rbt_insert(RBTree *t, Node *n);
-    static Node *insert_imp(Node *h, Node *n)
+    static void init_free_mb(MemoryBlock *block, u64 size, MemoryBlock *next, MemoryBlock *prev)
     {
-        if (h == nullptr)
-        {
-            n->color = RED;
-            return n;
-        }
-
-        if (is_red(h->left) && is_red(h->right))
-        {
-            color_flip(h);
-        }
-
-        if (n->data < h->data)
-        {
-            h->left = rbt_insert(h->left, n);
-            h->left->parent = h;
-        }
-        else if (n->data > h->data)
-        {
-            h->right = rbt_insert(h->right, n);
-            h->right->parent = h;
-        }
-
-        if (is_red(h->right) && is_black(h->left))
-        {
-            h = rotate_left(h);
-        }
-
-        if (is_red(h->left) && is_red(h->left->left))
-        {
-            h = rotate_right(h);
-        }
-
-        return h;
+        block->size        = (~(1UL << ALLOCATION_BIT) & size) | (1UL << INITIALIZED_BIT);
+        block->next        = next;
+        block->prev        = prev;
+        block->free.center = nullptr;
+        block->free.left   = nullptr;
+        block->free.right  = nullptr;
     }
 
-    Node *rbt_insert(Node *h, Node *n)
+    MemoryArena *init_mem_arena(u64 size, u8 alignment)
     {
-        h = insert_imp(h, n);
-        return h;
-    }
+        ASSERT(size > sizeof(MemoryBlock), "Why are you initializing a memory arena that is literally smaller than 48 bytes...");
+        // NOTE(Brandon): These should really be the only two places where malloc and free are ever called throughout the lifetime of the program.
+        // Every other dynamic allocation should be done through the memory arenas.
 
-    void rbt_insert(RBTree *t, Node *n)
-    {
-        t->root = rbt_insert(t->root, n);
-        t->root->color = BLACK;
-        t->root->parent = nullptr;
-    }
+        // TODO(Brandon): Replace malloc with a more performant, platform specific, method
+        auto *arena = static_cast<MemoryArena *>(malloc(sizeof(MemoryArena)));
 
-    Node *rbt_delete(Node *h, Node *n);
-    void rbt_delete(RBTree *t, Node *n);
-
-    static Node *move_red_left(Node *h)
-    {
-        color_flip(h);
-        if (is_red(h->right->left))
+        if (arena == nullptr)
         {
-            h->right = rotate_right(h->right);
-            h = rotate_left(h);
-            color_flip(h);
+            return nullptr;
         }
-        return h;
-    }
-
-    static Node *move_red_right(Node *h)
-    {
-        color_flip(h);
-        if (is_red(h->left->left))
+        arena->memory = static_cast<MemoryBlock *>(malloc(size));
+        if (arena->memory == nullptr)
         {
-            h = rotate_right(h);
-            color_flip(h);
-        }
-        return h;
-    }
-
-    static Node *fixup(Node *h)
-    {
-        if (is_red(h->right))
-        {
-            h = rotate_left(h);
-        }
-
-        if (is_red(h->left) && h->left != nullptr && is_red(h->left->left))
-        {
-            h = rotate_right(h);
-        }
-
-        if (is_red(h->left) && is_red(h->right))
-        {
-            color_flip(h);
-        }
-
-        return h;
-    }
-
-    static Node *delete_min(Node *h)
-    {
-        if (h->left == nullptr)
-        {
-            // TODO(Brandon): Memory leak.
+            free(arena);
             return nullptr;
         }
 
-        if (is_black(h->left) && h->left != nullptr && is_black(h->left->left))
-        {
-            h = move_red_left(h);
-        }
+        MemoryBlock *h = arena->memory;
 
-        h->left = delete_min(h->left);
+        // Subtract the size of the memory header because this will exist at all times
+        init_free_mb(h, size - HEADER_SIZE, nullptr, nullptr);
+        insert_free_mb(h, arena);
 
-        return fixup(h);
-    }
+        arena->alignment = alignment;
 
-    static Node *delete_imp(Node *h, Node *n)
-    {
-        if (n->data < h->data)
-        {
-            if (is_black(h->left) && h->left != nullptr && is_black(h->left->left))
-            {
-                h = move_red_left(h);
-            }
-            h->left = rbt_delete(h->left, n);
-        }
-        else
-        {
-            if (is_red(h->left))
-            {
-                h = rotate_right(h);
-            }
-            if (n->data == h->data)
-            {
-                // TODO(Brandon): This is a memory leak, but I don't care right now.
-                // This implementation will be different in the allocator anyway because
-                // this will be essentially a bucket containing multiple memory blocks of the same size.
-                // All we need to do is remove if it is the same memory address.
-                return nullptr;
-            }
-            if (is_black(h->right) && h->right != nullptr && is_black(h->right->left))
-            {
-                h = move_red_right(h);
-            }
-
-            if (n->data == h->data)
-            {
-                // TODO(Brandon): Figure this shit out.
-                h->data = min(h)->data;
-                h->right = delete_min(h->right);
-            }
-            else
-            {
-                h->right = rbt_delete(h->right, n);
-            }
-        }
-
-        return fixup(h);
-    }
-
-    Node *rbt_delete(Node *h, Node *n)
-    {
-        h = delete_imp(h, n);
-        return h;
-    }
-
-    void rbt_delete(RBTree *t, Node *n)
-    {
-        t->root = rbt_delete(t->root, n);
-        t->root->color = BLACK;
-        t->root->parent = nullptr;
+        return arena;
     }
 
     void *mem_arena_alloc(MemoryArena *arena, u64 size)
     {
+        auto *best_match = mb_best_match(arena->free_root, size);
+        // rbt_delete(arena->free_root, best_match);
+        // TODO(Brandon): Other things
+
+        set_mb_allocated(best_match);
+        return best_match + HEADER_SIZE;
+    }
+    void mem_arena_free(MemoryArena *arena, void *data) {}
+    void destroy_mem_arena(MemoryArena *arena)
+    {
+        ASSERT(arena != nullptr && arena->memory != nullptr, "Invalid memory arena!");
+        free(arena->memory);
+        free(arena);
     }
 
-    void mem_arena_free(MemoryArena *arena, void *data)
+    static MemoryBlock *rotate_left(MemoryBlock *h)
     {
+        ASSERT_MB_FREE(h);
+        auto *x = get_right(h);
+        ASSERT_MB_FREE(x);
+        assign_right(h, get_left(x));
+        assign_left(x, h);
+        set_mb_color(x, is_red(h));
+        set_mb_red(h);
+        return x;
+    }
+    static MemoryBlock *rotate_right(MemoryBlock *h)
+    {
+        ASSERT_MB_FREE(h);
+        auto *x = get_left(h);
+        ASSERT_MB_FREE(x);
+        assign_left(h, get_right(x));
+        assign_right(x, h);
+        set_mb_color(x, is_red(h));
+        set_mb_red(h);
+        return x;
     }
 
-    void mem_arena_free(MemoryArena *mem)
+    static MemoryBlock *move_red_left(MemoryBlock *h)
     {
-        free(mem);
+        color_flip(h);
+        auto *r = get_right(h);
+        if (is_red(get_left(r)))
+        {
+            assign_right(h, rotate_right(r));
+            h = rotate_left(h);
+            color_flip(h);
+        }
+        return h;
     }
+
+    static MemoryBlock *move_red_right(MemoryBlock *h)
+    {
+        color_flip(h);
+        auto *ll = get_left(get_left(h));
+        if (is_red(ll))
+        {
+            h = rotate_right(h);
+            color_flip(h);
+        }
+        return h;
+    }
+
+    static MemoryBlock *rbt_insert(MemoryBlock *h, MemoryBlock *n)
+    {
+        if (h == nullptr)
+        {
+            set_mb_red(n);
+            return n;
+        }
+
+        auto *l     = get_left(h);
+        auto *r     = get_right(h);
+        auto n_size = get_mb_size(n);
+        auto h_size = get_mb_size(h);
+
+        if (is_red(l) && is_red(r))
+        {
+            color_flip(h);
+        }
+
+        if (n_size < h_size)
+        {
+            assign_left(h, rbt_insert(l, n));
+        }
+        else if (n_size > h_size)
+        {
+            assign_right(h, rbt_insert(r, n));
+        }
+
+        if (is_red(r) && is_black(l))
+        {
+            h = rotate_left(h);
+        }
+
+        if (is_red(l) && is_red(get_left(l)))
+        {
+            h = rotate_right(h);
+        }
+
+        return h;
+    }
+
+    static MemoryBlock *fixup(MemoryBlock *h)
+    {
+        auto *r = get_right(h);
+        auto *l = get_left(h);
+        if (is_red(r))
+        {
+            h = rotate_left(h);
+        }
+
+        if (is_red(l) && l != nullptr && is_red(get_left(l)))
+        {
+            h = rotate_right(h);
+        }
+
+        if (is_red(l) && is_red(h))
+        {
+            color_flip(h);
+        }
+
+        return h;
+    }
+
+    // static MemoryBlock *delete_min(MemoryBlock *h)
+    // {
+    //     auto *r = get_right(h);
+    //     auto *l = get_left(h);
+    //     if (l == nullptr)
+    //     {
+    //         // TODO(Brandon): Memory leak.
+    //         return nullptr;
+    //     }
+
+    //     if (is_black(l) && h->left != nullptr && is_black(h->left->left))
+    //     {
+    //         h = move_red_left(h);
+    //     }
+
+    //     h->left = delete_min(h->left);
+
+    //     return fixup(h);
+    // }
+
+    // static Node *delete_imp(Node *h, Node *n)
+    // {
+    //     if (n->data < h->data)
+    //     {
+    //         if (is_black(h->left) && h->left != nullptr && is_black(h->left->left))
+    //         {
+    //             h = move_red_left(h);
+    //         }
+    //         h->left = rbt_delete(h->left, n);
+    //     }
+    //     else
+    //     {
+    //         if (is_red(h->left))
+    //         {
+    //             h = rotate_right(h);
+    //         }
+    //         if (n->data == h->data)
+    //         {
+    //             // TODO(Brandon): This is a memory leak, but I don't care right now.
+    //             // This implementation will be different in the allocator anyway because
+    //             // this will be essentially a bucket containing multiple memory blocks of the same size.
+    //             // All we need to do is remove if it is the same memory address.
+    //             return nullptr;
+    //         }
+    //         if (is_black(h->right) && h->right != nullptr && is_black(h->right->left))
+    //         {
+    //             h = move_red_right(h);
+    //         }
+
+    //         if (n->data == h->data)
+    //         {
+    //             // TODO(Brandon): Figure this shit out.
+    //             h->data  = min(h)->data;
+    //             h->right = delete_min(h->right);
+    //         }
+    //         else
+    //         {
+    //             h->right = rbt_delete(h->right, n);
+    //         }
+    //     }
+
+    //     return fixup(h);
+    // }
+
+    // Node *rbt_delete(Node *h, Node *n)
+    // {
+    //     h = delete_imp(h, n);
+    //     return h;
+    // }
+
+    // void rbt_delete(RBTree *t, Node *n)
+    // {
+    //     t->root        = rbt_delete(t->root, n);
+    //     t->root->color = BLACK;
+    // }
+
 } // namespace Vultr

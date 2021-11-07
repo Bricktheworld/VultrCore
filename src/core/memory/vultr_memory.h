@@ -3,73 +3,48 @@
 
 namespace Vultr
 {
-    // TODO(Brandon): Remove these.
-#define RED 1
-#define BLACK 0
-    struct Node
+    struct MemoryBlock;
+
+    // Allocated memory does not have any additional fields.
+    struct AllocatedMemory
     {
-        u32 data = 0;
-        bool color = RED;
-        Node *left = nullptr;
-        Node *right = nullptr;
-        Node *parent = nullptr;
     };
 
-    struct RBTree
+    struct FreeMemory
     {
-        Node *root = nullptr;
+        MemoryBlock *left   = nullptr;
+        MemoryBlock *right  = nullptr;
+        MemoryBlock *center = nullptr;
     };
-
-    Node *rbt_insert(Node *h, Node *n);
-    void rbt_insert(RBTree *tree, Node *n);
-    Node *rbt_delete(Node *h, Node *n);
-    void rbt_delete(RBTree *t, Node *n);
-    Node *rbt_search(RBTree *t, u32 data);
-    u32 rbt_height(RBTree *t);
 
     /*
      * Present at the beginning of every block of memory
-     * */
-    struct MemoryHeader
-    {
-        // 8 Bytes dedicated to a header which just indicates the size of the chunk.
-        // Low bit stores whether it is allocated or not. 1 = Allocated, 0 = Freed.
-        u64 size = 0;
-
-        // NOTE(Brandon): The following members are only valid if the memory block is free.
-        void *left_child = nullptr;
-        void *right_child = nullptr;
-
-        // Low bit stores color. 1 = red, 0 = black
-        void *parent = nullptr;
-    };
-
-    /*
-     * Describes a section within a memory arena's allocated memory
+     * Size: (64-bit) Allocated: 24 bytes, Free: 48 bytes.
      * */
     struct MemoryBlock
     {
-        // Size in bytes of the memory block
+        // Lowest 3 bits of `size` store:
+        // - Whether the block has properly initialized: 0 = Uninitialized, 1 = Initialized.
+        // - Whether it is allocated or not:  0 = Freed, 1 = Allocated.
+        // - The color of the block (Only valid for free blocks of memory. Used for red-black tree): 0 = Black, 1 = Red
         u64 size = 0;
 
-        // Pointer to actual memory in block
-        void *data = nullptr;
+        // Pointer to previous and next memory blocks
+        MemoryBlock *prev = nullptr;
+        MemoryBlock *next = nullptr;
 
-        // Whether memory block has been allocated
-        bool allocated = false;
-
-        // Pointer to next block _header_
-        void *next_block = nullptr;
+        union {
+            AllocatedMemory allocated;
+            FreeMemory free;
+        };
     };
 
     struct MemoryArena
     {
         // TODO(Brandon): Add support for 32 bit alignment (8 bytes)
-        u8 alignment = 16;
-        MemoryBlock head;
-
-        // Internal memory chunk which should NOT be accessed
-        void *_memory_chunk = nullptr;
+        u8 alignment           = 16;
+        MemoryBlock *free_root = nullptr;
+        MemoryBlock *memory    = nullptr;
     };
 
     /*
@@ -80,7 +55,7 @@ namespace Vultr
      *
      * @error The method will return nullptr if there it is unable to allocate the memory arena. This should be handled properly.
      * */
-    MemoryArena *alloc_mem_arena(u64 size, u8 alignment = 16);
+    MemoryArena *init_mem_arena(u64 size, u8 alignment = 16);
 
     /*
      * Allocate a chunk of memory from a `MemoryArena`.
@@ -108,6 +83,6 @@ namespace Vultr
      * Free a `MemoryArena` from the OS.
      * @param MemoryArena *mem: The memory arena to be freed.
      * */
-    void mem_arena_free(MemoryArena *mem);
+    void destroy_mem_arena(MemoryArena *arena);
 
 } // namespace Vultr

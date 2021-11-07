@@ -7,3 +7,5 @@ BreakBeforeBraces: Custom
 BraceWrapping:
   AfterCaseLabel: true
 IndentCaseLabels: true
+AllowShortFunctionsOnASingleLine: true
+AlignConsecutiveAssignments: true

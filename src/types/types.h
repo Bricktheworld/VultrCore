@@ -47,7 +47,7 @@ typedef char byte;
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #ifdef DEBUG
-#define Assert(condition, message)                                                                                                                                                                                    \
+#define ASSERT(condition, message)                                                                                                                                                                                    \
     if (!(condition))                                                                                                                                                                                                 \
     {                                                                                                                                                                                                                 \
         fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                         \
@@ -71,35 +71,23 @@ typedef char byte;
         }                                                                                                                                                                                                             \
     }
 #else
-#define Assert(condition, message)
+#define ASSERT(condition, message)
 #endif
 
-inline constexpr u64 Kilobyte(u64 val)
-{
-    return val * 1024;
-}
+#define BIT_IS_HIGH(x, n) (((x) >> (n)) & 1UL)
+#define BIT_IS_LOW(x, n) !BIT_IS_HIGH(x, n)
 
-inline constexpr u64 Megabyte(u64 val)
-{
-    return Kilobyte(val) * 1024;
-}
-
-inline constexpr u64 Gigabyte(u64 val)
-{
-    return Megabyte(val) * 1024;
-}
-
-inline constexpr u64 Terabyte(u64 val)
-{
-    return Gigabyte(val) * 1024;
-}
+inline constexpr u64 Kilobyte(u64 val) { return val * 1024; }
+inline constexpr u64 Megabyte(u64 val) { return Kilobyte(val) * 1024; }
+inline constexpr u64 Gigabyte(u64 val) { return Megabyte(val) * 1024; }
+inline constexpr u64 Terabyte(u64 val) { return Gigabyte(val) * 1024; }
 
 struct Buffer
 {
     u64 count = 0;
-    u8 *data = nullptr;
+    u8 *data  = nullptr;
 
-    Buffer() = default;
+    Buffer()        = default;
     Buffer &operator=(const Buffer &other) = delete;
 
     ~Buffer()
@@ -126,16 +114,13 @@ inline u64 str_len(const char *string)
     return count;
 }
 
-inline u64 str_len(const String &string)
-{
-    return string.count;
-}
+inline u64 str_len(const String &string) { return string.count; }
 
 inline String str_new(const char *string)
 {
     String result;
     result.count = str_len(string);
-    result.data = static_cast<u8 *>(malloc(sizeof(u8) * result.count));
+    result.data  = static_cast<u8 *>(malloc(sizeof(u8) * result.count));
 
     return result;
 }
