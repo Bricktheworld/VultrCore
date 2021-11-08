@@ -19,8 +19,8 @@ TEST(MemoryArena, InitMemArena)
 
 TEST(MemoryArena, Allocate)
 {
-    MemoryArena *arena = init_mem_arena(Megabyte(256));
-    void *buf          = mem_arena_alloc(arena, Kilobyte(4));
+    MemoryArena *arena = init_mem_arena(2048);
+    void *buf          = mem_arena_alloc(arena, 1024);
     mem_arena_free(arena, buf);
     destroy_mem_arena(arena);
 }

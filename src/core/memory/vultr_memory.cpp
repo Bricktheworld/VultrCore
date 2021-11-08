@@ -17,6 +17,7 @@ namespace Vultr
 #define INITIALIZED_BIT 0
 #define ALLOCATION_BIT 1
 #define COLOR_BIT 2
+#define LOWEST_3_BITS 0x7
 #define HEADER_SIZE (sizeof(MemoryBlock) - sizeof(FreeMemory))
 #define ASSERT_MB_INITIALIZED(block) ASSERT(BIT_IS_HIGH(block->size, INITIALIZED_BIT), "Memory block has not been initialized! Please call `init_free_mb` first!")
 #define ASSERT_MB_FREE(block) ASSERT(BIT_IS_LOW(block->size, COLOR_BIT), "Memory block is not free!")
@@ -25,7 +26,7 @@ namespace Vultr
     // Bit hack magic to manipulate lowest 3 bits of our size.
     // This is possible because alignment is 8 bytes minimum so the lowest 3 bits (1, 2, 4) will always be rounded to 0.
     // These can then be used to hold our initialization flag, allocation flag, and color bit
-    static u64 get_mb_size(MemoryBlock *block) { return block->size & ~0x3; }
+    static u64 get_mb_size(MemoryBlock *block) { return block->size & ~LOWEST_3_BITS; }
     static void *get_mb_memory(MemoryBlock *block)
     {
         ASSERT_MB_ALLOCATED(block);
@@ -93,15 +94,19 @@ namespace Vultr
         ASSERT_MB_INITIALIZED(block);
         ASSERT_MB_FREE(block);
         arena->free_root = rbt_insert(arena->free_root, block);
+        ASSERT(arena->free_root != nullptr, "Something went wrong inserting memory block!");
         set_mb_black(arena->free_root);
     }
-    static MemoryBlock *rbt_delete(MemoryBlock *h, u64 size);
-    static void remove_free_mb(u64 size, MemoryArena *arena)
+    static MemoryBlock *rbt_delete(MemoryBlock *h, MemoryBlock *n);
+    static void remove_free_mb(MemoryBlock *block, MemoryArena *arena)
     {
         ASSERT_MB_INITIALIZED(block);
         ASSERT_MB_FREE(block);
-        arena->free_root = rbt_delete(arena->free_root, size);
-        set_mb_black(arena->free_root);
+        arena->free_root = rbt_delete(arena->free_root, block);
+        if (arena->free_root != nullptr)
+        {
+            set_mb_black(arena->free_root);
+        }
     }
 
     static MemoryBlock *mb_best_match(MemoryBlock *h, u64 size)
@@ -114,6 +119,7 @@ namespace Vultr
         if (size < get_mb_size(h))
         {
             auto *l = get_left(h);
+            // If there is no block that exists of a smaller size, then we should just return the current node, `h` and we will split that later.
             if (l == nullptr)
                 return h;
 
@@ -122,8 +128,10 @@ namespace Vultr
         else if (size > get_mb_size(h))
         {
             auto *r = get_right(h);
+
+            // If there is no block that exists of a larger size, then the requested allocation size is impossible. Thus we must return nullptr.
             if (r == nullptr)
-                return h;
+                return nullptr;
 
             return mb_best_match(r, size);
         }
@@ -159,7 +167,7 @@ namespace Vultr
         }
     }
 
-    static void init_free_mb(MemoryBlock *block, u64 size, MemoryBlock *next, MemoryBlock *prev)
+    static void init_free_mb(MemoryBlock *block, u64 size, MemoryBlock *prev, MemoryBlock *next)
     {
         block->size        = (~(1UL << ALLOCATION_BIT) & size) | (1UL << INITIALIZED_BIT);
         block->next        = next;
@@ -175,7 +183,7 @@ namespace Vultr
         // NOTE(Brandon): These should really be the only two places where malloc and free are ever called throughout the lifetime of the program.
         // Every other dynamic allocation should be done through the memory arenas.
 
-        // TODO(Brandon): Replace malloc with a more performant, platform specific, method
+        // TODO(Brandon): Replace malloc with a more performant, platform specific, method.
         auto *arena = static_cast<MemoryArena *>(malloc(sizeof(MemoryArena)));
 
         if (arena == nullptr)
@@ -200,16 +208,54 @@ namespace Vultr
         return arena;
     }
 
+    static MemoryBlock *split_mb(MemoryBlock *b, u64 new_size)
+    {
+        // If the new size is exactly the same size as our memory block, there is no reason to split.
+        if (new_size == get_mb_size(b))
+        {
+            return nullptr;
+        }
+        u32 lowest_bits = b->size & LOWEST_3_BITS;
+        u32 old_size    = get_mb_size(b) + HEADER_SIZE;
+        b->size         = new_size | lowest_bits;
+
+        MemoryBlock *new_block = reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(b) + new_size + HEADER_SIZE);
+        init_free_mb(new_block, old_size - new_size - HEADER_SIZE, b, b->next);
+
+        b->next = new_block;
+        return new_block;
+    }
     void *mem_arena_alloc(MemoryArena *arena, u64 size)
     {
+        // Find a memory block of suitable size.
         auto *best_match = mb_best_match(arena->free_root, size);
-        // rbt_delete(arena->free_root, best_match);
-        // TODO(Brandon): Other things
+        PRODUCTION_ASSERT(best_match != nullptr, "Not enough memory to allocate!");
+        ASSERT(get_mb_size(best_match) >= size, "");
 
+        // Delete this memory block from the red black tree.
+        remove_free_mb(best_match, arena);
+
+        // If need be, split the memory block into the size that we need.
+        auto *new_block = split_mb(best_match, size);
+        if (new_block != nullptr)
+        {
+            // Insert this new memory block as free into the memory arena.
+            insert_free_mb(new_block, arena);
+        }
+
+        // Set our memory block to allocated.
         set_mb_allocated(best_match);
-        return best_match + HEADER_SIZE;
+        return reinterpret_cast<char *>(best_match) + HEADER_SIZE;
     }
-    void mem_arena_free(MemoryArena *arena, void *data) {}
+    void mem_arena_free(MemoryArena *arena, void *data)
+    {
+        MemoryBlock *block_to_free = reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(data) - HEADER_SIZE);
+        u64 size                   = get_mb_size(block_to_free);
+        auto *prev                 = block_to_free->prev;
+        auto *next                 = block_to_free->next;
+        init_free_mb(block_to_free, size, prev, next);
+        insert_free_mb(block_to_free, arena);
+    }
     void destroy_mem_arena(MemoryArena *arena)
     {
         ASSERT(arena != nullptr && arena->memory != nullptr, "Invalid memory arena!");
@@ -372,8 +418,9 @@ namespace Vultr
             {
                 h = rotate_right(h);
             }
-            if (n == h)
+            if (n_size == h_size)
             {
+                ASSERT(n == h, "TODO(Brandon): Handle this case.");
                 // TODO(Brandon): This is a memory leak, but I don't care right now.
                 // This implementation will be different in the allocator anyway because
                 // this will be essentially a bucket containing multiple memory blocks of the same size.
@@ -385,31 +432,19 @@ namespace Vultr
                 h = move_red_right(h);
             }
 
-            if (n == h)
+            if (n_size == h_size)
             {
+                NOT_IMPLEMENTED("TODO(Brandon): Figure this shit out.");
                 // TODO(Brandon): Figure this shit out.
-                h->data  = min(h)->data;
-                h->right = delete_min(h->right);
+                // h->data  = min(h)->data;
+                // h->right = delete_min(h->right);
             }
             else
             {
-                h->right = rbt_delete(h->right, n);
+                assign_right(h, rbt_delete(r, n));
             }
         }
 
         return fixup(h);
     }
-
-    // Node *rbt_delete(Node *h, Node *n)
-    // {
-    //     h = delete_imp(h, n);
-    //     return h;
-    // }
-
-    // void rbt_delete(RBTree *t, Node *n)
-    // {
-    //     t->root        = rbt_delete(t->root, n);
-    //     t->root->color = BLACK;
-    // }
-
 } // namespace Vultr
