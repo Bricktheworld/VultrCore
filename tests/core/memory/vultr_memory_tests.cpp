@@ -16,3 +16,11 @@ TEST(MemoryArena, InitMemArena)
     arena = init_mem_arena(Terabyte(10));
     ASSERT_EQ(arena, nullptr);
 }
+
+TEST(MemoryArena, Allocate)
+{
+    MemoryArena *arena = init_mem_arena(Megabyte(256));
+    void *buf          = mem_arena_alloc(arena, Kilobyte(4));
+    mem_arena_free(arena, buf);
+    destroy_mem_arena(arena);
+}

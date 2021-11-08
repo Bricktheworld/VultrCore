@@ -59,8 +59,34 @@ namespace Vultr
 
     static MemoryBlock *get_left(MemoryBlock *block) { return block->free.left; }
     static MemoryBlock *get_right(MemoryBlock *block) { return block->free.right; }
+    static MemoryBlock *get_center(MemoryBlock *block) { return block->free.center; }
     static void assign_right(MemoryBlock *dest, MemoryBlock *src) { dest->free.right = src; }
     static void assign_left(MemoryBlock *dest, MemoryBlock *src) { dest->free.left = src; }
+    static void assign_center(MemoryBlock *dest, MemoryBlock *src) { dest->free.center = src; }
+    static void add_center(MemoryBlock *dest, MemoryBlock *src)
+    {
+        auto *c = get_center(dest);
+        if (c == nullptr)
+        {
+            assign_center(dest, src);
+        }
+        else
+        {
+            // Pre-pend to the linked list.
+            assign_center(src, c);
+            assign_center(dest, src);
+        }
+    }
+    static MemoryBlock *remove_center(MemoryBlock *block)
+    {
+        auto *c = get_center(block);
+        ASSERT(c != nullptr, "Memory block does not have a center!");
+
+        auto *cc = get_center(c);
+        assign_center(block, cc);
+        assign_center(c, nullptr);
+        return c;
+    }
     static MemoryBlock *rbt_insert(MemoryBlock *h, MemoryBlock *n);
     static void insert_free_mb(MemoryBlock *block, MemoryArena *arena)
     {
@@ -69,7 +95,14 @@ namespace Vultr
         arena->free_root = rbt_insert(arena->free_root, block);
         set_mb_black(arena->free_root);
     }
-    MemoryBlock *rbt_delete(MemoryBlock *h, MemoryBlock *n);
+    static MemoryBlock *rbt_delete(MemoryBlock *h, u64 size);
+    static void remove_free_mb(u64 size, MemoryArena *arena)
+    {
+        ASSERT_MB_INITIALIZED(block);
+        ASSERT_MB_FREE(block);
+        arena->free_root = rbt_delete(arena->free_root, size);
+        set_mb_black(arena->free_root);
+    }
 
     static MemoryBlock *mb_best_match(MemoryBlock *h, u64 size)
     {
@@ -258,6 +291,10 @@ namespace Vultr
         {
             assign_right(h, rbt_insert(r, n));
         }
+        else if (n_size == h_size)
+        {
+            // TODO(Brandon): Make a bucket linked list such that inserting memory blocks of the same size get bundled together.
+        }
 
         if (is_red(r) && is_black(l))
         {
@@ -294,69 +331,74 @@ namespace Vultr
         return h;
     }
 
-    // static MemoryBlock *delete_min(MemoryBlock *h)
-    // {
-    //     auto *r = get_right(h);
-    //     auto *l = get_left(h);
-    //     if (l == nullptr)
-    //     {
-    //         // TODO(Brandon): Memory leak.
-    //         return nullptr;
-    //     }
+    static MemoryBlock *delete_min(MemoryBlock *h)
+    {
+        auto *r = get_right(h);
+        auto *l = get_left(h);
+        if (l == nullptr)
+        {
+            // TODO(Brandon): Memory leak.
+            return nullptr;
+        }
 
-    //     if (is_black(l) && h->left != nullptr && is_black(h->left->left))
-    //     {
-    //         h = move_red_left(h);
-    //     }
+        if (is_black(l) && l != nullptr && is_black(get_left(l)))
+        {
+            h = move_red_left(h);
+        }
 
-    //     h->left = delete_min(h->left);
+        assign_left(h, delete_min(l));
 
-    //     return fixup(h);
-    // }
+        return fixup(h);
+    }
 
-    // static Node *delete_imp(Node *h, Node *n)
-    // {
-    //     if (n->data < h->data)
-    //     {
-    //         if (is_black(h->left) && h->left != nullptr && is_black(h->left->left))
-    //         {
-    //             h = move_red_left(h);
-    //         }
-    //         h->left = rbt_delete(h->left, n);
-    //     }
-    //     else
-    //     {
-    //         if (is_red(h->left))
-    //         {
-    //             h = rotate_right(h);
-    //         }
-    //         if (n->data == h->data)
-    //         {
-    //             // TODO(Brandon): This is a memory leak, but I don't care right now.
-    //             // This implementation will be different in the allocator anyway because
-    //             // this will be essentially a bucket containing multiple memory blocks of the same size.
-    //             // All we need to do is remove if it is the same memory address.
-    //             return nullptr;
-    //         }
-    //         if (is_black(h->right) && h->right != nullptr && is_black(h->right->left))
-    //         {
-    //             h = move_red_right(h);
-    //         }
+    static MemoryBlock *rbt_delete(MemoryBlock *h, MemoryBlock *n)
+    {
+        auto *l     = get_left(h);
+        auto *r     = get_right(h);
+        auto n_size = get_mb_size(n);
+        auto h_size = get_mb_size(h);
 
-    //         if (n->data == h->data)
-    //         {
-    //             // TODO(Brandon): Figure this shit out.
-    //             h->data  = min(h)->data;
-    //             h->right = delete_min(h->right);
-    //         }
-    //         else
-    //         {
-    //             h->right = rbt_delete(h->right, n);
-    //         }
-    //     }
+        if (n_size < h_size)
+        {
+            if (is_black(l) && l != nullptr && is_black(get_left(l)))
+            {
+                h = move_red_left(h);
+            }
+            assign_left(h, rbt_delete(l, n));
+        }
+        else
+        {
+            if (is_red(l))
+            {
+                h = rotate_right(h);
+            }
+            if (n == h)
+            {
+                // TODO(Brandon): This is a memory leak, but I don't care right now.
+                // This implementation will be different in the allocator anyway because
+                // this will be essentially a bucket containing multiple memory blocks of the same size.
+                // All we need to do is remove if it is the same memory address.
+                return get_center(h);
+            }
+            if (is_black(r) && r != nullptr && is_black(get_left(r)))
+            {
+                h = move_red_right(h);
+            }
 
-    //     return fixup(h);
-    // }
+            if (n == h)
+            {
+                // TODO(Brandon): Figure this shit out.
+                h->data  = min(h)->data;
+                h->right = delete_min(h->right);
+            }
+            else
+            {
+                h->right = rbt_delete(h->right, n);
+            }
+        }
+
+        return fixup(h);
+    }
 
     // Node *rbt_delete(Node *h, Node *n)
     // {
