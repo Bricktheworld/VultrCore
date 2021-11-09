@@ -58,12 +58,65 @@ namespace Vultr
         flip_color(block->free.right);
     }
 
-    static MemoryBlock *get_left(MemoryBlock *block) { return block->free.left; }
-    static MemoryBlock *get_right(MemoryBlock *block) { return block->free.right; }
-    static MemoryBlock *get_center(MemoryBlock *block) { return block->free.center; }
-    static void assign_right(MemoryBlock *dest, MemoryBlock *src) { dest->free.right = src; }
-    static void assign_left(MemoryBlock *dest, MemoryBlock *src) { dest->free.left = src; }
-    static void assign_center(MemoryBlock *dest, MemoryBlock *src) { dest->free.center = src; }
+    static MemoryBlock *get_parent(MemoryBlock *block)
+    {
+        ASSERT(block != nullptr, "Cannot assign get parent from NULL block!");
+        return block->free.parent;
+    }
+    static MemoryBlock *get_grandparent(MemoryBlock *block)
+    {
+        ASSERT(block != nullptr, "Cannot assign get grandparent from NULL block!");
+        auto *parent = get_parent(block);
+        ASSERT(parent != nullptr, "Block does not have a parent and thus doesn't have a grandparent!");
+        return get_parent(parent);
+    }
+    static MemoryBlock *get_left(MemoryBlock *block)
+    {
+        ASSERT(block != nullptr, "Cannot assign get left from NULL block!");
+        return block->free.left;
+    }
+    static MemoryBlock *get_right(MemoryBlock *block)
+    {
+        ASSERT(block != nullptr, "Cannot assign get right from NULL block!");
+        return block->free.right;
+    }
+    static MemoryBlock *get_center(MemoryBlock *block)
+    {
+        ASSERT(block != nullptr, "Cannot assign get center from NULL block!");
+        return block->free.center;
+    }
+    static void assign_parent(MemoryBlock *dest, MemoryBlock *src)
+    {
+        ASSERT(dest != nullptr, "Cannot assign to NULL destination!");
+        dest->free.parent = src;
+    }
+    static void assign_right(MemoryBlock *dest, MemoryBlock *src)
+    {
+        ASSERT(dest != nullptr, "Cannot assign to NULL destination!");
+        dest->free.right = src;
+        if (src != nullptr)
+        {
+            assign_parent(src, dest);
+        }
+    }
+    static void assign_left(MemoryBlock *dest, MemoryBlock *src)
+    {
+        ASSERT(dest != nullptr, "Cannot assign to NULL destination!");
+        dest->free.left = src;
+        if (src != nullptr)
+        {
+            assign_parent(src, dest);
+        }
+    }
+    static void assign_center(MemoryBlock *dest, MemoryBlock *src)
+    {
+        ASSERT(dest != nullptr, "Cannot assign to NULL destination!");
+        dest->free.center = src;
+        if (src != nullptr)
+        {
+            assign_parent(src, get_parent(dest));
+        }
+    }
     static void add_center(MemoryBlock *dest, MemoryBlock *src)
     {
         auto *c = get_center(dest);
@@ -109,21 +162,22 @@ namespace Vultr
             find_remove_center(c, find);
         }
     }
-    static MemoryBlock *rbt_insert(MemoryBlock *h, MemoryBlock *n);
     static void insert_free_mb(MemoryBlock *block, MemoryArena *arena)
     {
         ASSERT_MB_INITIALIZED(block);
         ASSERT_MB_FREE(block);
-        arena->free_root = rbt_insert(arena->free_root, block);
+        rbt_insert(arena, block);
         ASSERT(arena->free_root != nullptr, "Something went wrong inserting memory block!");
         set_mb_black(arena->free_root);
+        assign_parent(arena->free_root, nullptr);
     }
-    static MemoryBlock *rbt_delete(MemoryBlock *h, MemoryBlock *n);
+    static MemoryBlock *rbt_delete(MemoryArena *arena, MemoryBlock *n);
     static void remove_free_mb(MemoryBlock *block, MemoryArena *arena)
     {
         ASSERT_MB_INITIALIZED(block);
         ASSERT_MB_FREE(block);
-        arena->free_root = rbt_delete(arena->free_root, block);
+        NOT_IMPLEMENTED("Reimplementing RN.");
+        // rbt_delete(arena, block);
         if (arena->free_root != nullptr)
         {
             set_mb_black(arena->free_root);
@@ -193,6 +247,7 @@ namespace Vultr
         block->size        = (~(1UL << ALLOCATION_BIT) & size) | (1UL << INITIALIZED_BIT);
         block->next        = next;
         block->prev        = prev;
+        block->free.parent = nullptr;
         block->free.center = nullptr;
         block->free.left   = nullptr;
         block->free.right  = nullptr;
@@ -284,193 +339,192 @@ namespace Vultr
         free(arena);
     }
 
-    static MemoryBlock *rotate_left(MemoryBlock *h)
+    // Red-black tree algorithm credit to https://github.com/xieqing/red-black-tree
+    static void rbt_rotate_left(MemoryArena *arena, MemoryBlock *x)
     {
-        ASSERT_MB_FREE(h);
-        auto *x = get_right(h);
-        ASSERT_MB_FREE(x);
-        assign_right(h, get_left(x));
-        assign_left(x, h);
-        set_mb_color(x, is_red(h));
-        set_mb_red(h);
-        return x;
-    }
-    static MemoryBlock *rotate_right(MemoryBlock *h)
-    {
-        ASSERT_MB_FREE(h);
-        auto *x = get_left(h);
-        ASSERT_MB_FREE(x);
-        assign_left(h, get_right(x));
-        assign_right(x, h);
-        set_mb_color(x, is_red(h));
-        set_mb_red(h);
-        return x;
-    }
+        MemoryBlock *y;
 
-    static MemoryBlock *move_red_left(MemoryBlock *h)
-    {
-        color_flip(h);
-        auto *r = get_right(h);
-        if (is_red(get_left(r)))
-        {
-            assign_right(h, rotate_right(r));
-            h = rotate_left(h);
-            color_flip(h);
-        }
-        return h;
-    }
+        y = get_right(x);
 
-    static MemoryBlock *move_red_right(MemoryBlock *h)
-    {
-        color_flip(h);
-        auto *ll = get_left(get_left(h));
-        if (is_red(ll))
+        assign_right(x, get_left(y));
+        if (get_right(x) != nullptr)
         {
-            h = rotate_right(h);
-            color_flip(h);
-        }
-        return h;
-    }
-
-    static MemoryBlock *rbt_insert(MemoryBlock *h, MemoryBlock *n)
-    {
-        if (h == nullptr)
-        {
-            set_mb_red(n);
-            return n;
+            assign_parent(get_right(x), x);
         }
 
-        auto *l     = get_left(h);
-        auto *r     = get_right(h);
-        auto n_size = get_mb_size(n);
-        auto h_size = get_mb_size(h);
-
-        if (is_red(l) && is_red(r))
+        assign_parent(y, get_parent(x));
+        if (x == get_left(get_parent(x)))
         {
-            color_flip(h);
-        }
-
-        if (n_size < h_size)
-        {
-            assign_left(h, rbt_insert(l, n));
-        }
-        else if (n_size > h_size)
-        {
-            assign_right(h, rbt_insert(r, n));
-        }
-        else if (n_size == h_size)
-        {
-            ASSERT(h != n, "Attempting to insert memory block into memory arena which already exists.");
-            add_center(h, n);
-        }
-
-        if (is_red(r) && is_black(l))
-        {
-            h = rotate_left(h);
-        }
-
-        if (is_red(l) && is_red(get_left(l)))
-        {
-            h = rotate_right(h);
-        }
-
-        return h;
-    }
-
-    static MemoryBlock *fixup(MemoryBlock *h)
-    {
-        auto *r = get_right(h);
-        auto *l = get_left(h);
-        if (is_red(r))
-        {
-            h = rotate_left(h);
-        }
-
-        if (is_red(l) && l != nullptr && is_red(get_left(l)))
-        {
-            h = rotate_right(h);
-        }
-
-        if (is_red(l) && is_red(h))
-        {
-            color_flip(h);
-        }
-
-        return h;
-    }
-
-    static MemoryBlock *delete_min(MemoryBlock *h)
-    {
-        auto *r = get_right(h);
-        auto *l = get_left(h);
-        if (l == nullptr)
-        {
-            // TODO(Brandon): Memory leak.
-            return nullptr;
-        }
-
-        if (is_black(l) && l != nullptr && is_black(get_left(l)))
-        {
-            h = move_red_left(h);
-        }
-
-        assign_left(h, delete_min(l));
-
-        return fixup(h);
-    }
-
-    static MemoryBlock *rbt_delete(MemoryBlock *h, MemoryBlock *n)
-    {
-        auto *l     = get_left(h);
-        auto *r     = get_right(h);
-        auto n_size = get_mb_size(n);
-        auto h_size = get_mb_size(h);
-
-        if (n_size < h_size)
-        {
-            if (is_black(l) && l != nullptr && is_black(get_left(l)))
-            {
-                h = move_red_left(h);
-            }
-            assign_left(h, rbt_delete(l, n));
+            assign_left(get_parent(x), y);
         }
         else
         {
-            if (is_red(l))
-            {
-                h = rotate_right(h);
-            }
-            if (n_size == h_size)
-            {
-                if (n != h)
-                {
-                    find_remove_center(h, n);
-                }
-                // ASSERT(n == h, "TODO(Brandon): Handle this case.");
-                // TODO(Brandon): This is a memory leak, but I don't care right now.
-                // This implementation will be different in the allocator anyway because
-                // this will be essentially a bucket containing multiple memory blocks of the same size.
-                // All we need to do is remove if it is the same memory address.
-                return get_center(h);
-            }
-            if (is_black(r) && r != nullptr && is_black(get_left(r)))
-            {
-                h = move_red_right(h);
-            }
+            assign_right(get_parent(x), y);
+        }
 
-            if (n_size == h_size)
+        assign_left(y, x);
+        assign_parent(x, y);
+    }
+
+    static void rbt_rotate_right(MemoryArena *arena, MemoryBlock *x)
+    {
+        MemoryBlock *y;
+
+        y = get_left(x);
+
+        assign_left(x, get_right(y));
+        if (get_left(x) != nullptr)
+        {
+            assign_parent(get_left(x), x);
+        }
+
+        assign_parent(y, get_parent(x));
+        if (x == get_left(get_parent(x)))
+        {
+            assign_left(get_parent(x), y);
+        }
+        else
+        {
+            assign_right(get_parent(x), y);
+        }
+
+        assign_right(y, x);
+        assign_parent(x, y);
+    }
+
+    static void rbt_insert_repair(MemoryArena *arena, MemoryBlock *current)
+    {
+        MemoryBlock *uncle;
+        //
+        do
+        {
+            // Current node is red and parent node is also red
+            if (get_parent(current) == get_left(get_grandparent(current)))
             {
-                NOT_IMPLEMENTED("TODO(Brandon): Figure this shit out.");
-                // TODO(Brandon): Figure this shit out.
-                // h->data  = min(h)->data;
-                // h->right = delete_min(h->right);
+                uncle = get_right(get_grandparent(current));
+                if (is_red(uncle))
+                {
+                    // Insert into 4 child cluster
+
+                    // Split
+                    set_mb_black(get_parent(current));
+                    set_mb_black(uncle);
+
+                    current = get_grandparent(current);
+                    set_mb_red(current);
+                }
+                else
+                {
+                    // Insert into 3 child cluster
+
+                    if (current == get_right(get_parent(current)))
+                    {
+                        current = get_parent(current);
+                        rbt_rotate_left(arena, current);
+                    }
+
+                    set_mb_black(get_parent(current));
+                    set_mb_red(get_grandparent(current));
+                    rbt_rotate_right(arena, get_grandparent(current));
+                }
             }
             else
             {
-                assign_right(h, rbt_delete(r, n));
-            }
-        }
+                uncle = get_left(get_grandparent(current));
 
-        return fixup(h);
+                if (is_red(uncle))
+                {
+                    // Insert into 4 child cluster
+
+                    // Split
+                    set_mb_black(get_parent(current));
+                    set_mb_black(uncle);
+
+                    current = get_grandparent(current);
+                    set_mb_red(current);
+                }
+                else
+                {
+                    // Insert into 3 child cluster
+
+                    if (current == get_left(get_parent(current)))
+                    {
+                        current = get_parent(current);
+                        rbt_rotate_right(arena, current);
+                    }
+
+                    set_mb_black(get_parent(current));
+                    set_mb_red(get_grandparent(current));
+
+                    rbt_rotate_left(arena, get_grandparent(current));
+                }
+            }
+        } while (is_red(get_parent(current)));
     }
+
+    void rbt_insert(MemoryArena *arena, MemoryBlock *n)
+    {
+        if (arena->free_root == nullptr)
+        {
+            arena->free_root = n;
+        }
+        else
+        {
+            MemoryBlock *current = arena->free_root;
+            MemoryBlock *parent  = nullptr;
+
+            while (current != nullptr)
+            {
+                if (get_mb_size(current) == get_mb_size(n))
+                {
+                    add_center(current, n);
+                    return;
+                }
+
+                parent  = current;
+                current = get_mb_size(n) < get_mb_size(current) ? get_left(current) : get_right(current);
+            }
+
+            current = n;
+            assign_left(current, nullptr);
+            assign_right(current, nullptr);
+            assign_parent(current, parent);
+            set_mb_red(current);
+
+            ASSERT(get_mb_size(current) != get_mb_size(parent), "Something went wrong internally. If the current size matches the size of the parent block, then we need to insert into the bucket!");
+            if (get_mb_size(current) < get_mb_size(parent))
+            {
+                assign_left(parent, current);
+            }
+            else
+            {
+                assign_right(parent, current);
+            }
+
+            // Insertion into a red-black tree:
+            //  0-children root cluster (parent node is BLACK) becomes 2-children root cluster (new root node)
+            //    paint root node BLACK, and done
+            //  2-children cluster (parent node is BLACK) becomes 3-children cluster
+            //    done
+            //  3-children cluster (parent node is BLACK) becomes 4-children cluster
+            //    done
+            //  3-children cluster (parent node is RED) becomes 4-children cluster
+            //    rotate, and done
+            //  4-children cluster (parent node is RED) splits into 2-children cluster and 3-children cluster
+            //    split, and insert grandparent node into parent cluster
+
+            if (is_red(get_parent(current)))
+            {
+                rbt_insert_repair(arena, current);
+            }
+            // else
+            // {
+            //		insertion into 0-children root cluster (parent node is BLACK)
+            // 		insertion into 2-children cluster (parent node is BLACK)
+            // 		insertion into 3-children cluster (parent node is BLACK)
+            // }
+        }
+        set_mb_black(arena->free_root);
+    }
+
 } // namespace Vultr
