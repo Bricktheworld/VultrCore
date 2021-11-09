@@ -88,6 +88,27 @@ namespace Vultr
         assign_center(c, nullptr);
         return c;
     }
+    static void find_remove_center(MemoryBlock *block, MemoryBlock *find)
+    {
+        ASSERT(find != nullptr, "Cannot find a memory block that is NULL.");
+
+        auto *c = get_center(block);
+        if (c == nullptr)
+        {
+            return;
+        }
+        else if (c == find)
+        {
+            auto *cc = get_center(c);
+            assign_center(block, cc);
+            assign_center(c, nullptr);
+            return;
+        }
+        else if (c != find)
+        {
+            find_remove_center(c, find);
+        }
+    }
     static MemoryBlock *rbt_insert(MemoryBlock *h, MemoryBlock *n);
     static void insert_free_mb(MemoryBlock *block, MemoryArena *arena)
     {
@@ -339,7 +360,8 @@ namespace Vultr
         }
         else if (n_size == h_size)
         {
-            // TODO(Brandon): Make a bucket linked list such that inserting memory blocks of the same size get bundled together.
+            ASSERT(h != n, "Attempting to insert memory block into memory arena which already exists.");
+            add_center(h, n);
         }
 
         if (is_red(r) && is_black(l))
@@ -420,7 +442,11 @@ namespace Vultr
             }
             if (n_size == h_size)
             {
-                ASSERT(n == h, "TODO(Brandon): Handle this case.");
+                if (n != h)
+                {
+                    find_remove_center(h, n);
+                }
+                // ASSERT(n == h, "TODO(Brandon): Handle this case.");
                 // TODO(Brandon): This is a memory leak, but I don't care right now.
                 // This implementation will be different in the allocator anyway because
                 // this will be essentially a bucket containing multiple memory blocks of the same size.

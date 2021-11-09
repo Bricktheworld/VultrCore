@@ -89,7 +89,7 @@ typedef char byte;
 #define PRODUCTION_ASSERT(condition, message)
 #endif
 
-#define NOT_IMPLEMENTED(message) ASSERT(false, message)
+#define NOT_IMPLEMENTED(message) PRODUCTION_ASSERT(false, message)
 
 #define BIT_IS_HIGH(x, n) (((x) >> (n)) & 1UL)
 #define BIT_IS_LOW(x, n) !BIT_IS_HIGH(x, n)
