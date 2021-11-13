@@ -33,13 +33,14 @@ TEST(MemoryArena, Allocate)
     for (u32 i = 0; i < 10; i++)
     {
         auto *b = static_cast<MemoryBlock *>(malloc(sizeof(MemoryBlock)));
-        init_free_mb(b, rand() % 2048, nullptr, nullptr);
+        // init_free_mb(b, rand() % 2048, nullptr, nullptr);
+        init_free_mb(b, i << 3, nullptr, nullptr);
         rbt_insert(arena, b);
+        rbt_print(arena, [](u64 size) {
+            //
+            printf("%lu", size);
+        });
     }
-    rbt_print(arena, [](u64 size) {
-        //
-        printf("%lu", size);
-    });
 
     // void *buf          = mem_arena_alloc(arena, 1024);
     // mem_arena_free(arena, buf);

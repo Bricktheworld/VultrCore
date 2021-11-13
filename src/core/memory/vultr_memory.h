@@ -58,7 +58,7 @@ namespace Vultr
             printf("%*s", 8 * depth, "");
             if (label)
                 printf("%s: ", label);
-            print_func(n->size);
+            print_func(n->size & ~0x7);
             printf(" (%s)\n", BIT_IS_HIGH(n->size, 2) ? "r" : "b");
             print(arena, n->free.left, print_func, depth + 1, "L");
         }

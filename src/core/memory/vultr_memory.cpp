@@ -35,8 +35,17 @@ namespace Vultr
     static void set_mb_allocated(MemoryBlock *block) { block->size |= 1UL << ALLOCATION_BIT; }
     static void set_mb_free(MemoryBlock *block) { block->size &= ~(1UL << ALLOCATION_BIT); }
     static void set_mb_color(MemoryBlock *block, u8 color) { block->size = (block->size & ~(1UL << COLOR_BIT)) | (color << COLOR_BIT); }
-    static void set_mb_black(MemoryBlock *block) { block->size &= ~(1UL << COLOR_BIT); }
-    static void set_mb_red(MemoryBlock *block) { block->size |= 1UL << COLOR_BIT; }
+    static void set_mb_black(MemoryBlock *block)
+    {
+        if (block == nullptr)
+            return;
+        block->size &= ~(1UL << COLOR_BIT);
+    }
+    static void set_mb_red(MemoryBlock *block)
+    {
+        ASSERT(block != nullptr, "Cannot set color of memory block nullptr");
+        block->size |= 1UL << COLOR_BIT;
+    }
     static bool is_red(MemoryBlock *block)
     {
         if (block == nullptr)
@@ -339,192 +348,193 @@ namespace Vultr
         free(arena);
     }
 
-    // Red-black tree algorithm credit to https://github.com/xieqing/red-black-tree
-    static void rbt_rotate_left(MemoryArena *arena, MemoryBlock *x)
+    // Red-black tree rules:
+    // - Every node is either black or red.
+    // - The root node is always black.
+    // - Red nodes cannot have red children (no two red nodes can exist in a row).
+    // - Every path from a node to any of its descendants null nodes have the same number of black nodes (All nodes have the same black height).
+    //
+    // Black Height: The number of black nodes on a path to a leaf node. Leaf nodes are black nodes because they are null.
+    // A red black tree of height h has black height >= h/2
+    // The height of a red black tree with n nodes is h <= 2 logBase(2, n+1)
+    // All leaves (null) are black.
+    // The black depth of a node is defined as the number of black ancestor nodes.
+    //
+    //
+
+    static MemoryBlock *bst_insert(MemoryBlock *h, MemoryBlock *n)
     {
-        MemoryBlock *y;
-
-        y = get_right(x);
-
-        assign_right(x, get_left(y));
-        if (get_right(x) != nullptr)
+        if (h == nullptr)
         {
-            assign_parent(get_right(x), x);
+            set_mb_red(n);
+            return n;
         }
 
-        assign_parent(y, get_parent(x));
-        if (x == get_left(get_parent(x)))
+        u64 h_size = get_mb_size(h);
+        u64 n_size = get_mb_size(n);
+
+        if (n_size < h_size)
         {
-            assign_left(get_parent(x), y);
+            assign_left(h, bst_insert(get_left(h), n));
         }
-        else
+        else if (n_size > h_size)
         {
-            assign_right(get_parent(x), y);
+            assign_right(h, bst_insert(get_right(h), n));
+        }
+        else if (n_size == h_size)
+        {
+            add_center(h, n);
         }
 
-        assign_left(y, x);
-        assign_parent(x, y);
+        return h;
     }
 
-    static void rbt_rotate_right(MemoryArena *arena, MemoryBlock *x)
+    static void rbt_right_rotate(MemoryArena *arena, MemoryBlock *n)
     {
-        MemoryBlock *y;
+        auto *l = get_left(n);
+        assign_left(n, get_right(l));
 
-        y = get_left(x);
-
-        assign_left(x, get_right(y));
-        if (get_left(x) != nullptr)
+        assign_parent(l, get_parent(n));
+        // If node n is not the root...
+        if (get_parent(n) != nullptr)
         {
-            assign_parent(get_left(x), x);
-        }
-
-        assign_parent(y, get_parent(x));
-        if (x == get_left(get_parent(x)))
-        {
-            assign_left(get_parent(x), y);
-        }
-        else
-        {
-            assign_right(get_parent(x), y);
-        }
-
-        assign_right(y, x);
-        assign_parent(x, y);
-    }
-
-    static void rbt_insert_repair(MemoryArena *arena, MemoryBlock *current)
-    {
-        MemoryBlock *uncle;
-        //
-        do
-        {
-            // Current node is red and parent node is also red
-            if (get_parent(current) == get_left(get_grandparent(current)))
+            // If n is a left child...
+            if (n == get_left(get_parent(n)))
             {
-                uncle = get_right(get_grandparent(current));
-                if (is_red(uncle))
-                {
-                    // Insert into 4 child cluster
-
-                    // Split
-                    set_mb_black(get_parent(current));
-                    set_mb_black(uncle);
-
-                    current = get_grandparent(current);
-                    set_mb_red(current);
-                }
-                else
-                {
-                    // Insert into 3 child cluster
-
-                    if (current == get_right(get_parent(current)))
-                    {
-                        current = get_parent(current);
-                        rbt_rotate_left(arena, current);
-                    }
-
-                    set_mb_black(get_parent(current));
-                    set_mb_red(get_grandparent(current));
-                    rbt_rotate_right(arena, get_grandparent(current));
-                }
+                assign_left(get_parent(n), l);
             }
+            // If n is a right child...
             else
             {
-                uncle = get_left(get_grandparent(current));
-
-                if (is_red(uncle))
-                {
-                    // Insert into 4 child cluster
-
-                    // Split
-                    set_mb_black(get_parent(current));
-                    set_mb_black(uncle);
-
-                    current = get_grandparent(current);
-                    set_mb_red(current);
-                }
-                else
-                {
-                    // Insert into 3 child cluster
-
-                    if (current == get_left(get_parent(current)))
-                    {
-                        current = get_parent(current);
-                        rbt_rotate_right(arena, current);
-                    }
-
-                    set_mb_black(get_parent(current));
-                    set_mb_red(get_grandparent(current));
-
-                    rbt_rotate_left(arena, get_grandparent(current));
-                }
+                assign_right(get_parent(n), l);
             }
-        } while (is_red(get_parent(current)));
+        }
+        // If it is, then we need to fix the root node pointed to in memory arena.
+        else
+        {
+            arena->free_root = l;
+        }
+
+        assign_right(l, n);
+    }
+
+    static void rbt_left_rotate(MemoryArena *arena, MemoryBlock *n)
+    {
+        auto *r = get_right(n);
+        assign_right(n, get_left(r));
+
+        assign_parent(r, get_parent(n));
+        // If node n is not the root...
+        if (get_parent(n) != nullptr)
+        {
+            // If n is a left child...
+            if (n == get_left(get_parent(n)))
+            {
+                assign_left(get_parent(n), r);
+            }
+            // If n is a right child...
+            else
+            {
+                assign_right(get_parent(n), r);
+            }
+        }
+        // If it is, then we need to fix the root node pointed to in memory arena.
+        else
+        {
+            arena->free_root = r;
+        }
+        assign_left(r, n);
     }
 
     void rbt_insert(MemoryArena *arena, MemoryBlock *n)
     {
-        if (arena->free_root == nullptr)
-        {
-            arena->free_root = n;
-        }
-        else
-        {
-            MemoryBlock *current = arena->free_root;
-            MemoryBlock *parent  = nullptr;
+        arena->free_root = bst_insert(arena->free_root, n);
 
-            while (current != nullptr)
+        MemoryBlock *parent      = nullptr;
+        MemoryBlock *grandparent = nullptr;
+
+        // Traverse until either:
+        // - We reach the root node.
+        // - The current node is black.
+        // - The current node's parent is black.
+
+        while (n != arena->free_root && is_red(n) && is_red(get_parent(n)))
+        {
+            parent = get_parent(n);
+            // NOTE(Brandon): grandparent will never be nullptr because in order for it to be nullptr parent would have to be the root, and that is simply not allowed in the loop because the root is always black and
+            // the parent must be red.
+            grandparent = get_grandparent(n);
+
+            // Left variant of checks
+            if (parent == get_left(grandparent))
             {
-                if (get_mb_size(current) == get_mb_size(n))
+                auto *uncle = get_right(grandparent);
+
+                // If uncle is also red...
+                if (is_red(uncle))
                 {
-                    add_center(current, n);
-                    return;
+                    set_mb_red(grandparent);
+                    set_mb_black(parent);
+                    set_mb_black(uncle);
+                    n = grandparent;
                 }
+                else
+                {
+                    // If n is a right child of parent...
+                    if (n == get_right(parent))
+                    {
+                        rbt_left_rotate(arena, parent);
+                        n      = parent;
+                        parent = get_parent(n);
+                    }
 
-                parent  = current;
-                current = get_mb_size(n) < get_mb_size(current) ? get_left(current) : get_right(current);
+                    // If n is a left child of its parent...
+                    rbt_right_rotate(arena, grandparent);
+                    auto c = is_red(parent);
+                    set_mb_color(parent, is_red(grandparent));
+                    set_mb_color(grandparent, c);
+                    n = parent;
+                }
             }
-
-            current = n;
-            assign_left(current, nullptr);
-            assign_right(current, nullptr);
-            assign_parent(current, parent);
-            set_mb_red(current);
-
-            ASSERT(get_mb_size(current) != get_mb_size(parent), "Something went wrong internally. If the current size matches the size of the parent block, then we need to insert into the bucket!");
-            if (get_mb_size(current) < get_mb_size(parent))
-            {
-                assign_left(parent, current);
-            }
+            // Right variant of checks
             else
             {
-                assign_right(parent, current);
-            }
+                auto *uncle = get_left(grandparent);
 
-            // Insertion into a red-black tree:
-            //  0-children root cluster (parent node is BLACK) becomes 2-children root cluster (new root node)
-            //    paint root node BLACK, and done
-            //  2-children cluster (parent node is BLACK) becomes 3-children cluster
-            //    done
-            //  3-children cluster (parent node is BLACK) becomes 4-children cluster
-            //    done
-            //  3-children cluster (parent node is RED) becomes 4-children cluster
-            //    rotate, and done
-            //  4-children cluster (parent node is RED) splits into 2-children cluster and 3-children cluster
-            //    split, and insert grandparent node into parent cluster
+                // If uncle is also red...
+                if (is_red(uncle))
+                {
+                    set_mb_red(grandparent);
+                    set_mb_black(parent);
+                    set_mb_black(uncle);
+                    n = grandparent;
+                }
+                else
+                {
+                    // If n is a left child of parent...
+                    if (n == get_left(parent))
+                    {
+                        rbt_right_rotate(arena, parent);
+                        n      = parent;
+                        parent = get_parent(n);
+                    }
 
-            if (is_red(get_parent(current)))
-            {
-                rbt_insert_repair(arena, current);
+                    // If n is a right child of its parent...
+                    rbt_left_rotate(arena, grandparent);
+                    auto c = is_red(parent);
+                    set_mb_color(parent, is_red(grandparent));
+                    set_mb_color(grandparent, c);
+                    n = parent;
+                }
             }
-            // else
-            // {
-            //		insertion into 0-children root cluster (parent node is BLACK)
-            // 		insertion into 2-children cluster (parent node is BLACK)
-            // 		insertion into 3-children cluster (parent node is BLACK)
-            // }
         }
+
         set_mb_black(arena->free_root);
     }
 
+    static MemoryBlock *rbt_delete(MemoryArena *arena, MemoryBlock *n)
+    {
+        // TODO(Brandon): Implement.
+        NOT_IMPLEMENTED("Not implemented");
+    }
 } // namespace Vultr
