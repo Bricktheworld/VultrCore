@@ -33,6 +33,7 @@ namespace Vultr
         return block + HEADER_SIZE;
     }
     static void set_mb_allocated(MemoryBlock *block) { block->size |= 1UL << ALLOCATION_BIT; }
+    static bool mb_is_free(MemoryBlock *block) { return BIT_IS_HIGH(block->size, ALLOCATION_BIT); }
     static void set_mb_free(MemoryBlock *block) { block->size &= ~(1UL << ALLOCATION_BIT); }
     static void set_mb_color(MemoryBlock *block, u8 color) { block->size = (block->size & ~(1UL << COLOR_BIT)) | (color << COLOR_BIT); }
     static void set_mb_black(MemoryBlock *block)
@@ -209,6 +210,8 @@ namespace Vultr
             find_remove_center(c, find);
         }
     }
+
+    static void rbt_insert(MemoryArena *arena, MemoryBlock *n);
     static void insert_free_mb(MemoryBlock *block, MemoryArena *arena)
     {
         ASSERT_MB_INITIALIZED(block);
@@ -218,7 +221,7 @@ namespace Vultr
         set_mb_black(arena->free_root);
         assign_parent(arena->free_root, nullptr);
     }
-    // static void rbt_delete(MemoryArena *arena, MemoryBlock *n);
+    static void rbt_delete(MemoryArena *arena, MemoryBlock *n);
     static void remove_free_mb(MemoryBlock *block, MemoryArena *arena)
     {
         ASSERT_MB_INITIALIZED(block);
@@ -347,6 +350,16 @@ namespace Vultr
         b->next = new_block;
         return new_block;
     }
+
+    // TODO(Brandon): Implement.
+    static void coalesce_mbs(MemoryBlock *b)
+    {
+        auto *prev = b->prev;
+        auto *next = b->next;
+    }
+
+    // TODO(Brandon): Make sure that the sizes are aligned properly.
+    // TODO(Brandon): Add lots of error messages to make sure this isn't misused.
     void *mem_arena_alloc(MemoryArena *arena, u64 size)
     {
         // Find a memory block of suitable size.
@@ -369,6 +382,7 @@ namespace Vultr
         set_mb_allocated(best_match);
         return reinterpret_cast<char *>(best_match) + HEADER_SIZE;
     }
+
     void mem_arena_free(MemoryArena *arena, void *data)
     {
         MemoryBlock *block_to_free = reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(data) - HEADER_SIZE);

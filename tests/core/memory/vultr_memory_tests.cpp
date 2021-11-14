@@ -16,44 +16,46 @@ TEST(MemoryArena, InitMemArena)
     arena = init_mem_arena(Terabyte(10));
     ASSERT_EQ(arena, nullptr);
 }
-static void init_free_mb(MemoryBlock *block, u64 size, MemoryBlock *prev, MemoryBlock *next)
+
+void print(MemoryArena *arena, MemoryBlock *n, void (*print_func)(u64 size), int depth, const char *label)
 {
-    block->size        = (~(1UL << 1) & size) | (1UL << 0);
-    block->next        = next;
-    block->prev        = prev;
-    block->free.parent = nullptr;
-    block->free.center = nullptr;
-    block->free.left   = nullptr;
-    block->free.right  = nullptr;
+    if (n != nullptr)
+    {
+        print(arena, n->free.right, print_func, depth + 1, "R");
+        printf("%*s", 8 * depth, "");
+        if (label)
+            printf("%s: ", label);
+        print_func(n->size & ~0x7);
+        printf(" (%s)\n", BIT_IS_HIGH(n->size, 2) ? "r" : "b");
+        print(arena, n->free.left, print_func, depth + 1, "L");
+    }
+}
+
+void rbt_print(MemoryArena *arena, void (*print_func)(u64 size))
+{
+    printf("\n--\n");
+    print(arena, arena->free_root, print_func, 0, "T");
 }
 
 TEST(MemoryArena, Allocate)
 {
-    MemoryArena *arena = init_mem_arena(2048);
+    MemoryArena *arena = init_mem_arena(Kilobyte(512));
     const u32 count    = 10;
 
-    auto **blocks = static_cast<MemoryBlock **>(malloc(sizeof(MemoryBlock *) * count));
+    void *allocations[count];
     for (u32 i = 0; i < count; i++)
     {
-        auto *b   = static_cast<MemoryBlock *>(malloc(sizeof(MemoryBlock)));
-        blocks[i] = b;
-        // init_free_mb(b, rand() % 2048, nullptr, nullptr);
-        init_free_mb(b, i << 3, nullptr, nullptr);
+        auto size      = (i + 32) << 3;
+        allocations[i] = mem_arena_alloc(arena, size);
         rbt_print(arena, [](u64 size) { printf("%lu", size); });
-        rbt_insert(arena, b);
     }
     rbt_print(arena, [](u64 size) { printf("%lu", size); });
 
     for (s32 i = count - 1; i >= 0; i--)
     {
-        auto *b = blocks[i];
-        rbt_delete(arena, b);
+        mem_arena_free(arena, allocations[i]);
         rbt_print(arena, [](u64 size) { printf("%lu", size); });
-        free(b);
     }
-    free(blocks);
 
-    // void *buf          = mem_arena_alloc(arena, 1024);
-    // mem_arena_free(arena, buf);
     destroy_mem_arena(arena);
 }

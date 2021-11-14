@@ -48,30 +48,6 @@ namespace Vultr
         MemoryBlock *memory    = nullptr;
     };
 
-    // TODO(Brandon): Remove these methods and put them back as internal in the source file.
-    void rbt_insert(MemoryArena *arena, MemoryBlock *n);
-    inline void print(MemoryArena *arena, MemoryBlock *n, void (*print_func)(u64 size), int depth, const char *label)
-    {
-        if (n != nullptr)
-        {
-            print(arena, n->free.right, print_func, depth + 1, "R");
-            printf("%*s", 8 * depth, "");
-            if (label)
-                printf("%s: ", label);
-            print_func(n->size & ~0x7);
-            printf(" (%s)\n", BIT_IS_HIGH(n->size, 2) ? "r" : "b");
-            print(arena, n->free.left, print_func, depth + 1, "L");
-        }
-    }
-
-    inline void rbt_print(MemoryArena *arena, void (*print_func)(u64 size))
-    {
-        printf("\n--\n");
-        print(arena, arena->free_root, print_func, 0, "T");
-        // printf("\ncheck_black_height = %d\n", rb_check_black_height(rbt));
-    }
-    void rbt_delete(MemoryArena *arena, MemoryBlock *n);
-
     /*
      * Allocate a chunk of memory from the OS and put it in a `MemoryArena`.
      * @param u64 size: Size in bytes of how much space the memory arena should have.
