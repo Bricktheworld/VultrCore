@@ -20,7 +20,7 @@ namespace Vultr
 #define LOWEST_3_BITS 0x7
 #define HEADER_SIZE (sizeof(MemoryBlock) - sizeof(FreeMemory))
 #define ASSERT_MB_INITIALIZED(block) ASSERT(BIT_IS_HIGH(block->size, INITIALIZED_BIT), "Memory block has not been initialized! Please call `init_free_mb` first!")
-#define ASSERT_MB_FREE(block) ASSERT(BIT_IS_LOW(block->size, COLOR_BIT), "Memory block is not free!")
+#define ASSERT_MB_FREE(block) ASSERT(BIT_IS_LOW(block->size, ALLOCATION_BIT), "Memory block is not free!")
 #define ASSERT_MB_ALLOCATED(block) ASSERT(BIT_IS_HIGH(block->size, COLOR_BIT), "Memory block has not been allocated!")
 
     // Bit hack magic to manipulate lowest 3 bits of our size.
@@ -33,7 +33,12 @@ namespace Vultr
         return block + HEADER_SIZE;
     }
     static void set_mb_allocated(MemoryBlock *block) { block->size |= 1UL << ALLOCATION_BIT; }
-    static bool mb_is_free(MemoryBlock *block) { return BIT_IS_HIGH(block->size, ALLOCATION_BIT); }
+    static bool mb_is_free(MemoryBlock *block)
+    {
+        if (block == nullptr)
+            return false;
+        return BIT_IS_LOW(block->size, ALLOCATION_BIT);
+    }
     static void set_mb_free(MemoryBlock *block) { block->size &= ~(1UL << ALLOCATION_BIT); }
     static void set_mb_color(MemoryBlock *block, u8 color) { block->size = (block->size & ~(1UL << COLOR_BIT)) | (color << COLOR_BIT); }
     static void set_mb_black(MemoryBlock *block)
@@ -341,7 +346,7 @@ namespace Vultr
             return nullptr;
         }
         u32 lowest_bits = b->size & LOWEST_3_BITS;
-        u32 old_size    = get_mb_size(b) + HEADER_SIZE;
+        u32 old_size    = get_mb_size(b);
         b->size         = new_size | lowest_bits;
 
         MemoryBlock *new_block = reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(b) + new_size + HEADER_SIZE);
@@ -351,11 +356,58 @@ namespace Vultr
         return new_block;
     }
 
-    // TODO(Brandon): Implement.
-    static void coalesce_mbs(MemoryBlock *b)
+    static void coalesce_mbs(MemoryArena *arena, MemoryBlock *b)
     {
-        auto *prev = b->prev;
-        auto *next = b->next;
+        auto *prev     = b->prev;
+        auto prev_size = b->prev ? get_mb_size(prev) : 0;
+        auto *next     = b->next;
+        auto next_size = b->next ? get_mb_size(next) : 0;
+        auto b_size    = get_mb_size(b);
+
+        if (mb_is_free(prev) && mb_is_free(next))
+        {
+            u64 new_size = prev_size + (b_size + HEADER_SIZE) + (next_size + HEADER_SIZE);
+            remove_free_mb(prev, arena);
+            remove_free_mb(next, arena);
+
+            init_free_mb(prev, new_size, prev->prev, next->next);
+            insert_free_mb(prev, arena);
+
+            if (next->next != nullptr)
+            {
+                next->next->prev = prev;
+            }
+        }
+        else if (mb_is_free(prev))
+        {
+            u64 new_size = prev_size + (b_size + HEADER_SIZE);
+            remove_free_mb(prev, arena);
+
+            init_free_mb(prev, new_size, prev->prev, next);
+            insert_free_mb(prev, arena);
+
+            if (next != nullptr)
+            {
+                next->prev = prev;
+            }
+        }
+        else if (mb_is_free(next))
+        {
+            u64 new_size = b_size + (next_size + HEADER_SIZE);
+            remove_free_mb(next, arena);
+
+            init_free_mb(b, new_size, prev, next->next);
+            insert_free_mb(b, arena);
+
+            if (prev != nullptr)
+            {
+                prev->next = b;
+            }
+        }
+        else
+        {
+            insert_free_mb(b, arena);
+        }
     }
 
     // TODO(Brandon): Make sure that the sizes are aligned properly.
@@ -390,7 +442,7 @@ namespace Vultr
         auto *prev                 = block_to_free->prev;
         auto *next                 = block_to_free->next;
         init_free_mb(block_to_free, size, prev, next);
-        insert_free_mb(block_to_free, arena);
+        coalesce_mbs(arena, block_to_free);
     }
     void destroy_mem_arena(MemoryArena *arena)
     {
