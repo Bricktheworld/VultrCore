@@ -70,5 +70,4 @@ if(WIN32)
 endif(WIN32)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
-set(CMAKE_CXX_FLAGS "-Wno-reorder -Wreorder-init-list")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
+set(CMAKE_CXX_FLAGS "-Wno-reorder -fdeduce-init-list")

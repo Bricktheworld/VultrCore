@@ -13,9 +13,9 @@ namespace Vultr
     {
         INVALID = 0x0,
         TEXTURE = 0x1,
-        SHADER = 0x2,
-        MESH = 0x4,
-        FONT = 0x8,
+        SHADER  = 0x2,
+        MESH    = 0x4,
+        FONT    = 0x8,
     };
 
     template <typename T>
@@ -42,8 +42,8 @@ namespace Vultr
     struct ResourceQueueItem
     {
         ResourceType type = ResourceType::INVALID;
-        VFileHandle file = 0;
-        void *temp_buf = nullptr;
+        VFileHandle file  = 0;
+        void *temp_buf    = nullptr;
     };
 
     // Load file data asynchronously on separate thread
@@ -85,8 +85,11 @@ namespace Vultr
 
         vtl::mutex mutex;
 
-        ResourceManager() = default;
+        ResourceManager()  = default;
         ~ResourceManager() = default;
+
+        template <typename T>
+        ResourceCache<T> *get_cache();
 
         template <typename T>
         void incr(VFileHandle file)
@@ -103,7 +106,7 @@ namespace Vultr
             {
                 size_t new_index = c->cache.len;
 
-                c->asset_to_index[file] = new_index;
+                c->asset_to_index[file]      = new_index;
                 c->index_to_asset[new_index] = file;
 
                 c->cache.push_back(ResourceData<T>());
@@ -164,9 +167,6 @@ namespace Vultr
             assert(has_asset<T>(file) && "Nonexistent asset!");
             return c->cache[c->asset_to_index[file]].loaded;
         }
-
-        template <typename T>
-        ResourceCache<T> *get_cache();
 
         void load_asset(const VirtualFilesystem *vfs, ResourceQueueItem *item)
         {
@@ -302,23 +302,22 @@ namespace Vultr
             auto *c = get_cache<T>();
             // finalize_resource<T>(item->file, &c->cache[c->asset_to_index[item->file]].data, item->temp_buf);
         }
-
-        template <>
-        ResourceCache<Texture> *get_cache()
-        {
-            return &texture_cache;
-        }
-
-        template <>
-        ResourceCache<Shader> *get_cache()
-        {
-            return &shader_cache;
-        }
-
-        template <>
-        ResourceCache<Mesh> *get_cache()
-        {
-            return &mesh_cache;
-        }
     };
+    template <>
+    inline ResourceCache<Texture> *ResourceManager::get_cache()
+    {
+        return &texture_cache;
+    }
+
+    template <>
+    inline ResourceCache<Shader> *ResourceManager::get_cache()
+    {
+        return &shader_cache;
+    }
+
+    template <>
+    inline ResourceCache<Mesh> *ResourceManager::get_cache()
+    {
+        return &mesh_cache;
+    }
 } // namespace Vultr

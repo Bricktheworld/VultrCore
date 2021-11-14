@@ -70,6 +70,7 @@ namespace Vultr
         print(arena, arena->free_root, print_func, 0, "T");
         // printf("\ncheck_black_height = %d\n", rb_check_black_height(rbt));
     }
+    void rbt_delete(MemoryArena *arena, MemoryBlock *n);
 
     /*
      * Allocate a chunk of memory from the OS and put it in a `MemoryArena`.

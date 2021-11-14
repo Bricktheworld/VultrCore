@@ -17,7 +17,7 @@ namespace Vultr
         char *path = nullptr;
 
         virtual const char *const *get_file_extensions(size_t *size) const = 0;
-        virtual char *expected_extensions_string() = 0;
+        virtual char *expected_extensions_string()                         = 0;
     };
 
     template <const char *const extensions[]>
@@ -25,10 +25,7 @@ namespace Vultr
     {
         static constexpr size_t extensions_length = sizeof(extensions) / sizeof(char *const);
 
-        File()
-        {
-            path = nullptr;
-        }
+        File() { path = nullptr; }
 
         File(const char *path)
         {
@@ -56,7 +53,7 @@ namespace Vultr
 
         File(const File &other)
         {
-            path = str(other.path);
+            // path = str(other.path);
         }
 
         ~File()
@@ -94,27 +91,27 @@ namespace Vultr
     {
         // OK who in the c++ standard committee thought that these syntax being valid was a good idea
         // inline const constexpr consteval inline char *const *char *const []const constexpr constantinople
-        inline constexpr const char *const GENERIC_FILE[] = {};
-        inline constexpr const char *const TEXTURE_SOURCE[] = {".jpeg", ".jpg", ".png", ".bmp", ".dds"};
-        static const size_t TEXTURE_SOURCE_LEN = sizeof(TEXTURE_SOURCE) / sizeof(const char *);
-        inline constexpr const char *const MODEL_SOURCE[] = {".obj", ".fbx", ".blend"};
-        static const size_t MODEL_SOURCE_LEN = sizeof(MODEL_SOURCE) / sizeof(const char *);
-        inline constexpr const char *const HEADER_SOURCE[] = {".h", ".hpp", ".c", ".cpp", ".cc"};
-        static const size_t HEADER_SOURCE_LEN = sizeof(HEADER_SOURCE) / sizeof(const char *);
-        inline constexpr const char *const HEADER[] = {".h", ".hpp"};
-        static const size_t HEADER_LEN = sizeof(HEADER) / sizeof(const char *);
-        inline constexpr const char *const SOURCE[] = {".c", ".cpp", ".cc"};
-        static const size_t SOURCE_LEN = sizeof(SOURCE) / sizeof(const char *);
-        inline constexpr const char *const SHADER[] = {".glsl"};
-        static const size_t SHADER_LEN = sizeof(SHADER) / sizeof(const char *);
-        inline constexpr const char *const FONT_SOURCE[] = {".ttf"};
-        static const size_t FONT_SOURCE_LEN = sizeof(FONT_SOURCE) / sizeof(const char *);
-        inline constexpr const char *const VULTR_SOURCE[] = {".vultr"};
-        static const size_t VULTR_SOURCE_LEN = sizeof(VULTR_SOURCE) / sizeof(const char *);
+        inline constexpr const char *const GENERIC_FILE[]        = {};
+        inline constexpr const char *const TEXTURE_SOURCE[]      = {".jpeg", ".jpg", ".png", ".bmp", ".dds"};
+        static const size_t TEXTURE_SOURCE_LEN                   = sizeof(TEXTURE_SOURCE) / sizeof(const char *);
+        inline constexpr const char *const MODEL_SOURCE[]        = {".obj", ".fbx", ".blend"};
+        static const size_t MODEL_SOURCE_LEN                     = sizeof(MODEL_SOURCE) / sizeof(const char *);
+        inline constexpr const char *const HEADER_SOURCE[]       = {".h", ".hpp", ".c", ".cpp", ".cc"};
+        static const size_t HEADER_SOURCE_LEN                    = sizeof(HEADER_SOURCE) / sizeof(const char *);
+        inline constexpr const char *const HEADER[]              = {".h", ".hpp"};
+        static const size_t HEADER_LEN                           = sizeof(HEADER) / sizeof(const char *);
+        inline constexpr const char *const SOURCE[]              = {".c", ".cpp", ".cc"};
+        static const size_t SOURCE_LEN                           = sizeof(SOURCE) / sizeof(const char *);
+        inline constexpr const char *const SHADER[]              = {".glsl"};
+        static const size_t SHADER_LEN                           = sizeof(SHADER) / sizeof(const char *);
+        inline constexpr const char *const FONT_SOURCE[]         = {".ttf"};
+        static const size_t FONT_SOURCE_LEN                      = sizeof(FONT_SOURCE) / sizeof(const char *);
+        inline constexpr const char *const VULTR_SOURCE[]        = {".vultr"};
+        static const size_t VULTR_SOURCE_LEN                     = sizeof(VULTR_SOURCE) / sizeof(const char *);
         inline constexpr const char *const VULTR_ASSET_PACKAGE[] = {".vasset"};
-        static const size_t VULTR_ASSET_PACKAGE_LEN = sizeof(VULTR_ASSET_PACKAGE) / sizeof(const char *);
-        inline constexpr const char *const DLL_SOURCE[] = {".so", ".dll"};
-        static const size_t DLL_SOURCE_LEN = sizeof(DLL_SOURCE) / sizeof(const char *);
+        static const size_t VULTR_ASSET_PACKAGE_LEN              = sizeof(VULTR_ASSET_PACKAGE) / sizeof(const char *);
+        inline constexpr const char *const DLL_SOURCE[]          = {".so", ".dll"};
+        static const size_t DLL_SOURCE_LEN                       = sizeof(DLL_SOURCE) / sizeof(const char *);
     } // namespace FileTypes
 
     typedef File<FileTypes::GENERIC_FILE> GenericFile;
