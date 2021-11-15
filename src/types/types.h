@@ -112,7 +112,8 @@ struct Buffer
     {
         if (data != nullptr)
         {
-            free(data);
+            // TODO(Brandon): Replace with custom allocator.
+            // free(data);
         }
     }
 };
@@ -138,7 +139,8 @@ inline String str_new(const char *string)
 {
     String result;
     result.count = str_len(string);
-    result.data  = static_cast<u8 *>(malloc(sizeof(u8) * result.count));
+    // TODO(Brandon): Replace with custom allocator.
+    // result.data  = static_cast<u8 *>(malloc(sizeof(u8) * result.count));
 
     return result;
 }
@@ -147,6 +149,7 @@ inline void str_free(String string)
 {
     if (string.data != nullptr)
     {
-        free(string.data);
+        // TODO(Brandon): Replace with custom allocator.
+        // free(string.data);
     }
 }

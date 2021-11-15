@@ -1,3 +1,4 @@
+// TODO(Brandon): Replace with custom allocator.
 #pragma once
 #include <memory>
 #include "equals.h"
@@ -26,9 +27,7 @@ namespace vtl
             typedef T ValueType;
             typedef ListNode<T> *Pointer;
             typedef ValueType &Reference;
-            Iterator(Pointer p_ptr) : ptr(p_ptr)
-            {
-            }
+            Iterator(Pointer p_ptr) : ptr(p_ptr) {}
 
             Iterator &operator++()
             {
@@ -58,34 +57,19 @@ namespace vtl
                 return iterator;
             }
 
-            Pointer operator->()
-            {
-                return ptr;
-            }
+            Pointer operator->() { return ptr; }
 
-            Reference operator*()
-            {
-                return ptr->value;
-            }
+            Reference operator*() { return ptr->value; }
 
-            bool operator==(const Iterator &other) const
-            {
-                return ptr == other.ptr;
-            }
+            bool operator==(const Iterator &other) const { return ptr == other.ptr; }
 
-            bool operator!=(const Iterator &other) const
-            {
-                return !(*this == other);
-            }
+            bool operator!=(const Iterator &other) const { return !(*this == other); }
 
           private:
             Pointer ptr;
         };
 
-        Iterator begin()
-        {
-            return Iterator(head);
-        }
+        Iterator begin() { return Iterator(head); }
 
         Iterator end()
         {
@@ -126,12 +110,12 @@ namespace vtl
     template <typename T>
     ListNode<T> *doubly_linked_list_push_back(DoublyLinkedList<T> &l, T value)
     {
-        auto *n = (ListNode<T> *)malloc(sizeof(ListNode<T>));
-        n->value = value;
-        n->next = nullptr;
+        ListNode<T> *n = nullptr; //(ListNode<T> *)malloc(sizeof(ListNode<T>));
+        n->value       = value;
+        n->next        = nullptr;
         if (l.head == nullptr)
         {
-            l.head = n;
+            l.head  = n;
             n->prev = nullptr;
         }
         else
@@ -142,7 +126,7 @@ namespace vtl
                 iterator = iterator->next;
             }
             iterator->next = n;
-            n->prev = iterator;
+            n->prev        = iterator;
         }
         return n;
     }
@@ -151,8 +135,8 @@ namespace vtl
     ListNode<T> *doubly_linked_list_insert(DoublyLinkedList<T> &l, T value, int index)
     {
         assert(index >= 0 && "Index out of bounds!");
-        auto *n = (ListNode<T> *)malloc(sizeof(ListNode<T>));
-        n->value = value;
+        ListNode<T> *n = nullptr; // (ListNode<T> *)malloc(sizeof(ListNode<T>));
+        n->value       = value;
 
         if (index > 0)
         {
@@ -170,16 +154,16 @@ namespace vtl
             if (next != nullptr)
             {
                 next->prev = n;
-                n->next = next;
+                n->next    = next;
             }
             prev->next = n;
-            n->prev = prev;
+            n->prev    = prev;
         }
         else
         {
             l.head->prev = n;
-            n->next = l.head;
-            l.head = n;
+            n->next      = l.head;
+            l.head       = n;
         }
         return n;
     }
@@ -195,8 +179,8 @@ namespace vtl
             iterator = iterator->next;
         }
         auto *deleted = iterator;
-        auto *next = iterator->next;
-        auto *prev = iterator->prev;
+        auto *next    = iterator->next;
+        auto *prev    = iterator->prev;
         if (next != nullptr)
         {
             next->prev = prev;
@@ -210,7 +194,7 @@ namespace vtl
             l.head = next;
         }
         T temp = deleted->value;
-        free(deleted);
+        // free(deleted);
         return temp;
     }
 

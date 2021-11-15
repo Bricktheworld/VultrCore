@@ -17,7 +17,7 @@ TEST(MemoryArena, InitMemArena)
     ASSERT_EQ(arena, nullptr);
 }
 
-void print(MemoryArena *arena, MemoryBlock *n, void (*print_func)(u64 size), int depth, const char *label)
+void print(MemoryArena *arena, MemoryBlock *n, void (*print_func)(size_t size), int depth, const char *label)
 {
     if (n != nullptr)
     {
@@ -31,7 +31,7 @@ void print(MemoryArena *arena, MemoryBlock *n, void (*print_func)(u64 size), int
     }
 }
 
-void rbt_print(MemoryArena *arena, void (*print_func)(u64 size))
+void rbt_print(MemoryArena *arena, void (*print_func)(size_t size))
 {
     printf("\n--\n");
     print(arena, arena->free_root, print_func, 0, "T");
@@ -42,13 +42,13 @@ TEST(MemoryArena, Allocate)
     MemoryArena *arena = init_mem_arena(Kilobyte(512));
     const u32 count    = 10;
 
-    u64 starting_size = Kilobyte(512) - 24;
+    size_t starting_size = Kilobyte(512) - 24;
 
     void *allocations[count];
-    u64 allocation_sizes[count];
+    size_t allocation_sizes[count];
     for (u32 i = 0; i < count; i++)
     {
-        u64 size            = (i + 32) << 3;
+        size_t size         = (i + 32) << 3;
         allocation_sizes[i] = size;
         allocations[i]      = mem_arena_alloc(arena, size);
     }

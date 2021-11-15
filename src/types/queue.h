@@ -1,3 +1,4 @@
+// TODO(Brandon): Replace with custom allocator.
 #pragma once
 #include "thread.h"
 #include "types.h"
@@ -10,10 +11,10 @@ namespace vtl
         Queue()
         {
             _size = reserved;
-            len = 0;
+            len   = 0;
             if (reserved > 0)
             {
-                _array = static_cast<T *>(malloc(_size * sizeof(T)));
+                // _array = static_cast<T *>(malloc(_size * sizeof(T)));
             }
         }
 
@@ -21,7 +22,7 @@ namespace vtl
         {
             if (_array != nullptr)
             {
-                free(_array);
+                // free(_array);
                 _array = nullptr;
             }
         }
@@ -78,24 +79,21 @@ namespace vtl
             pop();
         }
 
-        bool empty() const
-        {
-            return len == 0;
-        }
+        bool empty() const { return len == 0; }
 
         void clear()
         {
-            len = 0;
+            len   = 0;
             _size = reserved;
             if (reserved > 0)
             {
                 if (_array == nullptr)
                 {
-                    _array = (T *)malloc(_size * sizeof(T));
+                    // _array = (T *)malloc(_size * sizeof(T));
                 }
                 else
                 {
-                    _array = (T *)realloc(_array, _size * sizeof(T));
+                    // _array = (T *)realloc(_array, _size * sizeof(T));
                 }
             }
         }
@@ -125,7 +123,7 @@ namespace vtl
             {
                 if (_array != nullptr)
                 {
-                    free(_array);
+                    // free(_array);
                     _array = nullptr;
                 }
             }
@@ -137,7 +135,7 @@ namespace vtl
                 }
                 else
                 {
-                    _array = (T *)realloc(_array, _size * sizeof(T));
+                    // _array = (T *)realloc(_array, _size * sizeof(T));
                 }
             }
         }

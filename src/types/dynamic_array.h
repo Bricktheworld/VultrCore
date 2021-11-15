@@ -1,3 +1,4 @@
+// TODO(Brandon): Replace with custom allocator.
 #pragma once
 #include <assert.h>
 #include <memory>
@@ -14,10 +15,10 @@ namespace vtl
         DynamicArray()
         {
             _size = reserved;
-            len = 0;
+            len   = 0;
             if (reserved > 0)
             {
-                _array = static_cast<T *>(malloc(_size * sizeof(T)));
+                // _array = static_cast<T *>(malloc(_size * sizeof(T)));
             }
         }
 
@@ -26,14 +27,14 @@ namespace vtl
             assert(count != 0 && "Count must be greater than 0!");
             assert(array != nullptr && "Array must not be null!");
 
-            len = count;
+            len   = count;
             _size = len * growth_factor;
             if (_size < reserved)
             {
                 _size = reserved;
             }
 
-            _array = static_cast<T *>(malloc(sizeof(T) * _size));
+            // _array = static_cast<T *>(malloc(sizeof(T) * _size));
 
             for (int i = 0; i < count; i++)
             {
@@ -43,13 +44,13 @@ namespace vtl
 
         // Delete copy methods because we don't want this to be done on accident, we want it to be very very explicit since we are essentially duplicating a buffer
         DynamicArray<T> &operator=(const DynamicArray<T> &other) = delete;
-        DynamicArray(const DynamicArray<T> &other) = delete;
+        DynamicArray(const DynamicArray<T> &other)               = delete;
 
         // Destructor for dynamic array
         ~DynamicArray()
         {
-            if (_array != nullptr)
-                free(_array);
+            // if (_array != nullptr)
+            //     free(_array);
         }
 
         // Push element to back of dynamic_array
@@ -132,24 +133,21 @@ namespace vtl
             remove(len - 1);
         }
 
-        bool empty() const
-        {
-            return len == 0;
-        }
+        bool empty() const { return len == 0; }
 
         void clear()
         {
-            len = 0;
+            len   = 0;
             _size = reserved;
             if (reserved > 0)
             {
                 if (_array == nullptr)
                 {
-                    _array = (T *)malloc(_size * sizeof(T));
+                    // _array = (T *)malloc(_size * sizeof(T));
                 }
                 else
                 {
-                    _array = (T *)realloc(_array, _size * sizeof(T));
+                    // _array = (T *)realloc(_array, _size * sizeof(T));
                 }
             }
         }
@@ -201,7 +199,7 @@ namespace vtl
             {
                 if (_array != nullptr)
                 {
-                    free(_array);
+                    // free(_array);
                     _array = nullptr;
                 }
             }
@@ -209,11 +207,11 @@ namespace vtl
             {
                 if (_array == nullptr)
                 {
-                    _array = (T *)malloc(_size * sizeof(T));
+                    // _array = (T *)malloc(_size * sizeof(T));
                 }
                 else
                 {
-                    _array = (T *)realloc(_array, _size * sizeof(T));
+                    // _array = (T *)realloc(_array, _size * sizeof(T));
                 }
             }
         }
@@ -258,44 +256,23 @@ namespace vtl
                 return iterator;
             }
 
-            Reference operator[](int index)
-            {
-                return *(ptr + index);
-            }
+            Reference operator[](int index) { return *(ptr + index); }
 
-            Pointer operator->()
-            {
-                return ptr;
-            }
+            Pointer operator->() { return ptr; }
 
-            Reference operator*()
-            {
-                return *ptr;
-            }
+            Reference operator*() { return *ptr; }
 
-            bool operator==(const Iterator &other) const
-            {
-                return ptr == other.ptr;
-            }
+            bool operator==(const Iterator &other) const { return ptr == other.ptr; }
 
-            bool operator!=(const Iterator &other) const
-            {
-                return !(*this == other);
-            }
+            bool operator!=(const Iterator &other) const { return !(*this == other); }
 
           private:
             Pointer ptr;
         };
 
-        Iterator begin() const
-        {
-            return Iterator(_array);
-        }
+        Iterator begin() const { return Iterator(_array); }
 
-        Iterator end() const
-        {
-            return Iterator(_array + len);
-        }
+        Iterator end() const { return Iterator(_array + len); }
     };
 
 } // namespace vtl

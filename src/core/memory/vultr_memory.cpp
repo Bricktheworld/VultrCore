@@ -26,7 +26,7 @@ namespace Vultr
     // Bit hack magic to manipulate lowest 3 bits of our size.
     // This is possible because alignment is 8 bytes minimum so the lowest 3 bits (1, 2, 4) will always be rounded to 0.
     // These can then be used to hold our initialization flag, allocation flag, and color bit
-    static u64 get_mb_size(MemoryBlock *block) { return block->size & ~LOWEST_3_BITS; }
+    static size_t get_mb_size(MemoryBlock *block) { return block->size & ~LOWEST_3_BITS; }
     static void *get_mb_memory(MemoryBlock *block)
     {
         ASSERT_MB_ALLOCATED(block);
@@ -238,7 +238,7 @@ namespace Vultr
         }
     }
 
-    static MemoryBlock *mb_best_match(MemoryBlock *h, u64 size)
+    static MemoryBlock *mb_best_match(MemoryBlock *h, size_t size)
     {
         // If h is a leaf, then we can assume it is the closest block to the size we need so we can just split it
 
@@ -296,7 +296,7 @@ namespace Vultr
         }
     }
 
-    static void init_free_mb(MemoryBlock *block, u64 size, MemoryBlock *prev, MemoryBlock *next)
+    static void init_free_mb(MemoryBlock *block, size_t size, MemoryBlock *prev, MemoryBlock *next)
     {
         block->size        = (~(1UL << ALLOCATION_BIT) & size) | (1UL << INITIALIZED_BIT);
         block->next        = next;
@@ -307,7 +307,7 @@ namespace Vultr
         block->free.right  = nullptr;
     }
 
-    MemoryArena *init_mem_arena(u64 size, u8 alignment)
+    MemoryArena *init_mem_arena(size_t size, u8 alignment)
     {
         ASSERT(size > sizeof(MemoryBlock), "Why are you initializing a memory arena that is literally smaller than 48 bytes...");
         // NOTE(Brandon): These should really be the only two places where malloc and free are ever called throughout the lifetime of the program.
@@ -338,7 +338,7 @@ namespace Vultr
         return arena;
     }
 
-    static MemoryBlock *split_mb(MemoryBlock *b, u64 new_size)
+    static MemoryBlock *split_mb(MemoryBlock *b, size_t new_size)
     {
         // If the new size is exactly the same size as our memory block, there is no reason to split.
         if (new_size == get_mb_size(b))
@@ -347,7 +347,15 @@ namespace Vultr
         }
         u32 lowest_bits = b->size & LOWEST_3_BITS;
         u32 old_size    = get_mb_size(b);
-        b->size         = new_size | lowest_bits;
+
+        // If this block is not big enough to be split into another smaller memory block, don't bother...
+        // TODO(Brandon): Add test case for this.
+        if (old_size - new_size < sizeof(MemoryBlock))
+        {
+            return nullptr;
+        }
+
+        b->size = new_size | lowest_bits;
 
         MemoryBlock *new_block = reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(b) + new_size + HEADER_SIZE);
         init_free_mb(new_block, old_size - new_size - HEADER_SIZE, b, b->next);
@@ -366,7 +374,7 @@ namespace Vultr
 
         if (mb_is_free(prev) && mb_is_free(next))
         {
-            u64 new_size = prev_size + (b_size + HEADER_SIZE) + (next_size + HEADER_SIZE);
+            size_t new_size = prev_size + (b_size + HEADER_SIZE) + (next_size + HEADER_SIZE);
             remove_free_mb(prev, arena);
             remove_free_mb(next, arena);
 
@@ -380,7 +388,7 @@ namespace Vultr
         }
         else if (mb_is_free(prev))
         {
-            u64 new_size = prev_size + (b_size + HEADER_SIZE);
+            size_t new_size = prev_size + (b_size + HEADER_SIZE);
             remove_free_mb(prev, arena);
 
             init_free_mb(prev, new_size, prev->prev, next);
@@ -393,7 +401,7 @@ namespace Vultr
         }
         else if (mb_is_free(next))
         {
-            u64 new_size = b_size + (next_size + HEADER_SIZE);
+            size_t new_size = b_size + (next_size + HEADER_SIZE);
             remove_free_mb(next, arena);
 
             init_free_mb(b, new_size, prev, next->next);
@@ -412,7 +420,7 @@ namespace Vultr
 
     // TODO(Brandon): Make sure that the sizes are aligned properly.
     // TODO(Brandon): Add lots of error messages to make sure this isn't misused.
-    void *mem_arena_alloc(MemoryArena *arena, u64 size)
+    void *mem_arena_alloc(MemoryArena *arena, size_t size)
     {
         // Find a memory block of suitable size.
         auto *best_match = mb_best_match(arena->free_root, size);
@@ -438,7 +446,7 @@ namespace Vultr
     void mem_arena_free(MemoryArena *arena, void *data)
     {
         MemoryBlock *block_to_free = reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(data) - HEADER_SIZE);
-        u64 size                   = get_mb_size(block_to_free);
+        size_t size                = get_mb_size(block_to_free);
         auto *prev                 = block_to_free->prev;
         auto *next                 = block_to_free->next;
         init_free_mb(block_to_free, size, prev, next);
@@ -473,8 +481,8 @@ namespace Vultr
             return n;
         }
 
-        u64 h_size = get_mb_size(h);
-        u64 n_size = get_mb_size(n);
+        size_t h_size = get_mb_size(h);
+        size_t n_size = get_mb_size(n);
 
         if (n_size < h_size)
         {

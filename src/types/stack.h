@@ -1,3 +1,4 @@
+// TODO(Brandon): Replace with custom allocator.
 #pragma once
 #include <assert.h>
 #include <memory>
@@ -12,10 +13,10 @@ namespace vtl
         Stack()
         {
             _size = reserved;
-            len = 0;
+            len   = 0;
             if (reserved > 0)
             {
-                _array = static_cast<T *>(malloc(_size * sizeof(T)));
+                // _array = static_cast<T *>(malloc(_size * sizeof(T)));
             }
         }
 
@@ -24,14 +25,14 @@ namespace vtl
             assert(count != 0 && "Count must be greater than 0!");
             assert(array != nullptr && "Array must not be null!");
 
-            len = count;
+            len   = count;
             _size = len * growth_factor;
             if (_size < reserved)
             {
                 _size = reserved;
             }
 
-            _array = static_cast<T *>(malloc(sizeof(T) * _size));
+            // _array = static_cast<T *>(malloc(sizeof(T) * _size));
 
             for (int i = 0; i < count; i++)
             {
@@ -41,13 +42,13 @@ namespace vtl
 
         // Delete copy methods because we don't want this to be done on accident, we want it to be very very explicit since we are essentially duplicating a buffer
         Stack<T> &operator=(const Stack<T> &other) = delete;
-        Stack(const Stack<T> &other) = delete;
+        Stack(const Stack<T> &other)               = delete;
 
         // Destructor for dynamic array
         ~Stack()
         {
-            if (_array != nullptr)
-                free(_array);
+            // if (_array != nullptr)
+            //     free(_array);
         }
 
         // Push element to back of Stack
@@ -119,24 +120,21 @@ namespace vtl
             pop();
         }
 
-        bool empty() const
-        {
-            return len == 0;
-        }
+        bool empty() const { return len == 0; }
 
         void clear()
         {
-            len = 0;
+            len   = 0;
             _size = reserved;
             if (reserved > 0)
             {
                 if (_array == nullptr)
                 {
-                    _array = (T *)malloc(_size * sizeof(T));
+                    // _array = (T *)malloc(_size * sizeof(T));
                 }
                 else
                 {
-                    _array = (T *)realloc(_array, _size * sizeof(T));
+                    // _array = (T *)realloc(_array, _size * sizeof(T));
                 }
             }
         }
@@ -175,7 +173,7 @@ namespace vtl
             {
                 if (_array != nullptr)
                 {
-                    free(_array);
+                    // free(_array);
                     _array = nullptr;
                 }
             }
@@ -183,11 +181,11 @@ namespace vtl
             {
                 if (_array == nullptr)
                 {
-                    _array = (T *)malloc(_size * sizeof(T));
+                    // _array = (T *)malloc(_size * sizeof(T));
                 }
                 else
                 {
-                    _array = (T *)realloc(_array, _size * sizeof(T));
+                    // _array = (T *)realloc(_array, _size * sizeof(T));
                 }
             }
         }

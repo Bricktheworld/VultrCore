@@ -11,7 +11,7 @@ enable_testing()
 file(
   GLOB_RECURSE Sources
   "vendor/*.cpp"
-  "src/main.cpp"
+  "src/sources.cpp"
 )
 
 
