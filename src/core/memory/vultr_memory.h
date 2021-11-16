@@ -1,5 +1,6 @@
 #pragma once
 #include <types/types.h>
+#include <platform/platform.h>
 
 namespace Vultr
 {
@@ -43,9 +44,10 @@ namespace Vultr
     struct MemoryArena
     {
         // TODO(Brandon): Add support for 32 bit alignment (8 bytes)
-        u8 alignment           = 16;
-        MemoryBlock *free_root = nullptr;
-        MemoryBlock *memory    = nullptr;
+        u8 alignment                          = 16;
+        MemoryBlock *free_root                = nullptr;
+        MemoryBlock *block_head               = nullptr;
+        Platform::PlatformMemoryBlock *memory = nullptr;
     };
 
     /*
@@ -70,6 +72,20 @@ namespace Vultr
      * @no_thread_safety
      * */
     void *mem_arena_alloc(MemoryArena *arena, size_t size);
+
+    /*
+     * Resize a chunk of memory from a `MemoryArena`.
+     * @param MemoryArena *arena: The memory arena to allocate from.
+     * @param void *: The old allocated block of memory.
+     * @param size_t size: The size of memory to allocate.
+     *
+     * @return void *: The memory that can now be used.
+     *
+     * @error The method will return nullptr if there is no memory chunk available to allocate.
+     *
+     * @no_thread_safety
+     * */
+    void *mem_arena_realloc(MemoryArena *arena, void *data, size_t size);
 
     /*
      * Free a chunk of memory from a `MemoryArena`.

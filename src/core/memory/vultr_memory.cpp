@@ -310,30 +310,32 @@ namespace Vultr
     MemoryArena *init_mem_arena(size_t size, u8 alignment)
     {
         ASSERT(size > sizeof(MemoryBlock), "Why are you initializing a memory arena that is literally smaller than 48 bytes...");
-        // NOTE(Brandon): These should really be the only two places where malloc and free are ever called throughout the lifetime of the program.
-        // Every other dynamic allocation should be done through the memory arenas.
 
-        // TODO(Brandon): Replace malloc with a more performant, platform specific, method.
-        auto *arena = static_cast<MemoryArena *>(malloc(sizeof(MemoryArena)));
+        // Virtual alloc some memory.
+        auto *memory_block = Platform::virtual_alloc(nullptr, sizeof(MemoryArena) + size);
 
-        if (arena == nullptr)
+        // If it returned nullptr, then we can assume that the allocation failed.
+        if (memory_block == nullptr)
         {
             return nullptr;
         }
-        arena->memory = static_cast<MemoryBlock *>(malloc(size));
-        if (arena->memory == nullptr)
-        {
-            free(arena);
-            return nullptr;
-        }
 
-        MemoryBlock *h = arena->memory;
+        // The memory arena will be at the start of this platform memory block.
+        auto *arena      = reinterpret_cast<MemoryArena *>(Platform::get_memory(memory_block));
+        arena->alignment = alignment;
+
+        // And in that arena we will have a pointer to the head of the platform memory block.
+        arena->memory = memory_block;
+
+        // The head block will come after the memory arena.
+        arena->block_head = reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(arena) + sizeof(MemoryArena));
+
+        // Memory block head.
+        auto *h = arena->block_head;
 
         // Subtract the size of the memory header because this will exist at all times
         init_free_mb(h, size - HEADER_SIZE, nullptr, nullptr);
         insert_free_mb(h, arena);
-
-        arena->alignment = alignment;
 
         return arena;
     }
@@ -443,9 +445,44 @@ namespace Vultr
         return reinterpret_cast<char *>(best_match) + HEADER_SIZE;
     }
 
+    static MemoryBlock *get_block_from_allocated_data(void *data) 
+    {
+	return reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(data) - HEADER_SIZE);
+    }
+
+    void *mem_arena_realloc(MemoryArena *arena, void *data, size_t size) 
+    {
+	auto *block = get_block_from_allocated_data(data);
+	size_t current_size = get_mb_size(block);
+
+	auto *prev = block->prev;
+	auto prev_is_free = prev ? mb_is_free(prev) : false;
+	auto prev_size = prev ? get_mb_size(prev) : 0;
+
+	auto *next = block->next;
+	auto next_is_free = next ? mb_is_free(next) : false;
+	auto next_size = next ? get_mb_size(next) : 0;
+
+	if (prev_is_free) 
+	{
+	    if(prev_size + current_size + HEADER_SIZE >= size)  
+	    {
+	    } 
+	    else if(next_is_free)
+	    {
+
+	    }
+	} 
+	else if (next_is_free) 
+	{
+
+	} 
+
+    }
+
     void mem_arena_free(MemoryArena *arena, void *data)
     {
-        MemoryBlock *block_to_free = reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(data) - HEADER_SIZE);
+        auto *block_to_free 	   = get_block_from_allocated_data(data);
         size_t size                = get_mb_size(block_to_free);
         auto *prev                 = block_to_free->prev;
         auto *next                 = block_to_free->next;
@@ -455,8 +492,7 @@ namespace Vultr
     void destroy_mem_arena(MemoryArena *arena)
     {
         ASSERT(arena != nullptr && arena->memory != nullptr, "Invalid memory arena!");
-        free(arena->memory);
-        free(arena);
+        Platform::virtual_free(arena->memory);
     }
 
     // Red-black tree rules:
