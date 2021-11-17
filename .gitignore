@@ -1,4 +1,5 @@
 build/
+release/
 VultrHelper
 VultrHelper.exe
 *.generated.h

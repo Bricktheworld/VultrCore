@@ -217,7 +217,7 @@ namespace Vultr
     }
 
     static void rbt_insert(MemoryArena *arena, MemoryBlock *n);
-    static void insert_free_mb(MemoryBlock *block, MemoryArena *arena)
+    static void insert_free_mb(MemoryArena *arena, MemoryBlock *block)
     {
         ASSERT_MB_INITIALIZED(block);
         ASSERT_MB_FREE(block);
@@ -227,7 +227,7 @@ namespace Vultr
         assign_parent(arena->free_root, nullptr);
     }
     static void rbt_delete(MemoryArena *arena, MemoryBlock *n);
-    static void remove_free_mb(MemoryBlock *block, MemoryArena *arena)
+    static void remove_free_mb(MemoryArena *arena, MemoryBlock *block)
     {
         ASSERT_MB_INITIALIZED(block);
         ASSERT_MB_FREE(block);
@@ -335,7 +335,7 @@ namespace Vultr
 
         // Subtract the size of the memory header because this will exist at all times
         init_free_mb(h, size - HEADER_SIZE, nullptr, nullptr);
-        insert_free_mb(h, arena);
+        insert_free_mb(arena, h);
 
         return arena;
     }
@@ -377,11 +377,11 @@ namespace Vultr
         if (mb_is_free(prev) && mb_is_free(next))
         {
             size_t new_size = prev_size + (b_size + HEADER_SIZE) + (next_size + HEADER_SIZE);
-            remove_free_mb(prev, arena);
-            remove_free_mb(next, arena);
+            remove_free_mb(arena, prev);
+            remove_free_mb(arena, next);
 
             init_free_mb(prev, new_size, prev->prev, next->next);
-            insert_free_mb(prev, arena);
+            insert_free_mb(arena, prev);
 
             if (next->next != nullptr)
             {
@@ -391,10 +391,10 @@ namespace Vultr
         else if (mb_is_free(prev))
         {
             size_t new_size = prev_size + (b_size + HEADER_SIZE);
-            remove_free_mb(prev, arena);
+            remove_free_mb(arena, prev);
 
             init_free_mb(prev, new_size, prev->prev, next);
-            insert_free_mb(prev, arena);
+            insert_free_mb(arena, prev);
 
             if (next != nullptr)
             {
@@ -404,10 +404,10 @@ namespace Vultr
         else if (mb_is_free(next))
         {
             size_t new_size = b_size + (next_size + HEADER_SIZE);
-            remove_free_mb(next, arena);
+            remove_free_mb(arena, next);
 
             init_free_mb(b, new_size, prev, next->next);
-            insert_free_mb(b, arena);
+            insert_free_mb(arena, b);
 
             if (prev != nullptr)
             {
@@ -416,7 +416,7 @@ namespace Vultr
         }
         else
         {
-            insert_free_mb(b, arena);
+            insert_free_mb(arena, b);
         }
     }
 
@@ -430,14 +430,14 @@ namespace Vultr
         ASSERT(get_mb_size(best_match) >= size, "");
 
         // Delete this memory block from the red black tree.
-        remove_free_mb(best_match, arena);
+        remove_free_mb(arena, best_match);
 
         // If need be, split the memory block into the size that we need.
         auto *new_block = split_mb(best_match, size);
         if (new_block != nullptr)
         {
             // Insert this new memory block as free into the memory arena.
-            insert_free_mb(new_block, arena);
+            insert_free_mb(arena, new_block);
         }
 
         // Set our memory block to allocated.
@@ -445,47 +445,66 @@ namespace Vultr
         return reinterpret_cast<char *>(best_match) + HEADER_SIZE;
     }
 
-    static MemoryBlock *get_block_from_allocated_data(void *data) 
+    static MemoryBlock *get_block_from_allocated_data(void *data) { return reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(data) - HEADER_SIZE); }
+
+    void *mem_arena_realloc(MemoryArena *arena, void *data, size_t size)
     {
-	return reinterpret_cast<MemoryBlock *>(reinterpret_cast<char *>(data) - HEADER_SIZE);
+        auto *block         = get_block_from_allocated_data(data);
+        size_t current_size = get_mb_size(block);
+
+        auto *next        = block->next;
+        auto next_is_free = next ? mb_is_free(next) : false;
+        auto next_size    = next ? get_mb_size(next) : 0;
+
+        if (next_is_free)
+        {
+            if (next_size + size + HEADER_SIZE >= size)
+            {
+                // This memory block no longer exists.
+                remove_free_mb(arena, next);
+
+                u32 lowest_bits = block->size & LOWEST_3_BITS;
+                block->size     = size | lowest_bits;
+                block->next     = next->next;
+
+                if (block->next != nullptr)
+                {
+                    block->next->prev = block;
+                }
+
+                return data;
+            }
+        }
+
+        void *new_data = mem_arena_alloc(arena, size);
+
+        if (new_data == nullptr)
+        {
+            mem_arena_free(arena, block);
+            return nullptr;
+        }
+
+        mem_cpy(new_data, data, current_size);
+
+        // TODO(Brandon): Figure out a way to allow freeing the block before searching for a new one.
+        // This will require the data to be temporarily stored on a buffer on the stack, that will then be copied into the new area.
+        mem_arena_free(arena, block);
+
+        return new_data;
     }
 
-    void *mem_arena_realloc(MemoryArena *arena, void *data, size_t size) 
+    void mem_cpy(void *dest, void *src, size_t len)
     {
-	auto *block = get_block_from_allocated_data(data);
-	size_t current_size = get_mb_size(block);
-
-	auto *prev = block->prev;
-	auto prev_is_free = prev ? mb_is_free(prev) : false;
-	auto prev_size = prev ? get_mb_size(prev) : 0;
-
-	auto *next = block->next;
-	auto next_is_free = next ? mb_is_free(next) : false;
-	auto next_size = next ? get_mb_size(next) : 0;
-
-	if (prev_is_free) 
-	{
-	    if(prev_size + current_size + HEADER_SIZE >= size)  
-	    {
-	    } 
-	    else if(next_is_free)
-	    {
-
-	    }
-	} 
-	else if (next_is_free) 
-	{
-
-	} 
-
+        // TODO(Brandon): Figure out correct way to do this performant.
+        NOT_IMPLEMENTED("Need to implement");
     }
 
     void mem_arena_free(MemoryArena *arena, void *data)
     {
-        auto *block_to_free 	   = get_block_from_allocated_data(data);
-        size_t size                = get_mb_size(block_to_free);
-        auto *prev                 = block_to_free->prev;
-        auto *next                 = block_to_free->next;
+        auto *block_to_free = get_block_from_allocated_data(data);
+        size_t size         = get_mb_size(block_to_free);
+        auto *prev          = block_to_free->prev;
+        auto *next          = block_to_free->next;
         init_free_mb(block_to_free, size, prev, next);
         coalesce_mbs(arena, block_to_free);
     }

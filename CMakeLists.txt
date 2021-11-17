@@ -59,6 +59,8 @@ target_precompile_headers(${This} PUBLIC pch.h)
 
 add_subdirectory(tests)
 
+add_subdirectory(benchmark)
+
 
 if(WIN32)
   add_custom_command(

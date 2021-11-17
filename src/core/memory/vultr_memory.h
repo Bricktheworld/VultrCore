@@ -97,6 +97,15 @@ namespace Vultr
     void mem_arena_free(MemoryArena *arena, void *data);
 
     /*
+     * Copy memory from one location to another
+     * @param MemoryArena *mem: The memory arena to free from.
+     * @param void *data: The data to free.
+     *
+     * @no_thread_safety
+     * */
+    void mem_cpy(void *dest, void *src, size_t len);
+
+    /*
      * Free a `MemoryArena` from the OS.
      * @param MemoryArena *mem: The memory arena to be freed.
      * */
