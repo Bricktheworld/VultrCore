@@ -40,6 +40,7 @@ namespace Vultr
             FreeMemory free;
         };
     };
+#define MEMORY_ARENA_BLOCK_CACHE_SIZE 8
 
     struct MemoryArena
     {
@@ -48,7 +49,16 @@ namespace Vultr
         MemoryBlock *free_root                = nullptr;
         MemoryBlock *block_head               = nullptr;
         Platform::PlatformMemoryBlock *memory = nullptr;
+        size_t sizes[8]                       = {0};
+        MemoryBlock *blocks[8]                = {nullptr};
+        size_t used                           = 0;
     };
+
+    // TODO(Brandon): Remove these.
+    void insert_free_mb(MemoryArena *arena, MemoryBlock *block);
+    void remove_free_mb(MemoryArena *arena, MemoryBlock *block);
+    void init_free_mb(MemoryBlock *block, size_t size, MemoryBlock *prev, MemoryBlock *next);
+    MemoryBlock *mb_best_match(MemoryBlock *h, size_t size);
 
     /*
      * Allocate a chunk of memory from the OS and put it in a `MemoryArena`.
@@ -105,15 +115,6 @@ namespace Vultr
      * @no_thread_safety
      * */
     void mem_arena_free(MemoryArena *arena, void *data);
-
-    /*
-     * Copy memory from one location to another
-     * @param MemoryArena *mem: The memory arena to free from.
-     * @param void *data: The data to free.
-     *
-     * @no_thread_safety
-     * */
-    void mem_cpy(void *dest, void *src, size_t len);
 
     /*
      * Free a `MemoryArena` from the OS.

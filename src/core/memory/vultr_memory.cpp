@@ -32,6 +32,15 @@ namespace Vultr
         ASSERT_MB_ALLOCATED(block);
         return block + HEADER_SIZE;
     }
+    static size_t align(size_t size, u32 alignment)
+    {
+        auto remainder = size % alignment;
+
+        if (remainder == 0)
+            return size;
+
+        return size + alignment - remainder;
+    }
     static void set_mb_allocated(MemoryBlock *block) { block->size |= 1UL << ALLOCATION_BIT; }
     static bool mb_is_free(MemoryBlock *block)
     {
@@ -217,7 +226,7 @@ namespace Vultr
     }
 
     static void rbt_insert(MemoryArena *arena, MemoryBlock *n);
-    static void insert_free_mb(MemoryArena *arena, MemoryBlock *block)
+    void insert_free_mb(MemoryArena *arena, MemoryBlock *block)
     {
         ASSERT_MB_INITIALIZED(block);
         ASSERT_MB_FREE(block);
@@ -227,7 +236,7 @@ namespace Vultr
         assign_parent(arena->free_root, nullptr);
     }
     static void rbt_delete(MemoryArena *arena, MemoryBlock *n);
-    static void remove_free_mb(MemoryArena *arena, MemoryBlock *block)
+    void remove_free_mb(MemoryArena *arena, MemoryBlock *block)
     {
         ASSERT_MB_INITIALIZED(block);
         ASSERT_MB_FREE(block);
@@ -238,7 +247,7 @@ namespace Vultr
         }
     }
 
-    static MemoryBlock *mb_best_match(MemoryBlock *h, size_t size)
+    MemoryBlock *mb_best_match(MemoryBlock *h, size_t size)
     {
         // If h is a leaf, then we can assume it is the closest block to the size we need so we can just split it
 
@@ -296,7 +305,7 @@ namespace Vultr
         }
     }
 
-    static void init_free_mb(MemoryBlock *block, size_t size, MemoryBlock *prev, MemoryBlock *next)
+    void init_free_mb(MemoryBlock *block, size_t size, MemoryBlock *prev, MemoryBlock *next)
     {
         block->size        = (~(1UL << ALLOCATION_BIT) & size) | (1UL << INITIALIZED_BIT);
         block->next        = next;
@@ -420,10 +429,10 @@ namespace Vultr
         }
     }
 
-    // TODO(Brandon): Make sure that the sizes are aligned properly.
     // TODO(Brandon): Add lots of error messages to make sure this isn't misused.
     void *mem_arena_alloc(MemoryArena *arena, size_t size)
     {
+        size = align(size, arena->alignment);
         // Find a memory block of suitable size.
         auto *best_match = mb_best_match(arena->free_root, size);
         PRODUCTION_ASSERT(best_match != nullptr, "Not enough memory to allocate!");
@@ -442,6 +451,7 @@ namespace Vultr
 
         // Set our memory block to allocated.
         set_mb_allocated(best_match);
+        arena->used += size;
         return reinterpret_cast<char *>(best_match) + HEADER_SIZE;
     }
 
@@ -469,7 +479,7 @@ namespace Vultr
         }
     }
 
-    void mem_copy(MemoryArena *arena, void *src, void *dest, size_t len) {}
+    void mem_copy(void *src, void *dest, size_t len) {}
 
     void mem_arena_free(MemoryArena *arena, void *data)
     {
@@ -500,31 +510,56 @@ namespace Vultr
     //
     //
 
-    static MemoryBlock *bst_insert(MemoryBlock *h, MemoryBlock *n)
+    static bool bst_insert(MemoryArena *arena, MemoryBlock *n)
     {
+        auto *h = arena->free_root;
         if (h == nullptr)
         {
-            set_mb_red(n);
-            return n;
+            arena->free_root = n;
+            set_mb_black(n);
+            return true;
         }
 
-        size_t h_size = get_mb_size(h);
-        size_t n_size = get_mb_size(n);
+        set_mb_red(n);
 
-        if (n_size < h_size)
+        while (h != nullptr)
         {
-            assign_left(h, bst_insert(get_left(h), n));
-        }
-        else if (n_size > h_size)
-        {
-            assign_right(h, bst_insert(get_right(h), n));
-        }
-        else if (n_size == h_size)
-        {
-            add_center(h, n);
+            size_t h_size = get_mb_size(h);
+            size_t n_size = get_mb_size(n);
+            if (n_size < h_size)
+            {
+                auto *l = get_left(h);
+                if (l == nullptr)
+                {
+                    assign_left(h, n);
+                    return false;
+                }
+                else
+                {
+                    h = l;
+                }
+            }
+            else if (n_size > h_size)
+            {
+                auto *r = get_right(h);
+                if (r == nullptr)
+                {
+                    assign_right(h, n);
+                    return false;
+                }
+                else
+                {
+                    h = r;
+                }
+            }
+            else if (n_size == h_size)
+            {
+                add_center(h, n);
+                return true;
+            }
         }
 
-        return h;
+        return false;
     }
 
     static void rbt_right_rotate(MemoryArena *arena, MemoryBlock *n)
@@ -586,7 +621,11 @@ namespace Vultr
 
     void rbt_insert(MemoryArena *arena, MemoryBlock *n)
     {
-        arena->free_root = bst_insert(arena->free_root, n);
+        auto can_skip = bst_insert(arena, n);
+        if (can_skip)
+        {
+            return;
+        }
 
         MemoryBlock *parent      = nullptr;
         MemoryBlock *grandparent = nullptr;
@@ -712,94 +751,99 @@ namespace Vultr
 
     static void fix_double_black(MemoryArena *arena, MemoryBlock *n)
     {
-        // Recurse until reach the root.
-        if (n == arena->free_root)
-            return;
-
-        auto *sibling = get_sibling(n);
-        auto *parent  = get_parent(n);
-
-        // If there is no sibling, double black is pushed up the tree.
-        if (sibling == nullptr)
+        while (1)
         {
-            fix_double_black(arena, parent);
-        }
-        else
-        {
-            // If sibling is red...
-            if (is_red(sibling))
+            // Recurse until reach the root.
+            if (n == arena->free_root)
+                return;
+
+            auto *sibling = get_sibling(n);
+            auto *parent  = get_parent(n);
+
+            // If there is no sibling, double black is pushed up the tree.
+            if (sibling == nullptr)
             {
-                set_mb_red(parent);
-                set_mb_black(sibling);
-
-                // Left case
-                if (is_left_child(sibling))
-                {
-                    rbt_right_rotate(arena, parent);
-                }
-                else
-                {
-                    rbt_left_rotate(arena, parent);
-                }
-
-                // Fix double black again.
-                fix_double_black(arena, n);
+                n = parent;
+                continue;
             }
-            // If sibling is black...
             else
             {
-                // If there is at least one red child...
-                if (has_red_child(sibling))
+                // If sibling is red...
+                if (is_red(sibling))
                 {
-                    // Left case...
-                    if (is_red(get_left(sibling)))
+                    set_mb_red(parent);
+                    set_mb_black(sibling);
+
+                    // Left case
+                    if (is_left_child(sibling))
                     {
-                        // Left left
-                        if (is_left_child(sibling))
-                        {
-                            set_mb_color(get_left(sibling), is_red(sibling));
-                            set_mb_color(sibling, is_red(parent));
-                            rbt_right_rotate(arena, parent);
-                        }
-                        // Right left
-                        else
-                        {
-                            set_mb_color(get_left(sibling), is_red(parent));
-                            rbt_right_rotate(arena, sibling);
-                            rbt_left_rotate(arena, parent);
-                        }
+                        rbt_right_rotate(arena, parent);
                     }
-                    // Right case...
                     else
                     {
-                        // Left right
-                        if (is_left_child(sibling))
-                        {
-                            set_mb_color(get_right(sibling), is_red(parent));
-                            rbt_left_rotate(arena, sibling);
-                            rbt_right_rotate(arena, parent);
-                        }
-                        // Right right
-                        else
-                        {
-                            set_mb_color(get_right(sibling), is_red(sibling));
-                            set_mb_color(sibling, is_red(parent));
-                            rbt_left_rotate(arena, parent);
-                        }
+                        rbt_left_rotate(arena, parent);
                     }
-                    set_mb_black(parent);
+
+                    // Fix double black again.
+                    continue;
                 }
-                // If there are two black children...
+                // If sibling is black...
                 else
                 {
-                    set_mb_red(sibling);
-                    if (is_black(parent))
+                    // If there is at least one red child...
+                    if (has_red_child(sibling))
                     {
-                        fix_double_black(arena, parent);
+                        // Left case...
+                        if (is_red(get_left(sibling)))
+                        {
+                            // Left left
+                            if (is_left_child(sibling))
+                            {
+                                set_mb_color(get_left(sibling), is_red(sibling));
+                                set_mb_color(sibling, is_red(parent));
+                                rbt_right_rotate(arena, parent);
+                            }
+                            // Right left
+                            else
+                            {
+                                set_mb_color(get_left(sibling), is_red(parent));
+                                rbt_right_rotate(arena, sibling);
+                                rbt_left_rotate(arena, parent);
+                            }
+                        }
+                        // Right case...
+                        else
+                        {
+                            // Left right
+                            if (is_left_child(sibling))
+                            {
+                                set_mb_color(get_right(sibling), is_red(parent));
+                                rbt_left_rotate(arena, sibling);
+                                rbt_right_rotate(arena, parent);
+                            }
+                            // Right right
+                            else
+                            {
+                                set_mb_color(get_right(sibling), is_red(sibling));
+                                set_mb_color(sibling, is_red(parent));
+                                rbt_left_rotate(arena, parent);
+                            }
+                        }
+                        set_mb_black(parent);
                     }
+                    // If there are two black children...
                     else
                     {
-                        set_mb_black(parent);
+                        set_mb_red(sibling);
+                        if (is_black(parent))
+                        {
+                            n = parent;
+                            continue;
+                        }
+                        else
+                        {
+                            set_mb_black(parent);
+                        }
                     }
                 }
             }
@@ -903,94 +947,98 @@ namespace Vultr
 
     void rbt_delete(MemoryArena *arena, MemoryBlock *n)
     {
-        ASSERT(n != nullptr, "Cannot delete null memory block!");
-
-        auto *replacement = bst_find_replacement(n);
-
-        bool both_black = is_black(replacement) && is_black(n);
-        auto *parent    = get_parent(n);
-        auto *root      = arena->free_root;
-
-        // If replacement is nullptr then n is a leaf.
-        if (replacement == nullptr)
+        while (1)
         {
-            // If the root is nullptr...
-            if (n == root)
+            ASSERT(n != nullptr, "Cannot delete null memory block!");
+
+            auto *replacement = bst_find_replacement(n);
+
+            bool both_black = is_black(replacement) && is_black(n);
+            auto *parent    = get_parent(n);
+            auto *root      = arena->free_root;
+
+            // If replacement is nullptr then n is a leaf.
+            if (replacement == nullptr)
             {
-                // Then update the free root in the memory arena.
-                arena->free_root = nullptr;
-            }
-            else
-            {
-                // If both are black, then it needs to be fixed.
-                // n is a leaf, thus we need to fix the double black at n.
-                if (both_black)
+                // If the root is nullptr...
+                if (n == root)
                 {
-                    fix_double_black(arena, n);
+                    // Then update the free root in the memory arena.
+                    arena->free_root = nullptr;
                 }
-                // If either n or replacement are red...
                 else
                 {
-                    auto *sibling = get_sibling(n);
-                    // If the sibling exists, make it red.
-                    if (sibling != nullptr)
+                    // If both are black, then it needs to be fixed.
+                    // n is a leaf, thus we need to fix the double black at n.
+                    if (both_black)
                     {
-                        set_mb_red(sibling);
+                        fix_double_black(arena, n);
+                    }
+                    // If either n or replacement are red...
+                    else
+                    {
+                        auto *sibling = get_sibling(n);
+                        // If the sibling exists, make it red.
+                        if (sibling != nullptr)
+                        {
+                            set_mb_red(sibling);
+                        }
+                    }
+
+                    // Delete n from the tree.
+                    if (is_left_child(n))
+                    {
+                        assign_left(parent, nullptr);
+                    }
+                    else
+                    {
+                        assign_right(parent, nullptr);
                     }
                 }
-
-                // Delete n from the tree.
-                if (is_left_child(n))
+                return;
+            }
+            // If n has one child...
+            else if (get_left(n) == nullptr || get_right(n) == nullptr)
+            {
+                if (n == root)
                 {
-                    assign_left(parent, nullptr);
+                    assign_parent(replacement, nullptr);
+                    set_mb_black(replacement);
+                    assign_left(replacement, nullptr);
+                    assign_right(replacement, nullptr);
+                    arena->free_root = replacement;
                 }
                 else
                 {
-                    assign_right(parent, nullptr);
+                    if (is_left_child(n))
+                    {
+                        assign_left(parent, replacement);
+                    }
+                    else
+                    {
+                        assign_right(parent, replacement);
+                    }
+
+                    assign_parent(replacement, parent);
+
+                    // If both are black, then fix the double black at the replacement.
+                    if (both_black)
+                    {
+                        fix_double_black(arena, replacement);
+                    }
+                    // If either are red, then set the replacement to black.
+                    else
+                    {
+                        set_mb_black(replacement);
+                    }
                 }
+                return;
             }
-        }
-        // If n has one child...
-        else if (get_left(n) == nullptr || get_right(n) == nullptr)
-        {
-            if (n == root)
-            {
-                assign_parent(replacement, nullptr);
-                set_mb_black(replacement);
-                assign_left(replacement, nullptr);
-                assign_right(replacement, nullptr);
-                arena->free_root = replacement;
-            }
+            // If n has two children...
             else
             {
-                if (is_left_child(n))
-                {
-                    assign_left(parent, replacement);
-                }
-                else
-                {
-                    assign_right(parent, replacement);
-                }
-
-                assign_parent(replacement, parent);
-
-                // If both are black, then fix the double black at the replacement.
-                if (both_black)
-                {
-                    fix_double_black(arena, replacement);
-                }
-                // If either are red, then set the replacement to black.
-                else
-                {
-                    set_mb_black(replacement);
-                }
+                swap_nodes(arena, n, replacement);
             }
-        }
-        // If n has two children...
-        else
-        {
-            swap_nodes(arena, n, replacement);
-            rbt_delete(arena, n);
         }
     }
 } // namespace Vultr
