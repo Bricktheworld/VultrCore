@@ -456,48 +456,20 @@ namespace Vultr
         auto next_is_free = next ? mb_is_free(next) : false;
         auto next_size    = next ? get_mb_size(next) : 0;
 
-        if (next_is_free)
+        if (next_is_free && next_size + current_size + HEADER_SIZE >= size)
         {
-            if (next_size + size + HEADER_SIZE >= size)
-            {
-                // This memory block no longer exists.
-                remove_free_mb(arena, next);
-
-                u32 lowest_bits = block->size & LOWEST_3_BITS;
-                block->size     = size | lowest_bits;
-                block->next     = next->next;
-
-                if (block->next != nullptr)
-                {
-                    block->next->prev = block;
-                }
-
-                return data;
-            }
+            return data;
         }
-
-        void *new_data = mem_arena_alloc(arena, size);
-
-        if (new_data == nullptr)
+        else
         {
-            mem_arena_free(arena, block);
-            return nullptr;
+            void *new_data = mem_arena_alloc(arena, size);
+            mem_copy(data, new_data, current_size);
+            mem_arena_free(arena, data);
+            return new_data;
         }
-
-        mem_cpy(new_data, data, current_size);
-
-        // TODO(Brandon): Figure out a way to allow freeing the block before searching for a new one.
-        // This will require the data to be temporarily stored on a buffer on the stack, that will then be copied into the new area.
-        mem_arena_free(arena, block);
-
-        return new_data;
     }
 
-    void mem_cpy(void *dest, void *src, size_t len)
-    {
-        // TODO(Brandon): Figure out correct way to do this performant.
-        NOT_IMPLEMENTED("Need to implement");
-    }
+    void mem_copy(MemoryArena *arena, void *src, void *dest, size_t len) {}
 
     void mem_arena_free(MemoryArena *arena, void *data)
     {

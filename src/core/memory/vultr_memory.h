@@ -88,6 +88,16 @@ namespace Vultr
     void *mem_arena_realloc(MemoryArena *arena, void *data, size_t size);
 
     /*
+     * Copy bytes from one area to another.
+     * @param void *src: The original byte location.
+     * @param void *dest: The new byte location.
+     * @param size_t len: The size of memory to allocate.
+     *
+     * @no_thread_safety
+     * */
+    void mem_copy(void *src, void *dest, size_t len);
+
+    /*
      * Free a chunk of memory from a `MemoryArena`.
      * @param MemoryArena *mem: The memory arena to free from.
      * @param void *data: The data to free.
