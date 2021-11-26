@@ -17,7 +17,6 @@ file(
 
 if(UNIX)
   set(CMAKE_CXX_STANDARD 20)
-  find_package(ASSIMP REQUIRED)
   find_package(GTest CONFIG REQUIRED)
   # include_directories(${ASSIMP_INCLUDE_DIRS})
 endif(UNIX)
@@ -35,7 +34,8 @@ add_library(${This} STATIC ${Sources})
 set(TargetIncludeDirs src vendor)
 
 if(UNIX)
-  set(Libs GL glfw3 X11 Xxf86vm Xrandr pthread Xi dl freetype ${ASSIMP_LIBRARIES})
+  set(Libs GL glfw3 X11 Xxf86vm Xrandr pthread Xi dl freetype ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/LINUX/libassimp.so)
+  link_directories(${CMAKE_BINARY_DIR}/res)
   file(GLOB_RECURSE VultrExeSources "src/platform/entry_point/linux_main.cpp")
 endif(UNIX)
 
