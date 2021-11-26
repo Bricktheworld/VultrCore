@@ -51,8 +51,6 @@ namespace Vultr
         }
     }
 
-    void *mem_arena_get_allocator(MemoryArena *arena, void *data) { return nullptr; }
-
     void destroy_mem_arena(MemoryArena *arena)
     {
         ASSERT(arena != nullptr && arena->memory != nullptr, "Invalid memory arena!");

@@ -14,9 +14,6 @@ namespace Vultr
         FreeList = 0x8,
     };
 
-    template <typename T>
-    AllocatorType get_allocator_type();
-
 #define MAX_ALLOCATORS 16
     struct MemoryArena
     {
