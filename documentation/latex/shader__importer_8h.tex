@@ -1,0 +1,39 @@
+\hypertarget{shader__importer_8h}{}\doxysection{src/filesystem/importers/shader\+\_\+importer.h File Reference}
+\label{shader__importer_8h}\index{src/filesystem/importers/shader\_importer.h@{src/filesystem/importers/shader\_importer.h}}
+{\ttfamily \#include $<$render/types/shader.\+h$>$}\newline
+{\ttfamily \#include $<$string$>$}\newline
+{\ttfamily \#include $<$types/types.\+h$>$}\newline
+{\ttfamily \#include $<$filesystem/file.\+h$>$}\newline
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{Vultr\+::\+Shader\+Importer\+::\+Shader\+Program\+Source}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceVultr}{Vultr}}
+\item 
+namespace \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter}{Vultr\+::\+Shader\+Importer}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum struct \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06}{Vultr\+::\+Shader\+Importer\+::\+Shader\+Type}} \+: u8 \{ \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06ab50339a10e1de285ac99d4c3990b8693}{Vultr\+::\+Shader\+Importer\+::\+NONE}} = 0x\+FF
+, \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06a0c3e47aef93a7f244f41ab309a33634b}{Vultr\+::\+Shader\+Importer\+::\+VERTEX}} = 0
+, \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06a7345a249ed5c2f850d85dc1727c24716}{Vultr\+::\+Shader\+Importer\+::\+FRAGMENT}} = 1
+ \}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a29dd1b2624e2744a21591ab2cf2b595f}{Vultr\+::\+Shader\+Importer\+::shader\+\_\+import}} (Shader $\ast$shader, const Shader\+Source $\ast$source)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a9100905c119a4a9f4aba5af0235cc8f7}{Vultr\+::\+Shader\+Importer\+::shader\+\_\+import\+\_\+file}} (Shader\+Program\+Source $\ast$result, const Shader\+Source $\ast$source)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a1091e8459fe6600632fe2bbd391bb187}{Vultr\+::\+Shader\+Importer\+::shader\+\_\+import\+\_\+memory}} (Shader\+Program\+Source $\ast$result, const unsigned char $\ast$data, \mbox{\hyperlink{types_8h_a3f7e2bcbb0b4c338f3c4f6c937cd4234}{u64}} len)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a8ce16e9cace352565b340f95e8c8ab9b}{Vultr\+::\+Shader\+Importer\+::shader\+\_\+load\+\_\+gpu}} (Shader $\ast$shader, const Shader\+Program\+Source $\ast$source)
+\item 
+\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a9982a47acaeab8ea6342af789e2cb002}{Vultr\+::\+Shader\+Importer\+::shader\+\_\+compile}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} type, const char $\ast$src)
+\end{DoxyCompactItemize}

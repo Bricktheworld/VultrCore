@@ -1,0 +1,84 @@
+\hypertarget{shader_8h}{}\doxysection{src/render/types/shader.h File Reference}
+\label{shader_8h}\index{src/render/types/shader.h@{src/render/types/shader.h}}
+{\ttfamily \#include $<$glm/glm.\+hpp$>$}\newline
+{\ttfamily \#include $<$types/types.\+h$>$}\newline
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1Shader}{Vultr\+::\+Shader}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceVultr}{Vultr}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{shader_8h_a88c2966bbab9c50b561f2d51aa5749a8}{invalid\+\_\+shader}}()
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{namespaceVultr_a775fe68533ee566d5c044b59266c8151}{Vultr\+::bind\+\_\+shader}} (Shader $\ast$shader)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a5073d3cca7141ca8f0237b8dc5fdf7df}{Vultr\+::unbind\+\_\+all\+\_\+shaders}} ()
+\item 
+bool \mbox{\hyperlink{namespaceVultr_aa6fa659da29fe9d712f1594c52127514}{Vultr\+::is\+\_\+valid\+\_\+shader}} (Shader $\ast$shader)
+\item 
+void \mbox{\hyperlink{namespaceVultr_aca512083b6ac7366abd76fb056e992e2}{Vultr\+::delete\+\_\+shader}} (Shader $\ast$shader)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a0a62592f22341eeea915f6f344348a62}{Vultr\+::set\+\_\+uniform\+\_\+matrix\+\_\+4fv}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} location, const float $\ast$value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a6c3efa217a605268b5dab35f34116964}{Vultr\+::set\+\_\+uniform\+\_\+matrix\+\_\+3fv}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} location, const float $\ast$value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a86f94e752bc5d7f9d9f4bd7697c48cb3}{Vultr\+::set\+\_\+uniform\+\_\+4f}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} location, const Vec4 \&value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a905bb6ba05074c01588e1f97f14d7a3b}{Vultr\+::set\+\_\+uniform\+\_\+3f}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} location, const Vec3 \&value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a6994288b227df9b638d7fc21439f2c07}{Vultr\+::set\+\_\+uniform\+\_\+2f}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} location, const Vec2 \&value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a55fde5a95a8f62ad799358a7c9158a54}{Vultr\+::set\+\_\+uniform\+\_\+1i}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} location, \mbox{\hyperlink{types_8h_ae9b1af5c037e57a98884758875d3a7c4}{s32}} value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a7d4cdce8ddeee7801c330338c5b51d62}{Vultr\+::set\+\_\+uniform\+\_\+1iv}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} location, size\+\_\+t size, const \mbox{\hyperlink{types_8h_ae9b1af5c037e57a98884758875d3a7c4}{s32}} $\ast$value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a9e2e8a5bdaee5b8e2c8662b8abcc578a}{Vultr\+::set\+\_\+uniform\+\_\+1f}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} location, \mbox{\hyperlink{types_8h_a5f6906312a689f27d70e9d086649d3fd}{f32}} value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a671c089cee1aa0434cd4dcd6a9a7a197}{Vultr\+::set\+\_\+uniform\+\_\+bool}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} location, bool value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a77f1fda008f68426bb02e7638d2f5de1}{Vultr\+::set\+\_\+uniform\+\_\+matrix\+\_\+4fv}} (Shader $\ast$shader, const char $\ast$uniform, const float $\ast$value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_ace6ab2b2d1c3172c3529774e6cd03551}{Vultr\+::set\+\_\+uniform\+\_\+matrix\+\_\+3fv}} (Shader $\ast$shader, const char $\ast$uniform, const float $\ast$value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a6874f9a02657dbb5deb055846c7e200f}{Vultr\+::set\+\_\+uniform\+\_\+4f}} (Shader $\ast$shader, const char $\ast$uniform, const Vec4 \&value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_ae95ccefc6392597d7b97238c32a6ee44}{Vultr\+::set\+\_\+uniform\+\_\+3f}} (Shader $\ast$shader, const char $\ast$uniform, const Vec3 \&value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a0f6d040db2869251a4eeff0cbe2ffa0e}{Vultr\+::set\+\_\+uniform\+\_\+2f}} (Shader $\ast$shader, const char $\ast$uniform, const Vec2 \&value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a9a22c28c093bad675c95a3881eee55e0}{Vultr\+::set\+\_\+uniform\+\_\+1i}} (Shader $\ast$shader, const char $\ast$uniform, \mbox{\hyperlink{types_8h_ae9b1af5c037e57a98884758875d3a7c4}{s32}} value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_ae6ae351d20e52638bfe5641dfb85ed6e}{Vultr\+::set\+\_\+uniform\+\_\+1iv}} (Shader $\ast$shader, const char $\ast$uniform, size\+\_\+t size, const \mbox{\hyperlink{types_8h_ae9b1af5c037e57a98884758875d3a7c4}{s32}} $\ast$value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_ad8df51410c50897e88faf551a6cc320e}{Vultr\+::set\+\_\+uniform\+\_\+1f}} (Shader $\ast$shader, const char $\ast$uniform, \mbox{\hyperlink{types_8h_a5f6906312a689f27d70e9d086649d3fd}{f32}} value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a94df3a7f394d8a5ea5071278e3768eea}{Vultr\+::set\+\_\+uniform\+\_\+bool}} (Shader $\ast$shader, const char $\ast$uniform, \mbox{\hyperlink{types_8h_a5f6906312a689f27d70e9d086649d3fd}{f32}} value)
+\item 
+\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{namespaceVultr_a2f92b2557bf5d848f8b4939977356da8}{Vultr\+::get\+\_\+uniform\+\_\+location}} (Shader $\ast$shader, const char $\ast$uniform)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Macro Definition Documentation}
+\mbox{\Hypertarget{shader_8h_a88c2966bbab9c50b561f2d51aa5749a8}\label{shader_8h_a88c2966bbab9c50b561f2d51aa5749a8}} 
+\index{shader.h@{shader.h}!invalid\_shader@{invalid\_shader}}
+\index{invalid\_shader@{invalid\_shader}!shader.h@{shader.h}}
+\doxysubsubsection{\texorpdfstring{invalid\_shader}{invalid\_shader}}
+{\footnotesize\ttfamily \#define invalid\+\_\+shader(\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+{\bfseries Value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{    Shader                                                                                                                                                                                                            \(\backslash\)}
+\DoxyCodeLine{    \{                                                                                                                                                                                                                 \(\backslash\)}
+\DoxyCodeLine{    \}}
+
+\end{DoxyCode}

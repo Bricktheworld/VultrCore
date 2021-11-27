@@ -1,0 +1,53 @@
+\hypertarget{resource__manager_8h}{}\doxysection{src/filesystem/resource\+\_\+manager.h File Reference}
+\label{resource__manager_8h}\index{src/filesystem/resource\_manager.h@{src/filesystem/resource\_manager.h}}
+{\ttfamily \#include $<$filesystem/virtual\+\_\+filesystem.\+h$>$}\newline
+{\ttfamily \#include $<$render/types/texture.\+h$>$}\newline
+{\ttfamily \#include $<$render/types/shader.\+h$>$}\newline
+{\ttfamily \#include $<$render/types/mesh.\+h$>$}\newline
+{\ttfamily \#include $<$types/queue.\+h$>$}\newline
+{\ttfamily \#include $<$types/dynamic\+\_\+array.\+h$>$}\newline
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{Vultr\+::\+Resource\+Queue\+Item}}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1ResourceData}{Vultr\+::\+Resource\+Data$<$ T $>$}}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1ResourceCache}{Vultr\+::\+Resource\+Cache$<$ T $>$}}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1ResourceManager}{Vultr\+::\+Resource\+Manager}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceVultr}{Vultr}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum struct \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8}{Vultr\+::\+Resource\+Type}} \+: u8 \{ \newline
+\mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8accc0377a8afbf50e7094f5c23a8af223}{Vultr\+::\+INVALID}} = 0x0
+, \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a3f92f542bd9ec48f912b9350e22736ac}{Vultr\+::\+TEXTURE}} = 0x1
+, \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8aa05d35337eb28027e70aef2ea40ff1df}{Vultr\+::\+SHADER}} = 0x2
+, \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a5b65fe46c5dd90ebcec69c472c3be1d9}{Vultr\+::\+MESH}} = 0x4
+, \newline
+\mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a4aaf23261cd3bd2064183cf1b53f1023}{Vultr\+::\+FONT}} = 0x8
+ \}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T $>$ }\\constexpr Resource\+Type \mbox{\hyperlink{namespaceVultr_a98962366b5101190834e518214a721cd}{Vultr\+::get\+\_\+resource\+\_\+type}} ()
+\item 
+template$<$$>$ constexpr Resource\+Type \mbox{\hyperlink{namespaceVultr_aaf455c8fdb4a36242e2cfdc3f37f50ea}{Vultr\+::get\+\_\+resource\+\_\+type$<$ Texture $>$}} ()
+\item 
+template$<$$>$ constexpr Resource\+Type \mbox{\hyperlink{namespaceVultr_ae8b06f426564eb3dc27d0c49d67f4261}{Vultr\+::get\+\_\+resource\+\_\+type$<$ Shader $>$}} ()
+\item 
+template$<$$>$ constexpr Resource\+Type \mbox{\hyperlink{namespaceVultr_a5111238cbaf0f91983598349eddfe29f}{Vultr\+::get\+\_\+resource\+\_\+type$<$ Mesh $>$}} ()
+\item 
+{\footnotesize template$<$typename T $>$ }\\bool \mbox{\hyperlink{namespaceVultr_aa7bab6829a47c88e8d0e9da48c64ad0f}{Vultr\+::load\+\_\+resource}} (const Virtual\+Filesystem $\ast$vfs, VFile\+Handle file, T $\ast$resource, Resource\+Queue\+Item $\ast$item)
+\item 
+{\footnotesize template$<$typename T $>$ }\\bool \mbox{\hyperlink{namespaceVultr_a44bf450bde34382518be08a705214cc7}{Vultr\+::finalize\+\_\+resource}} (VFile\+Handle file, T $\ast$data, void $\ast$buffer)
+\item 
+{\footnotesize template$<$typename T $>$ }\\void \mbox{\hyperlink{namespaceVultr_a95af69a1cd1c5b060f380fc61ebf2b59}{Vultr\+::free\+\_\+resource}} (T $\ast$resource)
+\end{DoxyCompactItemize}

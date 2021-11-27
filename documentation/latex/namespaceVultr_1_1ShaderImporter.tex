@@ -1,0 +1,84 @@
+\hypertarget{namespaceVultr_1_1ShaderImporter}{}\doxysection{Vultr\+::Shader\+Importer Namespace Reference}
+\label{namespaceVultr_1_1ShaderImporter}\index{Vultr::ShaderImporter@{Vultr::ShaderImporter}}
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{Shader\+Program\+Source}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum struct \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06}{Shader\+Type}} \+: u8 \{ \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06ab50339a10e1de285ac99d4c3990b8693}{NONE}} = 0x\+FF
+, \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06a0c3e47aef93a7f244f41ab309a33634b}{VERTEX}} = 0
+, \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06a7345a249ed5c2f850d85dc1727c24716}{FRAGMENT}} = 1
+ \}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a29dd1b2624e2744a21591ab2cf2b595f}{shader\+\_\+import}} (\mbox{\hyperlink{structVultr_1_1Shader}{Shader}} $\ast$shader, const \mbox{\hyperlink{namespaceVultr_a8a06f7032daa0bc951b69a0a6e390626}{Shader\+Source}} $\ast$source)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a9100905c119a4a9f4aba5af0235cc8f7}{shader\+\_\+import\+\_\+file}} (\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{Shader\+Program\+Source}} $\ast$result, const \mbox{\hyperlink{namespaceVultr_a8a06f7032daa0bc951b69a0a6e390626}{Shader\+Source}} $\ast$source)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a1091e8459fe6600632fe2bbd391bb187}{shader\+\_\+import\+\_\+memory}} (\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{Shader\+Program\+Source}} $\ast$result, const unsigned char $\ast$data, \mbox{\hyperlink{types_8h_a3f7e2bcbb0b4c338f3c4f6c937cd4234}{u64}} len)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a8ce16e9cace352565b340f95e8c8ab9b}{shader\+\_\+load\+\_\+gpu}} (\mbox{\hyperlink{structVultr_1_1Shader}{Shader}} $\ast$shader, const \mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{Shader\+Program\+Source}} $\ast$source)
+\item 
+\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a9982a47acaeab8ea6342af789e2cb002}{shader\+\_\+compile}} (\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} type, const char $\ast$src)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Enumeration Type Documentation}
+\mbox{\Hypertarget{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06}\label{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06}} 
+\index{Vultr::ShaderImporter@{Vultr::ShaderImporter}!ShaderType@{ShaderType}}
+\index{ShaderType@{ShaderType}!Vultr::ShaderImporter@{Vultr::ShaderImporter}}
+\doxysubsubsection{\texorpdfstring{ShaderType}{ShaderType}}
+{\footnotesize\ttfamily enum struct \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06}{Vultr\+::\+Shader\+Importer\+::\+Shader\+Type}} \+: \mbox{\hyperlink{types_8h_a92c50087ca0e64fa93fc59402c55f8ca}{u8}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{NONE@{NONE}!Vultr::ShaderImporter@{Vultr::ShaderImporter}}\index{Vultr::ShaderImporter@{Vultr::ShaderImporter}!NONE@{NONE}}}\mbox{\Hypertarget{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06ab50339a10e1de285ac99d4c3990b8693}\label{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06ab50339a10e1de285ac99d4c3990b8693}} 
+NONE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{VERTEX@{VERTEX}!Vultr::ShaderImporter@{Vultr::ShaderImporter}}\index{Vultr::ShaderImporter@{Vultr::ShaderImporter}!VERTEX@{VERTEX}}}\mbox{\Hypertarget{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06a0c3e47aef93a7f244f41ab309a33634b}\label{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06a0c3e47aef93a7f244f41ab309a33634b}} 
+VERTEX&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{FRAGMENT@{FRAGMENT}!Vultr::ShaderImporter@{Vultr::ShaderImporter}}\index{Vultr::ShaderImporter@{Vultr::ShaderImporter}!FRAGMENT@{FRAGMENT}}}\mbox{\Hypertarget{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06a7345a249ed5c2f850d85dc1727c24716}\label{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06a7345a249ed5c2f850d85dc1727c24716}} 
+FRAGMENT&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespaceVultr_1_1ShaderImporter_a9982a47acaeab8ea6342af789e2cb002}\label{namespaceVultr_1_1ShaderImporter_a9982a47acaeab8ea6342af789e2cb002}} 
+\index{Vultr::ShaderImporter@{Vultr::ShaderImporter}!shader\_compile@{shader\_compile}}
+\index{shader\_compile@{shader\_compile}!Vultr::ShaderImporter@{Vultr::ShaderImporter}}
+\doxysubsubsection{\texorpdfstring{shader\_compile()}{shader\_compile()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} Vultr\+::\+Shader\+Importer\+::shader\+\_\+compile (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}}}]{type,  }\item[{const char $\ast$}]{src }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceVultr_1_1ShaderImporter_a29dd1b2624e2744a21591ab2cf2b595f}\label{namespaceVultr_1_1ShaderImporter_a29dd1b2624e2744a21591ab2cf2b595f}} 
+\index{Vultr::ShaderImporter@{Vultr::ShaderImporter}!shader\_import@{shader\_import}}
+\index{shader\_import@{shader\_import}!Vultr::ShaderImporter@{Vultr::ShaderImporter}}
+\doxysubsubsection{\texorpdfstring{shader\_import()}{shader\_import()}}
+{\footnotesize\ttfamily bool Vultr\+::\+Shader\+Importer\+::shader\+\_\+import (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structVultr_1_1Shader}{Shader}} $\ast$}]{shader,  }\item[{const \mbox{\hyperlink{namespaceVultr_a8a06f7032daa0bc951b69a0a6e390626}{Shader\+Source}} $\ast$}]{source }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceVultr_1_1ShaderImporter_a9100905c119a4a9f4aba5af0235cc8f7}\label{namespaceVultr_1_1ShaderImporter_a9100905c119a4a9f4aba5af0235cc8f7}} 
+\index{Vultr::ShaderImporter@{Vultr::ShaderImporter}!shader\_import\_file@{shader\_import\_file}}
+\index{shader\_import\_file@{shader\_import\_file}!Vultr::ShaderImporter@{Vultr::ShaderImporter}}
+\doxysubsubsection{\texorpdfstring{shader\_import\_file()}{shader\_import\_file()}}
+{\footnotesize\ttfamily bool Vultr\+::\+Shader\+Importer\+::shader\+\_\+import\+\_\+file (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{Shader\+Program\+Source}} $\ast$}]{result,  }\item[{const \mbox{\hyperlink{namespaceVultr_a8a06f7032daa0bc951b69a0a6e390626}{Shader\+Source}} $\ast$}]{source }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceVultr_1_1ShaderImporter_a1091e8459fe6600632fe2bbd391bb187}\label{namespaceVultr_1_1ShaderImporter_a1091e8459fe6600632fe2bbd391bb187}} 
+\index{Vultr::ShaderImporter@{Vultr::ShaderImporter}!shader\_import\_memory@{shader\_import\_memory}}
+\index{shader\_import\_memory@{shader\_import\_memory}!Vultr::ShaderImporter@{Vultr::ShaderImporter}}
+\doxysubsubsection{\texorpdfstring{shader\_import\_memory()}{shader\_import\_memory()}}
+{\footnotesize\ttfamily bool Vultr\+::\+Shader\+Importer\+::shader\+\_\+import\+\_\+memory (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{Shader\+Program\+Source}} $\ast$}]{result,  }\item[{const unsigned char $\ast$}]{data,  }\item[{\mbox{\hyperlink{types_8h_a3f7e2bcbb0b4c338f3c4f6c937cd4234}{u64}}}]{len }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceVultr_1_1ShaderImporter_a8ce16e9cace352565b340f95e8c8ab9b}\label{namespaceVultr_1_1ShaderImporter_a8ce16e9cace352565b340f95e8c8ab9b}} 
+\index{Vultr::ShaderImporter@{Vultr::ShaderImporter}!shader\_load\_gpu@{shader\_load\_gpu}}
+\index{shader\_load\_gpu@{shader\_load\_gpu}!Vultr::ShaderImporter@{Vultr::ShaderImporter}}
+\doxysubsubsection{\texorpdfstring{shader\_load\_gpu()}{shader\_load\_gpu()}}
+{\footnotesize\ttfamily bool Vultr\+::\+Shader\+Importer\+::shader\+\_\+load\+\_\+gpu (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structVultr_1_1Shader}{Shader}} $\ast$}]{shader,  }\item[{const \mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{Shader\+Program\+Source}} $\ast$}]{source }\end{DoxyParamCaption})}
+

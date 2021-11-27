@@ -1,0 +1,45 @@
+\hypertarget{texture_8h_source}{}\doxysection{texture.\+h}
+\label{texture_8h_source}\index{src/render/types/texture.h@{src/render/types/texture.h}}
+\mbox{\hyperlink{texture_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{types_8h}{types/types.h}}>}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include <glad/glad.h>}}
+\DoxyCodeLine{4 }
+\DoxyCodeLine{5 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespaceVultr}{Vultr}}}
+\DoxyCodeLine{6 \{}
+\DoxyCodeLine{7     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1Texture}{Texture}}}
+\DoxyCodeLine{8     \{}
+\DoxyCodeLine{9         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \textcolor{keywordtype}{id} = 0;}
+\DoxyCodeLine{10         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1Texture_a403d89b4b6da865b0527e007b1f388b6}{width}} = 0;}
+\DoxyCodeLine{11         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1Texture_a2b00f828fb84332a51fee625a7c34f42}{height}} = 0;}
+\DoxyCodeLine{12         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1Texture_a5a095c8f94e0aa4b2aadfcbea8019f03}{level}} = 0;}
+\DoxyCodeLine{13         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1Texture_aace6d046c15a37be5c220b1977e11314}{type}} = GL\_TEXTURE\_2D;}
+\DoxyCodeLine{14         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1Texture_a779f57e1cf0106c03d2d1a4fb9f5381a}{internal\_format}} = GL\_RGB;}
+\DoxyCodeLine{15         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1Texture_a49b2f732c130a8db6955d3ee8ebab195}{format}} = GL\_RGB;}
+\DoxyCodeLine{16         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1Texture_aa9e9f8a8c5665829276f5601f5943483}{pixel\_data\_type}} = GL\_UNSIGNED\_BYTE;}
+\DoxyCodeLine{17         \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{char} *\mbox{\hyperlink{structVultr_1_1Texture_a9dd499bda388bfd95653f53708385167}{data}} = \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{18 }
+\DoxyCodeLine{19         \mbox{\hyperlink{structVultr_1_1Texture_a7772ca10e79ea7007794b052923eb5cc}{Texture}}() = \textcolor{keywordflow}{default};}
+\DoxyCodeLine{20         \mbox{\hyperlink{structVultr_1_1Texture_a13c937d25a3ea1df77dc5c31d1bb2880}{Texture}}(\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1Texture_aace6d046c15a37be5c220b1977e11314}{type}});}
+\DoxyCodeLine{21         \mbox{\hyperlink{structVultr_1_1Texture_a3f2f9c10faa3bc8f70fe7ae4dbd11404}{Texture}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Texture}{Texture}} \&other) = \textcolor{keyword}{delete};}
+\DoxyCodeLine{22     \};}
+\DoxyCodeLine{23 }
+\DoxyCodeLine{24     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a217119d61ffff297bc821638ded39be2}{generate\_texture}}(\mbox{\hyperlink{structVultr_1_1Texture}{Texture}} *texture, GLenum type);}
+\DoxyCodeLine{25 }
+\DoxyCodeLine{26 \textcolor{preprocessor}{\#define invalid\_texture()                                                                                                                                                                                             \(\backslash\)}}
+\DoxyCodeLine{27 \textcolor{preprocessor}{    Texture                                                                                                                                                                                                           \(\backslash\)}}
+\DoxyCodeLine{28 \textcolor{preprocessor}{    \{                                                                                                                                                                                                                 \(\backslash\)}}
+\DoxyCodeLine{29 \textcolor{preprocessor}{    \}}}
+\DoxyCodeLine{30     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a0738c8bbb41b7a63c04be27c502c0aed}{texture\_image\_2D}}(\mbox{\hyperlink{structVultr_1_1Texture}{Texture}} *texture, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} level, GLenum internalformat, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} width, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} height, GLenum format, GLenum type, \textcolor{keyword}{const} \textcolor{keywordtype}{void} *data);}
+\DoxyCodeLine{31     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a0738c8bbb41b7a63c04be27c502c0aed}{texture\_image\_2D}}(GLenum target, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} level, GLenum internalformat, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} width, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} height, GLenum format, GLenum type, \textcolor{keyword}{const} \textcolor{keywordtype}{void} *data);}
+\DoxyCodeLine{32     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_ace85aa0b95af79c45acf819918a58a27}{texture\_parameter\_i}}(\mbox{\hyperlink{structVultr_1_1Texture}{Texture}} *texture, GLenum pname, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} param);}
+\DoxyCodeLine{33 }
+\DoxyCodeLine{34     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_ad1e919a67212de874903f2a8daf8ef74}{is\_valid\_texture}}(\mbox{\hyperlink{structVultr_1_1Texture}{Texture}} *texture);}
+\DoxyCodeLine{35     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_af1cc3603ca0a0f81b087cc4082d030bf}{delete\_texture}}(\mbox{\hyperlink{structVultr_1_1Texture}{Texture}} *texture);}
+\DoxyCodeLine{36 }
+\DoxyCodeLine{37     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_aded10ab911e29f3777901ce6a48bca0d}{bind\_texture}}(\mbox{\hyperlink{structVultr_1_1Texture}{Texture}} *texture, GLenum slot);}
+\DoxyCodeLine{38     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a6ddaed20f322ad584ae30a4ff28f62a1}{unbind\_texture}}(\mbox{\hyperlink{structVultr_1_1Texture}{Texture}} *texture);}
+\DoxyCodeLine{39 \} \textcolor{comment}{// namespace Vultr}}
+
+\end{DoxyCode}

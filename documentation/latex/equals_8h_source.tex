@@ -1,0 +1,22 @@
+\hypertarget{equals_8h_source}{}\doxysection{equals.\+h}
+\label{equals_8h_source}\index{src/types/equals.h@{src/types/equals.h}}
+\mbox{\hyperlink{equals_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include <string.h>}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{comment}{// Generic equality}}
+\DoxyCodeLine{5 \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{6 \textcolor{keywordtype}{bool} \mbox{\hyperlink{equals_8h_a254b25f9bf2c556f3eab382ebf4ef8f4}{generic\_equals}}(T first, T second)}
+\DoxyCodeLine{7 \{}
+\DoxyCodeLine{8 \}}
+\DoxyCodeLine{9 \textcolor{comment}{//}}
+\DoxyCodeLine{10 \textcolor{comment}{// Default compare functions}}
+\DoxyCodeLine{11 \textcolor{comment}{//}}
+\DoxyCodeLine{12 \textcolor{keyword}{template} <>}
+\DoxyCodeLine{13 \textcolor{keyword}{inline} \textcolor{keywordtype}{bool} \mbox{\hyperlink{equals_8h_a5beba637940f05fa1856c91f5f852958}{generic\_equals<const char *>}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *first, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *second)}
+\DoxyCodeLine{14 \{}
+\DoxyCodeLine{15     \textcolor{keywordflow}{return} strcmp(first, second) == 0;}
+\DoxyCodeLine{16 \}}
+
+\end{DoxyCode}

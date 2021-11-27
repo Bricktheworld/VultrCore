@@ -1,0 +1,284 @@
+\hypertarget{dynamic__array_8h_source}{}\doxysection{dynamic\+\_\+array.\+h}
+\label{dynamic__array_8h_source}\index{src/types/dynamic\_array.h@{src/types/dynamic\_array.h}}
+\mbox{\hyperlink{dynamic__array_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{comment}{// TODO(Brandon): Replace with custom allocator.}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include <assert.h>}}
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include <memory>}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{types_8h}{types.h}}"{}}}
+\DoxyCodeLine{6 }
+\DoxyCodeLine{7 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespacevtl}{vtl}}}
+\DoxyCodeLine{8 \{}
+\DoxyCodeLine{9     \textcolor{keyword}{template} <\textcolor{keyword}{typename} T, \textcolor{keywordtype}{size\_t} reserved = 10, u32 growth\_numerator = 3, u32 growth\_denominator = 2, u32 decay\_percent\_threshold = 30>}
+\DoxyCodeLine{10     \textcolor{keyword}{struct }\mbox{\hyperlink{structvtl_1_1DynamicArray}{DynamicArray}}}
+\DoxyCodeLine{11     \{}
+\DoxyCodeLine{12         \textcolor{comment}{// Initialize an empty DynamicArray}}
+\DoxyCodeLine{13         \textcolor{comment}{// Reserved specifies a \_size of the DynamicArray that will be reserved initially}}
+\DoxyCodeLine{14         \textcolor{comment}{// which will be empty}}
+\DoxyCodeLine{15         \mbox{\hyperlink{structvtl_1_1DynamicArray_a1cc92b20550cf11e6be934f199ced1db}{DynamicArray}}()}
+\DoxyCodeLine{16         \{}
+\DoxyCodeLine{17             \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} = reserved;}
+\DoxyCodeLine{18             \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}}   = 0;}
+\DoxyCodeLine{19             \textcolor{keywordflow}{if} (reserved > 0)}
+\DoxyCodeLine{20             \{}
+\DoxyCodeLine{21                 \textcolor{comment}{// \_array = static\_cast<T *>(malloc(\_size * sizeof(T)));}}
+\DoxyCodeLine{22             \}}
+\DoxyCodeLine{23         \}}
+\DoxyCodeLine{24 }
+\DoxyCodeLine{25         \mbox{\hyperlink{structvtl_1_1DynamicArray_a5474e5efbd03eb52c38362e5dd03bb0a}{DynamicArray}}(T *array, \textcolor{keywordtype}{size\_t} count)}
+\DoxyCodeLine{26         \{}
+\DoxyCodeLine{27             assert(count != 0 \&\& \textcolor{stringliteral}{"{}Count must be greater than 0!"{}});}
+\DoxyCodeLine{28             assert(array != \textcolor{keyword}{nullptr} \&\& \textcolor{stringliteral}{"{}Array must not be null!"{}});}
+\DoxyCodeLine{29 }
+\DoxyCodeLine{30             \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}}   = count;}
+\DoxyCodeLine{31             \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} = \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} * \mbox{\hyperlink{structvtl_1_1DynamicArray_a808eb5f909646648e3c11948a4c72d18}{growth\_factor}};}
+\DoxyCodeLine{32             \textcolor{keywordflow}{if} (\mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} < reserved)}
+\DoxyCodeLine{33             \{}
+\DoxyCodeLine{34                 \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} = reserved;}
+\DoxyCodeLine{35             \}}
+\DoxyCodeLine{36 }
+\DoxyCodeLine{37             \textcolor{comment}{// \_array = static\_cast<T *>(malloc(sizeof(T) * \_size));}}
+\DoxyCodeLine{38 }
+\DoxyCodeLine{39             \textcolor{keywordflow}{for} (\textcolor{keywordtype}{int} i = 0; i < count; i++)}
+\DoxyCodeLine{40             \{}
+\DoxyCodeLine{41                 \mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}[i] = array[i];}
+\DoxyCodeLine{42             \}}
+\DoxyCodeLine{43         \}}
+\DoxyCodeLine{44 }
+\DoxyCodeLine{45         \textcolor{comment}{// Delete copy methods because we don't want this to be done on accident, we want it to be very very explicit since we are essentially duplicating a buffer}}
+\DoxyCodeLine{46         \mbox{\hyperlink{structvtl_1_1DynamicArray}{DynamicArray<T>}} \&\mbox{\hyperlink{structvtl_1_1DynamicArray_a9015b018e3c1045828e2f819a0125679}{operator=}}(\textcolor{keyword}{const} \mbox{\hyperlink{structvtl_1_1DynamicArray}{DynamicArray<T>}} \&other) = \textcolor{keyword}{delete};}
+\DoxyCodeLine{47         \mbox{\hyperlink{structvtl_1_1DynamicArray_ac0a8b09622044d9c1ba493fde64b256f}{DynamicArray}}(\textcolor{keyword}{const} \mbox{\hyperlink{structvtl_1_1DynamicArray}{DynamicArray<T>}} \&other)               = \textcolor{keyword}{delete};}
+\DoxyCodeLine{48 }
+\DoxyCodeLine{49         \textcolor{comment}{// Destructor for dynamic array}}
+\DoxyCodeLine{50         \mbox{\hyperlink{structvtl_1_1DynamicArray_a2d1672769d2f4e39d9eb0241473d3d04}{\string~DynamicArray}}()}
+\DoxyCodeLine{51         \{}
+\DoxyCodeLine{52             \textcolor{comment}{// if (\_array != nullptr)}}
+\DoxyCodeLine{53             \textcolor{comment}{//     free(\_array);}}
+\DoxyCodeLine{54         \}}
+\DoxyCodeLine{55 }
+\DoxyCodeLine{56         \textcolor{comment}{// Push element to back of dynamic\_array}}
+\DoxyCodeLine{57         \textcolor{comment}{// If the dynamic\_array does not have enough space, then a reallocation will}}
+\DoxyCodeLine{58         \textcolor{comment}{// occur}}
+\DoxyCodeLine{59         \textcolor{comment}{//}}
+\DoxyCodeLine{60         \textcolor{comment}{// Returns the element just inserted}}
+\DoxyCodeLine{61         T *\mbox{\hyperlink{structvtl_1_1DynamicArray_ac06cbc17c400974f008f36f4b2454ff0}{push\_back}}(\textcolor{keyword}{const} T \&element)}
+\DoxyCodeLine{62         \{}
+\DoxyCodeLine{63             \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}}++;}
+\DoxyCodeLine{64             \mbox{\hyperlink{structvtl_1_1DynamicArray_a97e7b6ae8d9deabf071ad4b298eb1c39}{reallocate}}();}
+\DoxyCodeLine{65 }
+\DoxyCodeLine{66             \textcolor{comment}{// Increase the len amount and assign the last element of array to the new}}
+\DoxyCodeLine{67             \textcolor{comment}{// element}}
+\DoxyCodeLine{68             \mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}[\mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} -\/ 1] = element;}
+\DoxyCodeLine{69 }
+\DoxyCodeLine{70             \textcolor{keywordflow}{return} \&\mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}[\mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} -\/ 1];}
+\DoxyCodeLine{71         \}}
+\DoxyCodeLine{72 }
+\DoxyCodeLine{73         \textcolor{comment}{// Inserts element at specific index in dynamic\_array}}
+\DoxyCodeLine{74         \textcolor{comment}{// Shifts all elements at and to the right of that index 1 to the right}}
+\DoxyCodeLine{75         \textcolor{comment}{// If the dynamic\_array does not have enough space, then a reallocation will}}
+\DoxyCodeLine{76         \textcolor{comment}{// occur}}
+\DoxyCodeLine{77         \textcolor{comment}{//}}
+\DoxyCodeLine{78         \textcolor{comment}{// Throws index out of bounds error if index is greater than the}}
+\DoxyCodeLine{79         \textcolor{comment}{// dynamic\_array.\_size or if index is negative}}
+\DoxyCodeLine{80         \textcolor{comment}{//}}
+\DoxyCodeLine{81         \textcolor{comment}{// Returns the element just inserted}}
+\DoxyCodeLine{82         T *\mbox{\hyperlink{structvtl_1_1DynamicArray_af1561715c7a70027af21f43af1fa5498}{insert}}(\mbox{\hyperlink{types_8h_ae9b1af5c037e57a98884758875d3a7c4}{s32}} index, T element)}
+\DoxyCodeLine{83         \{}
+\DoxyCodeLine{84             \textcolor{comment}{// Fail if the index is greater than the dynamic\_array.\_size or negative}}
+\DoxyCodeLine{85             assert(index <= \_size \&\& index >= 0 \&\& \textcolor{stringliteral}{"{}Index out of bounds!"{}});}
+\DoxyCodeLine{86 }
+\DoxyCodeLine{87             \textcolor{comment}{// Increase the len amount}}
+\DoxyCodeLine{88             \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}}++;}
+\DoxyCodeLine{89 }
+\DoxyCodeLine{90             \mbox{\hyperlink{structvtl_1_1DynamicArray_a97e7b6ae8d9deabf071ad4b298eb1c39}{reallocate}}();}
+\DoxyCodeLine{91 }
+\DoxyCodeLine{92             \textcolor{keywordflow}{if} (\mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} > 1)}
+\DoxyCodeLine{93             \{}
+\DoxyCodeLine{94                 \textcolor{comment}{// Shift all elements right}}
+\DoxyCodeLine{95                 \textcolor{keywordflow}{for} (\mbox{\hyperlink{types_8h_ae9b1af5c037e57a98884758875d3a7c4}{s32}} i = \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} -\/ 2; i >= index; i-\/-\/)}
+\DoxyCodeLine{96                 \{}
+\DoxyCodeLine{97                     \mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}[i + 1] = \mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}[i];}
+\DoxyCodeLine{98                 \}}
+\DoxyCodeLine{99             \}}
+\DoxyCodeLine{100 }
+\DoxyCodeLine{101             \textcolor{comment}{// Assign last element of array to new element}}
+\DoxyCodeLine{102             \mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}[index] = element;}
+\DoxyCodeLine{103 }
+\DoxyCodeLine{104             \textcolor{keywordflow}{return} \&\mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}[index];}
+\DoxyCodeLine{105         \}}
+\DoxyCodeLine{106 }
+\DoxyCodeLine{107         \textcolor{comment}{// Delete element at index in dynamic\_array}}
+\DoxyCodeLine{108         \textcolor{comment}{// Shifts all elements to the right of that index 1 to the left}}
+\DoxyCodeLine{109         \textcolor{comment}{// If the dynamic\_array len equals dynamic\_array \_size, then it will assume}}
+\DoxyCodeLine{110         \textcolor{comment}{// nothing is reserved and a reallocation will occur unless reallocate is}}
+\DoxyCodeLine{111         \textcolor{comment}{// explicitly false}}
+\DoxyCodeLine{112         \textcolor{keywordtype}{void} \mbox{\hyperlink{structvtl_1_1DynamicArray_a510f22049a05f713da66aa798ea53568}{remove}}(\textcolor{keywordtype}{size\_t} index)}
+\DoxyCodeLine{113         \{}
+\DoxyCodeLine{114             \textcolor{comment}{// Fail if the index is greater than the dynamic\_array.\_size or negative}}
+\DoxyCodeLine{115             assert(index <= len \&\& index >= 0 \&\& \textcolor{stringliteral}{"{}Index out of bounds!"{}});}
+\DoxyCodeLine{116 }
+\DoxyCodeLine{117             \textcolor{comment}{// Shift elements to the left}}
+\DoxyCodeLine{118             \textcolor{keywordflow}{for} (\mbox{\hyperlink{types_8h_a91ad9478d81a7aaf2593e8d9c3d06a14}{uint}} i = index + 1; i < \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}}; i++)}
+\DoxyCodeLine{119             \{}
+\DoxyCodeLine{120                 \mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}[i -\/ 1] = \mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}[i];}
+\DoxyCodeLine{121             \}}
+\DoxyCodeLine{122 }
+\DoxyCodeLine{123             \textcolor{comment}{// Decrease len even if no reallocation}}
+\DoxyCodeLine{124             \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}}-\/-\/;}
+\DoxyCodeLine{125 }
+\DoxyCodeLine{126             \mbox{\hyperlink{structvtl_1_1DynamicArray_a97e7b6ae8d9deabf071ad4b298eb1c39}{reallocate}}();}
+\DoxyCodeLine{127         \}}
+\DoxyCodeLine{128 }
+\DoxyCodeLine{129         \textcolor{comment}{// Shorthand of removing last element of the array}}
+\DoxyCodeLine{130         \textcolor{keywordtype}{void} \mbox{\hyperlink{structvtl_1_1DynamicArray_ae75fba1e02ca0c6785f455fcb4aa655f}{remove\_last}}()}
+\DoxyCodeLine{131         \{}
+\DoxyCodeLine{132             assert(\mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} > 0 \&\& \textcolor{stringliteral}{"{}Array is empty!"{}});}
+\DoxyCodeLine{133             \mbox{\hyperlink{structvtl_1_1DynamicArray_a510f22049a05f713da66aa798ea53568}{remove}}(\mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} -\/ 1);}
+\DoxyCodeLine{134         \}}
+\DoxyCodeLine{135 }
+\DoxyCodeLine{136         \textcolor{keywordtype}{bool} \mbox{\hyperlink{structvtl_1_1DynamicArray_adb4a83f155119af2172c0ef7d2f5a616}{empty}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} == 0; \}}
+\DoxyCodeLine{137 }
+\DoxyCodeLine{138         \textcolor{keywordtype}{void} \mbox{\hyperlink{structvtl_1_1DynamicArray_acd304d127859617d2a1efe6589d179c0}{clear}}()}
+\DoxyCodeLine{139         \{}
+\DoxyCodeLine{140             \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}}   = 0;}
+\DoxyCodeLine{141             \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} = reserved;}
+\DoxyCodeLine{142             \textcolor{keywordflow}{if} (reserved > 0)}
+\DoxyCodeLine{143             \{}
+\DoxyCodeLine{144                 \textcolor{keywordflow}{if} (\mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}} == \textcolor{keyword}{nullptr})}
+\DoxyCodeLine{145                 \{}
+\DoxyCodeLine{146                     \textcolor{comment}{// \_array = (T *)malloc(\_size * sizeof(T));}}
+\DoxyCodeLine{147                 \}}
+\DoxyCodeLine{148                 \textcolor{keywordflow}{else}}
+\DoxyCodeLine{149                 \{}
+\DoxyCodeLine{150                     \textcolor{comment}{// \_array = (T *)realloc(\_array, \_size * sizeof(T));}}
+\DoxyCodeLine{151                 \}}
+\DoxyCodeLine{152             \}}
+\DoxyCodeLine{153         \}}
+\DoxyCodeLine{154 }
+\DoxyCodeLine{155         \textcolor{comment}{// static DynamicArray<T> copy()}}
+\DoxyCodeLine{156         \textcolor{comment}{// \{}}
+\DoxyCodeLine{157         \textcolor{comment}{// \}}}
+\DoxyCodeLine{158 }
+\DoxyCodeLine{159         \textcolor{comment}{// Ability to index into the array and assign and retreive elements by}}
+\DoxyCodeLine{160         \textcolor{comment}{// reference}}
+\DoxyCodeLine{161         T \&\mbox{\hyperlink{structvtl_1_1DynamicArray_ad2ce8de56a0750d0ce7d1c2d24537b28}{operator[]}}(\textcolor{keywordtype}{int} index)\textcolor{keyword}{ const}}
+\DoxyCodeLine{162 \textcolor{keyword}{        }\{}
+\DoxyCodeLine{163             assert(index < len \&\& index >= 0 \&\& \textcolor{stringliteral}{"{}Index out of bounds"{}});}
+\DoxyCodeLine{164             \textcolor{keywordflow}{return} \mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}[index];}
+\DoxyCodeLine{165         \}}
+\DoxyCodeLine{166 }
+\DoxyCodeLine{167         \textcolor{comment}{// Spaces len (not bytes)}}
+\DoxyCodeLine{168         \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} = 0;}
+\DoxyCodeLine{169 }
+\DoxyCodeLine{170         \textcolor{comment}{// Space available (not bytes)}}
+\DoxyCodeLine{171         \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} = reserved;}
+\DoxyCodeLine{172 }
+\DoxyCodeLine{173         \textcolor{comment}{// To make sure that the buffer expansion is geometric}}
+\DoxyCodeLine{174         \mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}} \mbox{\hyperlink{structvtl_1_1DynamicArray_a808eb5f909646648e3c11948a4c72d18}{growth\_factor}} = (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})growth\_numerator / (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})growth\_denominator;}
+\DoxyCodeLine{175 }
+\DoxyCodeLine{176       \textcolor{keyword}{private}:}
+\DoxyCodeLine{177         \textcolor{keywordtype}{void} \mbox{\hyperlink{structvtl_1_1DynamicArray_a97e7b6ae8d9deabf071ad4b298eb1c39}{reallocate}}()}
+\DoxyCodeLine{178         \{}
+\DoxyCodeLine{179             \textcolor{comment}{// Only reallocate and expand the array if we need to}}
+\DoxyCodeLine{180             \textcolor{keywordflow}{if} (\mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} > \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}})}
+\DoxyCodeLine{181             \{}
+\DoxyCodeLine{182                 \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} = \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} * \mbox{\hyperlink{structvtl_1_1DynamicArray_a808eb5f909646648e3c11948a4c72d18}{growth\_factor}};}
+\DoxyCodeLine{183             \}}
+\DoxyCodeLine{184             \textcolor{keywordflow}{else} \textcolor{keywordflow}{if} ((\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})\mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} / (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})\mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} < (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})decay\_percent\_threshold / 100.0)}
+\DoxyCodeLine{185             \{}
+\DoxyCodeLine{186                 \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} = \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} * \mbox{\hyperlink{structvtl_1_1DynamicArray_a808eb5f909646648e3c11948a4c72d18}{growth\_factor}};}
+\DoxyCodeLine{187             \}}
+\DoxyCodeLine{188             \textcolor{keywordflow}{else}}
+\DoxyCodeLine{189             \{}
+\DoxyCodeLine{190                 \textcolor{keywordflow}{return};}
+\DoxyCodeLine{191             \}}
+\DoxyCodeLine{192 }
+\DoxyCodeLine{193             \textcolor{keywordflow}{if} (\mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} < reserved)}
+\DoxyCodeLine{194             \{}
+\DoxyCodeLine{195                 \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} = reserved;}
+\DoxyCodeLine{196             \}}
+\DoxyCodeLine{197 }
+\DoxyCodeLine{198             \textcolor{keywordflow}{if} (\mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\_size}} == 0)}
+\DoxyCodeLine{199             \{}
+\DoxyCodeLine{200                 \textcolor{keywordflow}{if} (\mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}} != \textcolor{keyword}{nullptr})}
+\DoxyCodeLine{201                 \{}
+\DoxyCodeLine{202                     \textcolor{comment}{// free(\_array);}}
+\DoxyCodeLine{203                     \mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}} = \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{204                 \}}
+\DoxyCodeLine{205             \}}
+\DoxyCodeLine{206             \textcolor{keywordflow}{else}}
+\DoxyCodeLine{207             \{}
+\DoxyCodeLine{208                 \textcolor{keywordflow}{if} (\mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}} == \textcolor{keyword}{nullptr})}
+\DoxyCodeLine{209                 \{}
+\DoxyCodeLine{210                     \textcolor{comment}{// \_array = (T *)malloc(\_size * sizeof(T));}}
+\DoxyCodeLine{211                 \}}
+\DoxyCodeLine{212                 \textcolor{keywordflow}{else}}
+\DoxyCodeLine{213                 \{}
+\DoxyCodeLine{214                     \textcolor{comment}{// \_array = (T *)realloc(\_array, \_size * sizeof(T));}}
+\DoxyCodeLine{215                 \}}
+\DoxyCodeLine{216             \}}
+\DoxyCodeLine{217         \}}
+\DoxyCodeLine{218 }
+\DoxyCodeLine{219         \textcolor{comment}{// The internal array}}
+\DoxyCodeLine{220         T *\mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}};}
+\DoxyCodeLine{221 }
+\DoxyCodeLine{222         \textcolor{comment}{// Dumbass C++ shit}}
+\DoxyCodeLine{223       \textcolor{keyword}{public}:}
+\DoxyCodeLine{224         \textcolor{keyword}{struct }\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}}}
+\DoxyCodeLine{225         \{}
+\DoxyCodeLine{226             \textcolor{keyword}{typedef} std::random\_access\_iterator\_tag \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a2532028048561d0b4b412ef7d9831823}{IteratorCategory}};}
+\DoxyCodeLine{227             \textcolor{keyword}{typedef} T \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a5943605a924cc4f8ad24974f1bf83cdb}{ValueType}};}
+\DoxyCodeLine{228             \textcolor{keyword}{typedef} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a5943605a924cc4f8ad24974f1bf83cdb}{ValueType}} *\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_af75974bb5dc05383958e1ec69e89436a}{Pointer}};}
+\DoxyCodeLine{229             \textcolor{keyword}{typedef} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a5943605a924cc4f8ad24974f1bf83cdb}{ValueType}} \&\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_ac662fd0258bafae7bc3eb370f05c62d1}{Reference}};}
+\DoxyCodeLine{230 }
+\DoxyCodeLine{231             \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a10567804dd737efa6ceadb5365832fa5}{Iterator}}(\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_af75974bb5dc05383958e1ec69e89436a}{Pointer}} p\_ptr) : \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a81f475c3ceed4286bf8d1ea291c580b3}{ptr}}(p\_ptr)\{\};}
+\DoxyCodeLine{232 }
+\DoxyCodeLine{233             \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \&\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a3b155b2b60206c77dac5f91243f3b45a}{operator++}}()}
+\DoxyCodeLine{234             \{}
+\DoxyCodeLine{235                 \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a81f475c3ceed4286bf8d1ea291c580b3}{ptr}}++;}
+\DoxyCodeLine{236                 \textcolor{keywordflow}{return} *\textcolor{keyword}{this};}
+\DoxyCodeLine{237             \}}
+\DoxyCodeLine{238 }
+\DoxyCodeLine{239             \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a13d5406e14aff6cfd1fbca65e0ae009c}{operator++}}(\textcolor{keywordtype}{int})}
+\DoxyCodeLine{240             \{}
+\DoxyCodeLine{241                 \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} iterator = *\textcolor{keyword}{this};}
+\DoxyCodeLine{242                 ++(*this);}
+\DoxyCodeLine{243                 \textcolor{keywordflow}{return} iterator;}
+\DoxyCodeLine{244             \}}
+\DoxyCodeLine{245 }
+\DoxyCodeLine{246             \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \&\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a31377e2052d5fc19714e3f0b957e2df7}{operator-\/-\/}}()}
+\DoxyCodeLine{247             \{}
+\DoxyCodeLine{248                 \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a81f475c3ceed4286bf8d1ea291c580b3}{ptr}}-\/-\/;}
+\DoxyCodeLine{249                 \textcolor{keywordflow}{return} *\textcolor{keyword}{this};}
+\DoxyCodeLine{250             \}}
+\DoxyCodeLine{251 }
+\DoxyCodeLine{252             \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a87a162dd82986d9f7d17c9768e21cb46}{operator-\/-\/}}(\textcolor{keywordtype}{int})}
+\DoxyCodeLine{253             \{}
+\DoxyCodeLine{254                 \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} iterator = *\textcolor{keyword}{this};}
+\DoxyCodeLine{255                 -\/-\/(*this);}
+\DoxyCodeLine{256                 \textcolor{keywordflow}{return} iterator;}
+\DoxyCodeLine{257             \}}
+\DoxyCodeLine{258 }
+\DoxyCodeLine{259             \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_ac662fd0258bafae7bc3eb370f05c62d1}{Reference}} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a12680a58645f998763bd87218dc21854}{operator[]}}(\textcolor{keywordtype}{int} index) \{ \textcolor{keywordflow}{return} *(\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a81f475c3ceed4286bf8d1ea291c580b3}{ptr}} + index); \}}
+\DoxyCodeLine{260 }
+\DoxyCodeLine{261             \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_af75974bb5dc05383958e1ec69e89436a}{Pointer}} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_aa86d00d043ab44deecaaabe8d246dc9a}{operator-\/>}}() \{ \textcolor{keywordflow}{return} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a81f475c3ceed4286bf8d1ea291c580b3}{ptr}}; \}}
+\DoxyCodeLine{262 }
+\DoxyCodeLine{263             \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_ac662fd0258bafae7bc3eb370f05c62d1}{Reference}} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a8edb8ae375ea468e50ed9eb7fc05ee51}{operator*}}() \{ \textcolor{keywordflow}{return} *\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a81f475c3ceed4286bf8d1ea291c580b3}{ptr}}; \}}
+\DoxyCodeLine{264 }
+\DoxyCodeLine{265             \textcolor{keywordtype}{bool} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a551694837cd6da9c0324d58248aaae9d}{operator==}}(\textcolor{keyword}{const} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \&other)\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a81f475c3ceed4286bf8d1ea291c580b3}{ptr}} == other.\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a81f475c3ceed4286bf8d1ea291c580b3}{ptr}}; \}}
+\DoxyCodeLine{266 }
+\DoxyCodeLine{267             \textcolor{keywordtype}{bool} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a9bef47e744dca153d1381f8b2696e3b1}{operator!=}}(\textcolor{keyword}{const} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \&other)\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} !(*\textcolor{keyword}{this} == other); \}}
+\DoxyCodeLine{268 }
+\DoxyCodeLine{269           \textcolor{keyword}{private}:}
+\DoxyCodeLine{270             \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_af75974bb5dc05383958e1ec69e89436a}{Pointer}} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator_a81f475c3ceed4286bf8d1ea291c580b3}{ptr}};}
+\DoxyCodeLine{271         \};}
+\DoxyCodeLine{272 }
+\DoxyCodeLine{273         \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \mbox{\hyperlink{structvtl_1_1DynamicArray_a762ef36cec2f626c7c023f37193f71ea}{begin}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}}(\mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}}); \}}
+\DoxyCodeLine{274 }
+\DoxyCodeLine{275         \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \mbox{\hyperlink{structvtl_1_1DynamicArray_a2c520cff3f9d536608e033d42a4df796}{end}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}}(\mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\_array}} + \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}}); \}}
+\DoxyCodeLine{276     \};}
+\DoxyCodeLine{277 }
+\DoxyCodeLine{278 \} \textcolor{comment}{// namespace vtl}}
+
+\end{DoxyCode}

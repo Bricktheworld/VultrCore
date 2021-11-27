@@ -1,0 +1,30 @@
+\hypertarget{pool_8h_source}{}\doxysection{pool.\+h}
+\label{pool_8h_source}\index{src/core/memory/pool.h@{src/core/memory/pool.h}}
+\mbox{\hyperlink{pool_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{types_8h}{types/types.h}}>}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{vultr__memory_8h}{vultr\_memory.h}}"{}}}
+\DoxyCodeLine{4 }
+\DoxyCodeLine{5 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespaceVultr}{Vultr}}}
+\DoxyCodeLine{6 \{}
+\DoxyCodeLine{7     \textcolor{keyword}{struct }PoolAllocator;}
+\DoxyCodeLine{8 }
+\DoxyCodeLine{12     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1PoolRegion}{PoolRegion}}}
+\DoxyCodeLine{13     \{}
+\DoxyCodeLine{14         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1PoolRegion_a80bb0b016483d06c3505a57583d8c47c}{size}};}
+\DoxyCodeLine{15         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1PoolRegion_a00a6fec1365385baea6570169e033e1e}{count}};}
+\DoxyCodeLine{16     \};}
+\DoxyCodeLine{17 }
+\DoxyCodeLine{32     PoolAllocator *\mbox{\hyperlink{namespaceVultr_ace1880e7a844691425b512d26e774071}{init\_pool\_allocator}}(\mbox{\hyperlink{structVultr_1_1MemoryArena}{MemoryArena}} *arena, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} allocation\_size, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} count);}
+\DoxyCodeLine{33 }
+\DoxyCodeLine{49     PoolAllocator *\mbox{\hyperlink{namespaceVultr_ace1880e7a844691425b512d26e774071}{init\_pool\_allocator}}(\mbox{\hyperlink{structVultr_1_1MemoryArena}{MemoryArena}} *arena, \mbox{\hyperlink{structVultr_1_1PoolRegion}{PoolRegion}} *regions, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} region\_count);}
+\DoxyCodeLine{50 }
+\DoxyCodeLine{63     \textcolor{keywordtype}{void} *\mbox{\hyperlink{namespaceVultr_ac33f29adb0339463a948214db3497376}{pool\_alloc}}(PoolAllocator *allocator, \textcolor{keywordtype}{size\_t} size);}
+\DoxyCodeLine{64 }
+\DoxyCodeLine{78     \textcolor{keywordtype}{void} *\mbox{\hyperlink{namespaceVultr_adb14f1432c09c71094c28916f689e88d}{pool\_realloc}}(PoolAllocator *allocator, \textcolor{keywordtype}{void} *data, \textcolor{keywordtype}{size\_t} size);}
+\DoxyCodeLine{79 }
+\DoxyCodeLine{87     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_afb285c2efe015272e03c3b3c9996d3dc}{pool\_free}}(PoolAllocator *allocator, \textcolor{keywordtype}{void} *data);}
+\DoxyCodeLine{88 \} \textcolor{comment}{// namespace Vultr}}
+
+\end{DoxyCode}

@@ -1,0 +1,20 @@
+\hypertarget{free__list_8h}{}\doxysection{src/core/memory/free\+\_\+list.h File Reference}
+\label{free__list_8h}\index{src/core/memory/free\_list.h@{src/core/memory/free\_list.h}}
+{\ttfamily \#include $<$types/types.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}vultr\+\_\+memory.\+h\char`\"{}}\newline
+\doxysubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceVultr}{Vultr}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+Free\+List\+Allocator $\ast$ \mbox{\hyperlink{namespaceVultr_ae77ce60c53f3ced1bc6059f1a4680fd1}{Vultr\+::init\+\_\+free\+\_\+list\+\_\+allocator}} (Memory\+Arena $\ast$arena, size\+\_\+t size, \mbox{\hyperlink{types_8h_a92c50087ca0e64fa93fc59402c55f8ca}{u8}} alignment)
+\item 
+void $\ast$ \mbox{\hyperlink{namespaceVultr_a1d4e4c7a6bee14fc6c470ced1d25f1fd}{Vultr\+::free\+\_\+list\+\_\+alloc}} (Free\+List\+Allocator $\ast$allocator, size\+\_\+t size)
+\item 
+void $\ast$ \mbox{\hyperlink{namespaceVultr_a1c0848176698de99da2a00f3379ed9b6}{Vultr\+::free\+\_\+list\+\_\+realloc}} (Free\+List\+Allocator $\ast$allocator, void $\ast$data, size\+\_\+t size)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a301ef7880faf3124be498efe2191d346}{Vultr\+::free\+\_\+list\+\_\+free}} (Free\+List\+Allocator $\ast$allocator, void $\ast$data)
+\end{DoxyCompactItemize}

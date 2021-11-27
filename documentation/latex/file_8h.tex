@@ -1,0 +1,127 @@
+\hypertarget{file_8h}{}\doxysection{src/filesystem/file.h File Reference}
+\label{file_8h}\index{src/filesystem/file.h@{src/filesystem/file.h}}
+{\ttfamily \#include $<$types/types.\+h$>$}\newline
+{\ttfamily \#include $<$cstring$>$}\newline
+{\ttfamily \#include $<$unistd.\+h$>$}\newline
+{\ttfamily \#include $<$sys/types.\+h$>$}\newline
+{\ttfamily \#include $<$sys/stat.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}directory.\+h\char`\"{}}\newline
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1IFile}{Vultr\+::\+IFile}}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1File}{Vultr\+::\+File$<$ extensions $>$}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceVultr}{Vultr}}
+\item 
+namespace \mbox{\hyperlink{namespaceVultr_1_1FileTypes}{Vultr\+::\+File\+Types}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{file_8h_a44d01ba0a136b8e27ad362f5a823d14e}{\+\_\+\+FILE\+\_\+\+OFFSET\+\_\+\+BITS}}~64
+\item 
+\#define \mbox{\hyperlink{file_8h_a306d0104aec0a780607d967884f5b05b}{EXTENSION\+\_\+\+MAX}}~255
+\end{DoxyCompactItemize}
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef File$<$ File\+Types\+::\+GENERIC\+\_\+\+FILE $>$ \mbox{\hyperlink{namespaceVultr_a9c8597afea4b3040b5cb7d03ef9e3e29}{Vultr\+::\+Generic\+File}}
+\item 
+typedef File$<$ File\+Types\+::\+TEXTURE\+\_\+\+SOURCE $>$ \mbox{\hyperlink{namespaceVultr_ab4cbf47f17838864a980b79157e4e4df}{Vultr\+::\+Texture\+Source}}
+\item 
+typedef File$<$ File\+Types\+::\+MODEL\+\_\+\+SOURCE $>$ \mbox{\hyperlink{namespaceVultr_a91dbce328287c41b38ecd5c4eff70743}{Vultr\+::\+Model\+Source}}
+\item 
+typedef File$<$ File\+Types\+::\+HEADER\+\_\+\+SOURCE $>$ \mbox{\hyperlink{namespaceVultr_ad9be1efd6a51cf74b2ff228fa83e2bee}{Vultr\+::\+Header\+And\+Source\+File}}
+\item 
+typedef File$<$ File\+Types\+::\+HEADER $>$ \mbox{\hyperlink{namespaceVultr_a1c746fa2b685184e9550aa50409d00dd}{Vultr\+::\+Header\+File}}
+\item 
+typedef File$<$ File\+Types\+::\+SOURCE $>$ \mbox{\hyperlink{namespaceVultr_a3f2d03710446bc2e5aa9e0094a3213f8}{Vultr\+::\+Source\+File}}
+\item 
+typedef File$<$ File\+Types\+::\+SHADER $>$ \mbox{\hyperlink{namespaceVultr_a8a06f7032daa0bc951b69a0a6e390626}{Vultr\+::\+Shader\+Source}}
+\item 
+typedef File$<$ File\+Types\+::\+FONT\+\_\+\+SOURCE $>$ \mbox{\hyperlink{namespaceVultr_a3de2225e69c504791c51a18eeef284b4}{Vultr\+::\+Font\+Source}}
+\item 
+typedef File$<$ File\+Types\+::\+VULTR\+\_\+\+SOURCE $>$ \mbox{\hyperlink{namespaceVultr_a71f4cc8738fcf715c4b9bbf15f843135}{Vultr\+::\+Vultr\+Source}}
+\item 
+typedef File$<$ File\+Types\+::\+VULTR\+\_\+\+ASSET\+\_\+\+PACKAGE $>$ \mbox{\hyperlink{namespaceVultr_a84e18938d0ed73621afea82f4332d7e3}{Vultr\+::\+Vultr\+Asset\+Package}}
+\item 
+typedef File$<$ File\+Types\+::\+DLL\+\_\+\+SOURCE $>$ \mbox{\hyperlink{namespaceVultr_abbf20890ebcee6b174918bf610f36b7b}{Vultr\+::\+DLLSource}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+const char $\ast$ \mbox{\hyperlink{namespaceVultr_acd8dca3e471eaad962b5c592015be3d1}{Vultr\+::fbasename}} (const IFile $\ast$file, size\+\_\+t $\ast$len)
+\item 
+const char $\ast$ \mbox{\hyperlink{namespaceVultr_a5abd05021346e4aadafc5af3c83cabeb}{Vultr\+::fextension}} (const IFile $\ast$file, bool with\+\_\+dot=true)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_afc14215326ae57a06831300eaf369ce4}{Vultr\+::fextension\+\_\+matches}} (const char $\ast$extension, const char $\ast$const file\+\_\+type\mbox{[}$\,$\mbox{]}, size\+\_\+t len)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_a2eb34c7e9b4471b66465dff370fad080}{Vultr\+::fremove}} (const IFile $\ast$file)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_ac125ae089eddc9fd6440079a803f0c62}{Vultr\+::frename}} (IFile $\ast$src, const char $\ast$new\+\_\+name)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_a466ec15229ee062f3e8bc4737b0edc20}{Vultr\+::fmove}} (const IFile $\ast$src, const IFile $\ast$destination)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_a02ad6a80f52bbfaeea7b5cb9240046fd}{Vultr\+::fmove}} (IFile $\ast$src, const char $\ast$destination)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_a3b3990e2fd799ea4599f9ba12fc680b4}{Vultr\+::fmove}} (IFile $\ast$src, const Directory $\ast$destination)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_a5dfebcc6888b94e53dccf50bb702d9ac}{Vultr\+::fcopy}} (IFile $\ast$src, const char $\ast$dest)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_ab56f62cd4b3571ea09f65995cd2cd081}{Vultr\+::fexists}} (const IFile $\ast$file)
+\item 
+Generic\+File $\ast$ \mbox{\hyperlink{namespaceVultr_ade0020b4d54474eeb5d6279203996337}{Vultr\+::dirfiles}} (const Directory $\ast$dir, size\+\_\+t $\ast$len)
+\item 
+{\footnotesize template$<$const char $\ast$const extensions$>$ }\\bool \mbox{\hyperlink{namespaceVultr_a8ee86db4b15e896b496e33accbea2780}{Vultr\+::cast\+\_\+file}} (const Generic\+File $\ast$src, File$<$ extensions $>$ $\ast$dest)
+\item 
+\mbox{\hyperlink{types_8h_ace9d960e74685e2cd84b36132dbbf8aa}{u16}} \mbox{\hyperlink{namespaceVultr_ab44d57880d4a6b2289d73fc6b7ae6335}{Vultr\+::fdate\+\_\+modified}} (const IFile $\ast$file)
+\item 
+{\footnotesize template$<$const char $\ast$const extensions$>$ }\\bool \mbox{\hyperlink{namespaceVultr_aa2d7639318cbe8fab7163f90b3c61bf3}{Vultr\+::operator$<$}} (const File$<$ extensions $>$ \&a, const File$<$ extensions $>$ \&b)
+\item 
+{\footnotesize template$<$const char $\ast$const extensions$>$ }\\bool \mbox{\hyperlink{namespaceVultr_a48e724903669a1950815aae030830d8e}{Vultr\+::operator==}} (const File$<$ extensions $>$ \&a, const File$<$ extensions $>$ \&b)
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_a087c7f85e2b8fcace4aa2387191fdc6e}{Vultr\+::\+File\+Types\+::\+GENERIC\+\_\+\+FILE}} \mbox{[}$\,$\mbox{]} = \{\}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_a068337c1f505eda819132af4e180ef7f}{Vultr\+::\+File\+Types\+::\+TEXTURE\+\_\+\+SOURCE}} \mbox{[}$\,$\mbox{]} = \{\char`\"{}.jpeg\char`\"{}, \char`\"{}.jpg\char`\"{}, \char`\"{}.png\char`\"{}, \char`\"{}.bmp\char`\"{}, \char`\"{}.dds\char`\"{}\}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_a6c7abfdb0d3b6cc22c35ab9d2d5c547a}{Vultr\+::\+File\+Types\+::\+MODEL\+\_\+\+SOURCE}} \mbox{[}$\,$\mbox{]} = \{\char`\"{}.obj\char`\"{}, \char`\"{}.fbx\char`\"{}, \char`\"{}.blend\char`\"{}\}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_a46a41f3c3d2832ba76bcc2e824084f1b}{Vultr\+::\+File\+Types\+::\+HEADER\+\_\+\+SOURCE}} \mbox{[}$\,$\mbox{]} = \{\char`\"{}.h\char`\"{}, \char`\"{}.hpp\char`\"{}, \char`\"{}.c\char`\"{}, \char`\"{}.cpp\char`\"{}, \char`\"{}.cc\char`\"{}\}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_ac82894cf30329d067cdbe0da89eb8522}{Vultr\+::\+File\+Types\+::\+HEADER}} \mbox{[}$\,$\mbox{]} = \{\char`\"{}.h\char`\"{}, \char`\"{}.hpp\char`\"{}\}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_a3278022365312622ea9f6a3c4d7273ff}{Vultr\+::\+File\+Types\+::\+SOURCE}} \mbox{[}$\,$\mbox{]} = \{\char`\"{}.c\char`\"{}, \char`\"{}.cpp\char`\"{}, \char`\"{}.cc\char`\"{}\}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_a659bb97f210a9f73b43dda6c8245611b}{Vultr\+::\+File\+Types\+::\+SHADER}} \mbox{[}$\,$\mbox{]} = \{\char`\"{}.glsl\char`\"{}\}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_a8f00e262db3b61aacff17fcbe6a6316e}{Vultr\+::\+File\+Types\+::\+FONT\+\_\+\+SOURCE}} \mbox{[}$\,$\mbox{]} = \{\char`\"{}.ttf\char`\"{}\}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_a486af4dc7cbc3603fcf862c641417f47}{Vultr\+::\+File\+Types\+::\+VULTR\+\_\+\+SOURCE}} \mbox{[}$\,$\mbox{]} = \{\char`\"{}.vultr\char`\"{}\}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_aef44ee189942f314c94feafa05eeb962}{Vultr\+::\+File\+Types\+::\+VULTR\+\_\+\+ASSET\+\_\+\+PACKAGE}} \mbox{[}$\,$\mbox{]} = \{\char`\"{}.vasset\char`\"{}\}
+\item 
+constexpr const char $\ast$const \mbox{\hyperlink{namespaceVultr_1_1FileTypes_a40c68757ce80c5f60fc12a3d0bbb21fa}{Vultr\+::\+File\+Types\+::\+DLL\+\_\+\+SOURCE}} \mbox{[}$\,$\mbox{]} = \{\char`\"{}.so\char`\"{}, \char`\"{}.dll\char`\"{}\}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Macro Definition Documentation}
+\mbox{\Hypertarget{file_8h_a44d01ba0a136b8e27ad362f5a823d14e}\label{file_8h_a44d01ba0a136b8e27ad362f5a823d14e}} 
+\index{file.h@{file.h}!\_FILE\_OFFSET\_BITS@{\_FILE\_OFFSET\_BITS}}
+\index{\_FILE\_OFFSET\_BITS@{\_FILE\_OFFSET\_BITS}!file.h@{file.h}}
+\doxysubsubsection{\texorpdfstring{\_FILE\_OFFSET\_BITS}{\_FILE\_OFFSET\_BITS}}
+{\footnotesize\ttfamily \#define \+\_\+\+FILE\+\_\+\+OFFSET\+\_\+\+BITS~64}
+
+\mbox{\Hypertarget{file_8h_a306d0104aec0a780607d967884f5b05b}\label{file_8h_a306d0104aec0a780607d967884f5b05b}} 
+\index{file.h@{file.h}!EXTENSION\_MAX@{EXTENSION\_MAX}}
+\index{EXTENSION\_MAX@{EXTENSION\_MAX}!file.h@{file.h}}
+\doxysubsubsection{\texorpdfstring{EXTENSION\_MAX}{EXTENSION\_MAX}}
+{\footnotesize\ttfamily \#define EXTENSION\+\_\+\+MAX~255}
+

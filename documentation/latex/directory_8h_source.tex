@@ -1,0 +1,53 @@
+\hypertarget{directory_8h_source}{}\doxysection{directory.\+h}
+\label{directory_8h_source}\index{src/filesystem/directory.h@{src/filesystem/directory.h}}
+\mbox{\hyperlink{directory_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include <string>}}
+\DoxyCodeLine{3 \textcolor{comment}{// \#include "{}file.h"{}}}
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{types_8h}{types/types.h}}>}}
+\DoxyCodeLine{5 }
+\DoxyCodeLine{6 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespaceVultr}{Vultr}}}
+\DoxyCodeLine{7 \{}
+\DoxyCodeLine{8     \textcolor{keyword}{struct }IFile;}
+\DoxyCodeLine{9 }
+\DoxyCodeLine{10     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1Directory}{Directory}}}
+\DoxyCodeLine{11     \{}
+\DoxyCodeLine{12         \mbox{\hyperlink{structVultr_1_1Directory_a29ec95315e323197792b03f10542d1ac}{Directory}}() = \textcolor{keywordflow}{default};}
+\DoxyCodeLine{13         \mbox{\hyperlink{structVultr_1_1Directory_a8d2c3b83490b87208013d1e7dd4287a4}{Directory}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{structVultr_1_1Directory_a68e69279ebbc8cb2674eeeb89c8bacb6}{path}});}
+\DoxyCodeLine{14         \mbox{\hyperlink{structVultr_1_1Directory_aa49ea9183bc68cb744df397e82f36fee}{Directory}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{structVultr_1_1Directory_a68e69279ebbc8cb2674eeeb89c8bacb6}{path}});}
+\DoxyCodeLine{15         \mbox{\hyperlink{structVultr_1_1Directory_ac08f7d427ca812d943d32905e009d2df}{\string~Directory}}();}
+\DoxyCodeLine{16 }
+\DoxyCodeLine{17         \textcolor{keywordtype}{void} \mbox{\hyperlink{structVultr_1_1Directory_a20da6c9e9ea779ec070a0e293d006914}{operator=}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} \&other);}
+\DoxyCodeLine{18         \textcolor{keywordtype}{char} *\mbox{\hyperlink{structVultr_1_1Directory_a68e69279ebbc8cb2674eeeb89c8bacb6}{path}} = \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{19     \};}
+\DoxyCodeLine{20 }
+\DoxyCodeLine{21     \textcolor{keyword}{const} \textcolor{keywordtype}{char} *\mbox{\hyperlink{namespaceVultr_ae78db5f960aedc68e84dd90363df1a54}{dirbasename}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir, \textcolor{keywordtype}{size\_t} *len);}
+\DoxyCodeLine{22 }
+\DoxyCodeLine{23     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_a340a9f1f601623f45f1824f58e4a94fb}{dircurrentworking}}(\mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir);}
+\DoxyCodeLine{24     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_ab40a7832ecc6400a5c1c83db70286dd9}{dirchangeworking}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir);}
+\DoxyCodeLine{25 }
+\DoxyCodeLine{26     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_a2c69f355544df2bdb6eaad70b8341bde}{dirhasparent}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir);}
+\DoxyCodeLine{27     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a477d05185a207b3416e47f9f169119c1}{dirparent}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir, \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *parent);}
+\DoxyCodeLine{28     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a477d05185a207b3416e47f9f169119c1}{dirparent}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1IFile}{IFile}} *file, \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *parent);}
+\DoxyCodeLine{29 }
+\DoxyCodeLine{30     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_aa65552160de5b6b24b333e4dd7fe3a7c}{dirmake}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir);}
+\DoxyCodeLine{31     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_aa65552160de5b6b24b333e4dd7fe3a7c}{dirmake}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *path, \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir);}
+\DoxyCodeLine{32 }
+\DoxyCodeLine{33     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_a8da635dc083b26686e0329bf9da194df}{dirremove}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir);}
+\DoxyCodeLine{34     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_a60ed4755cacc3e5989f9bd18cbf25694}{dirrename}}(\mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *name);}
+\DoxyCodeLine{35 }
+\DoxyCodeLine{36     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_a36e89dccca03cecceaad076a27184847}{dirmove}}(\mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *src, \textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dest);}
+\DoxyCodeLine{37     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_a36e89dccca03cecceaad076a27184847}{dirmove}}(\mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *src, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *dest);}
+\DoxyCodeLine{38 }
+\DoxyCodeLine{39     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_a7a1d7d28638d26cc23f84679b14e6448}{dircopy}}(\mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *src, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *dest);}
+\DoxyCodeLine{40 }
+\DoxyCodeLine{41     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_a5bf5a8071d77a18e9edede24afffb63c}{direxists}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir);}
+\DoxyCodeLine{42 }
+\DoxyCodeLine{43     \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{namespaceVultr_a06073435e880bd731b324aa4ad0d713a}{dirfilecount}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir);}
+\DoxyCodeLine{44     \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{namespaceVultr_a7b92cb753da55afc3bcfed5ce629c4ac}{dirsubdirectorycount}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir);}
+\DoxyCodeLine{45 }
+\DoxyCodeLine{46     \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *\mbox{\hyperlink{namespaceVultr_a2f294000b9236ac26997c6a27b205398}{dirsubdirs}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Directory}{Directory}} *dir, \textcolor{keywordtype}{size\_t} *len);}
+\DoxyCodeLine{47 \} \textcolor{comment}{// namespace Vultr}}
+
+\end{DoxyCode}

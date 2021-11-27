@@ -1,7 +1,7 @@
 #include <types/types.h>
 
-int main(void)
+int main(int argc, char **argv)
 {
-    ASSERT(false, "Some message");
-    printf("Nukes codebase, refuses to elaborate\n");
+    // TODO(Brandon):
+    // Stuff
 }

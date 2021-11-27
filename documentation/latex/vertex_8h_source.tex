@@ -1,0 +1,31 @@
+\hypertarget{vertex_8h_source}{}\doxysection{vertex.\+h}
+\label{vertex_8h_source}\index{src/render/types/vertex.h@{src/render/types/vertex.h}}
+\mbox{\hyperlink{vertex_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include <cstring>}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include <glm/glm.hpp>}}
+\DoxyCodeLine{4 }
+\DoxyCodeLine{5 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespaceVultr}{Vultr}}}
+\DoxyCodeLine{6 \{}
+\DoxyCodeLine{7 }
+\DoxyCodeLine{8     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1Vertex}{Vertex}}}
+\DoxyCodeLine{9     \{}
+\DoxyCodeLine{10 }
+\DoxyCodeLine{11         \textcolor{comment}{// Vertex properties that are in the vertex buffer}}
+\DoxyCodeLine{12         Vec3 \mbox{\hyperlink{structVultr_1_1Vertex_ab7fcc280945490a804f2889555cb6c57}{position}};}
+\DoxyCodeLine{13         Vec3 \mbox{\hyperlink{structVultr_1_1Vertex_ad63d9d49c5af356d3105f8c3577e2748}{normal}};}
+\DoxyCodeLine{14         Vec2 \mbox{\hyperlink{structVultr_1_1Vertex_a38506630eec0374b4dc9d538d14c140d}{uv}};}
+\DoxyCodeLine{15         Vec3 \mbox{\hyperlink{structVultr_1_1Vertex_a1459b756c15805fac85b19db47985519}{tangent}};}
+\DoxyCodeLine{16 }
+\DoxyCodeLine{17         \mbox{\hyperlink{structVultr_1_1Vertex_a752878dd068568944b9afbd5773a7899}{Vertex}}(Vec3 p\_position = Vec3(0, 0, 0), Vec3 p\_normal = Vec3(0, 0, 0), Vec2 p\_uv = Vec2(0, 0), Vec3 p\_tangent = Vec3(0)) : \mbox{\hyperlink{structVultr_1_1Vertex_ab7fcc280945490a804f2889555cb6c57}{position}}(p\_position), \mbox{\hyperlink{structVultr_1_1Vertex_ad63d9d49c5af356d3105f8c3577e2748}{normal}}(p\_normal), \mbox{\hyperlink{structVultr_1_1Vertex_a38506630eec0374b4dc9d538d14c140d}{uv}}(p\_uv), \mbox{\hyperlink{structVultr_1_1Vertex_a1459b756c15805fac85b19db47985519}{tangent}}(p\_tangent)\{\};}
+\DoxyCodeLine{18 }
+\DoxyCodeLine{19         \textcolor{keywordtype}{bool} \mbox{\hyperlink{structVultr_1_1Vertex_af47fedd8e43e36272ae935c42ded35da}{operator<}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1Vertex}{Vertex}} that)\textcolor{keyword}{ const}}
+\DoxyCodeLine{20 \textcolor{keyword}{        }\{}
+\DoxyCodeLine{21             \textcolor{keywordflow}{return} memcmp((\textcolor{keywordtype}{void} *)\textcolor{keyword}{this}, (\textcolor{keywordtype}{void} *)\&that, \textcolor{keyword}{sizeof}(\mbox{\hyperlink{structVultr_1_1Vertex}{Vertex}})) > 0;}
+\DoxyCodeLine{22         \};}
+\DoxyCodeLine{23     \};}
+\DoxyCodeLine{24 }
+\DoxyCodeLine{25 \} \textcolor{comment}{// namespace Vultr}}
+
+\end{DoxyCode}

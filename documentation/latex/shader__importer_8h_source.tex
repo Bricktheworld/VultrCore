@@ -1,0 +1,102 @@
+\hypertarget{shader__importer_8h_source}{}\doxysection{shader\+\_\+importer.\+h}
+\label{shader__importer_8h_source}\index{src/filesystem/importers/shader\_importer.h@{src/filesystem/importers/shader\_importer.h}}
+\mbox{\hyperlink{shader__importer_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{comment}{// TODO: Reimplement using custom VTL}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{shader_8h}{render/types/shader.h}}>}}
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include <string>}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{types_8h}{types/types.h}}>}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{file_8h}{filesystem/file.h}}>}}
+\DoxyCodeLine{7 }
+\DoxyCodeLine{8 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespaceVultr_1_1ShaderImporter}{Vultr::ShaderImporter}}}
+\DoxyCodeLine{9 \{}
+\DoxyCodeLine{10     \textcolor{keyword}{enum struct} \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06}{ShaderType}} : \mbox{\hyperlink{types_8h_a92c50087ca0e64fa93fc59402c55f8ca}{u8}}}
+\DoxyCodeLine{11     \{}
+\DoxyCodeLine{12         \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06ab50339a10e1de285ac99d4c3990b8693}{NONE}} = 0xFF,}
+\DoxyCodeLine{13         \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06a0c3e47aef93a7f244f41ab309a33634b}{VERTEX}} = 0,}
+\DoxyCodeLine{14         \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_ae350705ec7cabf21b0b9307bb767df06a7345a249ed5c2f850d85dc1727c24716}{FRAGMENT}} = 1}
+\DoxyCodeLine{15     \};}
+\DoxyCodeLine{16     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{ShaderProgramSource}}}
+\DoxyCodeLine{17     \{}
+\DoxyCodeLine{18         \textcolor{keywordtype}{char} *\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource_a77989e1f9dd776c54fd63272f38f28b2}{vert\_src}} = \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{19         \textcolor{keywordtype}{char} *\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource_ae6644afac37322f21aa2e6c1e02a58b6}{frag\_src}} = \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{20 }
+\DoxyCodeLine{21         \mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource_af6d82582b533992e2d12eadd65486cbb}{\string~ShaderProgramSource}}()}
+\DoxyCodeLine{22         \{}
+\DoxyCodeLine{23             \textcolor{keywordflow}{if} (\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource_a77989e1f9dd776c54fd63272f38f28b2}{vert\_src}} != \textcolor{keyword}{nullptr})}
+\DoxyCodeLine{24                 \mbox{\hyperlink{namespaceVultr_a202aae5f7bef20527c1bbe7ccc3cd00b}{free}}(\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource_a77989e1f9dd776c54fd63272f38f28b2}{vert\_src}});}
+\DoxyCodeLine{25             \textcolor{keywordflow}{if} (\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource_ae6644afac37322f21aa2e6c1e02a58b6}{frag\_src}} != \textcolor{keyword}{nullptr})}
+\DoxyCodeLine{26                 \mbox{\hyperlink{namespaceVultr_a202aae5f7bef20527c1bbe7ccc3cd00b}{free}}(\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource_ae6644afac37322f21aa2e6c1e02a58b6}{frag\_src}});}
+\DoxyCodeLine{27         \}}
+\DoxyCodeLine{28     \};}
+\DoxyCodeLine{29     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a29dd1b2624e2744a21591ab2cf2b595f}{shader\_import}}(\mbox{\hyperlink{structVultr_1_1Shader}{Shader}} *shader, \textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1File}{ShaderSource}} *source);}
+\DoxyCodeLine{30     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a9100905c119a4a9f4aba5af0235cc8f7}{shader\_import\_file}}(\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{ShaderProgramSource}} *result, \textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1File}{ShaderSource}} *source);}
+\DoxyCodeLine{31     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a1091e8459fe6600632fe2bbd391bb187}{shader\_import\_memory}}(\mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{ShaderProgramSource}} *result, \textcolor{keyword}{const} \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{char} *data, \mbox{\hyperlink{types_8h_a3f7e2bcbb0b4c338f3c4f6c937cd4234}{u64}} len);}
+\DoxyCodeLine{32     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a8ce16e9cace352565b340f95e8c8ab9b}{shader\_load\_gpu}}(\mbox{\hyperlink{structVultr_1_1Shader}{Shader}} *shader, \textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1ShaderImporter_1_1ShaderProgramSource}{ShaderProgramSource}} *source);}
+\DoxyCodeLine{33 }
+\DoxyCodeLine{34     \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{namespaceVultr_1_1ShaderImporter_a9982a47acaeab8ea6342af789e2cb002}{shader\_compile}}(\mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} type, \textcolor{keyword}{const} \textcolor{keywordtype}{char} *src);}
+\DoxyCodeLine{35 }
+\DoxyCodeLine{36     \textcolor{comment}{// const ShaderProgramSource OUTLINE = \{}}
+\DoxyCodeLine{37     \textcolor{comment}{//     .vert\_src = str("{}layout (location = 0) in vec3 position;\(\backslash\)n"{}}}
+\DoxyCodeLine{38     \textcolor{comment}{//                     "{}layout (location = 1) in vec3 normal;\(\backslash\)n"{}}}
+\DoxyCodeLine{39     \textcolor{comment}{//                     "{}layout (location = 2) in vec2 uv; \(\backslash\)n"{}}}
+\DoxyCodeLine{40     \textcolor{comment}{//                     "{}out vec3 FragPos; \(\backslash\)n"{}}}
+\DoxyCodeLine{41     \textcolor{comment}{//                     "{}uniform mat4 model; \(\backslash\)n"{}}}
+\DoxyCodeLine{42     \textcolor{comment}{//                     "{}uniform mat4 view; \(\backslash\)n"{}}}
+\DoxyCodeLine{43     \textcolor{comment}{//                     "{}uniform mat4 projection; \(\backslash\)n"{}}}
+\DoxyCodeLine{44     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{45     \textcolor{comment}{//                     "{}void main() \(\backslash\)n"{}}}
+\DoxyCodeLine{46     \textcolor{comment}{//                     "{}\{\(\backslash\)n"{}}}
+\DoxyCodeLine{47     \textcolor{comment}{//                     "{}   gl\_Position = projection * view * model * vec4(position, 1.0f); \(\backslash\)n"{}}}
+\DoxyCodeLine{48     \textcolor{comment}{//                     "{}   FragPos = vec3(model * vec4(position, 1.0f)); \(\backslash\)n"{}}}
+\DoxyCodeLine{49     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{50     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{51     \textcolor{comment}{//                     "{}\}\(\backslash\)n"{}),}}
+\DoxyCodeLine{52 }
+\DoxyCodeLine{53     \textcolor{comment}{//     .frag\_src = str("{}layout (location = 0) in vec3 FragPos;\(\backslash\)n"{}}}
+\DoxyCodeLine{54     \textcolor{comment}{//                     "{}out vec4 FragColor; \(\backslash\)n"{}}}
+\DoxyCodeLine{55     \textcolor{comment}{//                     "{}uniform vec4 color; \(\backslash\)n"{}}}
+\DoxyCodeLine{56     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{57     \textcolor{comment}{//                     "{}void main() \(\backslash\)n"{}}}
+\DoxyCodeLine{58     \textcolor{comment}{//                     "{}\{\(\backslash\)n"{}}}
+\DoxyCodeLine{59     \textcolor{comment}{//                     "{}   FragColor = color; \(\backslash\)n"{}}}
+\DoxyCodeLine{60     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{61     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{62     \textcolor{comment}{//                     "{}\}\(\backslash\)n"{}),}}
+\DoxyCodeLine{63     \textcolor{comment}{// \};}}
+\DoxyCodeLine{64     \textcolor{comment}{// const ShaderProgramSource EDITOR\_INPUT = \{}}
+\DoxyCodeLine{65     \textcolor{comment}{//     .vert\_src = str("{}\#version 330 core\(\backslash\)n"{}}}
+\DoxyCodeLine{66     \textcolor{comment}{//                     "{}\#extension GL\_ARB\_separate\_shader\_objects: enable\(\backslash\)n"{}}}
+\DoxyCodeLine{67     \textcolor{comment}{//                     "{}layout (location = 0) in vec3 position;\(\backslash\)n"{}}}
+\DoxyCodeLine{68     \textcolor{comment}{//                     "{}layout (location = 1) in vec3 normal;\(\backslash\)n"{}}}
+\DoxyCodeLine{69     \textcolor{comment}{//                     "{}layout (location = 2) in vec2 uv; \(\backslash\)n"{}}}
+\DoxyCodeLine{70     \textcolor{comment}{//                     "{}out vec3 FragPos; \(\backslash\)n"{}}}
+\DoxyCodeLine{71     \textcolor{comment}{//                     "{}uniform mat4 model; \(\backslash\)n"{}}}
+\DoxyCodeLine{72     \textcolor{comment}{//                     "{}uniform mat4 view; \(\backslash\)n"{}}}
+\DoxyCodeLine{73     \textcolor{comment}{//                     "{}uniform mat4 projection; \(\backslash\)n"{}}}
+\DoxyCodeLine{74     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{75     \textcolor{comment}{//                     "{}void main() \(\backslash\)n"{}}}
+\DoxyCodeLine{76     \textcolor{comment}{//                     "{}\{\(\backslash\)n"{}}}
+\DoxyCodeLine{77     \textcolor{comment}{//                     "{}   gl\_Position = projection * view * model * vec4(position, 1.0f); \(\backslash\)n"{}}}
+\DoxyCodeLine{78     \textcolor{comment}{//                     "{}   FragPos = vec3(model * vec4(position, 1.0f)); \(\backslash\)n"{}}}
+\DoxyCodeLine{79     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{80     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{81     \textcolor{comment}{//                     "{}\}\(\backslash\)n"{}),}}
+\DoxyCodeLine{82     \textcolor{comment}{//     .frag\_src = str("{}\#version 330 core\(\backslash\)n"{}}}
+\DoxyCodeLine{83     \textcolor{comment}{//                     "{}\#extension GL\_ARB\_separate\_shader\_objects: enable\(\backslash\)n"{}}}
+\DoxyCodeLine{84     \textcolor{comment}{//                     "{}layout (location = 0) in vec3 FragPos;\(\backslash\)n"{}}}
+\DoxyCodeLine{85     \textcolor{comment}{//                     "{}out vec4 FragColor; \(\backslash\)n"{}}}
+\DoxyCodeLine{86     \textcolor{comment}{//                     "{}uniform vec4 color; \(\backslash\)n"{}}}
+\DoxyCodeLine{87     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{88     \textcolor{comment}{//                     "{}void main() \(\backslash\)n"{}}}
+\DoxyCodeLine{89     \textcolor{comment}{//                     "{}\{\(\backslash\)n"{}}}
+\DoxyCodeLine{90     \textcolor{comment}{//                     "{}   FragColor = color; \(\backslash\)n"{}}}
+\DoxyCodeLine{91     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{92     \textcolor{comment}{//                     "{}"{}}}
+\DoxyCodeLine{93     \textcolor{comment}{//                     "{}\}\(\backslash\)n"{}),}}
+\DoxyCodeLine{94     \textcolor{comment}{// \};}}
+\DoxyCodeLine{95 }
+\DoxyCodeLine{96 \} \textcolor{comment}{// namespace Vultr::ShaderImporter}}
+
+\end{DoxyCode}

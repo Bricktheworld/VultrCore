@@ -1,0 +1,187 @@
+\hypertarget{namespaceVultr_1_1Platform}{}\doxysection{Vultr\+::Platform Namespace Reference}
+\label{namespaceVultr_1_1Platform}\index{Vultr::Platform@{Vultr::Platform}}
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1Platform_1_1DisplayMode}{Display\+Mode}}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowHint}{Window\+Hint}}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode}{Window\+Mode}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct GLFWmonitor \mbox{\hyperlink{namespaceVultr_1_1Platform_af56c8beedb79decad354d010fb4940dc}{Monitor}}
+\item 
+typedef struct GLFWwindow \mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void $\ast$ \mbox{\hyperlink{namespaceVultr_1_1Platform_ad43372e4269f94ad42e188ea00f2836a}{get\+\_\+memory}} (Platform\+Memory\+Block $\ast$block)
+\item 
+size\+\_\+t \mbox{\hyperlink{namespaceVultr_1_1Platform_ae3a3b9968a5060f6ff267b051d60001d}{get\+\_\+memory\+\_\+size}} (Platform\+Memory\+Block $\ast$block)
+\item 
+Platform\+Memory\+Block $\ast$ \mbox{\hyperlink{namespaceVultr_1_1Platform_ab089bc222ab266928a0c820db65d1af8}{virtual\+\_\+alloc}} (void $\ast$address\+\_\+hint, size\+\_\+t size)
+\item 
+void \mbox{\hyperlink{namespaceVultr_1_1Platform_af665082bcf5b045775afe8c6b379e7ef}{virtual\+\_\+free}} (Platform\+Memory\+Block $\ast$block)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_1_1Platform_aeaa4566089aebd13a86306b1d3377d61}{new\+\_\+thread}} (Thread $\ast$thread)
+\item 
+void \mbox{\hyperlink{namespaceVultr_1_1Platform_aa224c44fe72ef438081e218781db6c1f}{window\+\_\+set\+\_\+context}} (\mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}} $\ast$window)
+\item 
+void \mbox{\hyperlink{namespaceVultr_1_1Platform_a5b00fbc97291da160f2b36e0a4a34b0e}{window\+\_\+set\+\_\+hint}} (int hint, int value)
+\item 
+\mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode}{Window\+Mode}} \mbox{\hyperlink{namespaceVultr_1_1Platform_aeff5074a720deb4b97f65a858f94285b}{window\+\_\+get\+\_\+mode}} (\mbox{\hyperlink{namespaceVultr_1_1Platform_af56c8beedb79decad354d010fb4940dc}{Monitor}} $\ast$monitor)
+\item 
+bool \mbox{\hyperlink{namespaceVultr_1_1Platform_a67964b4133c88c368892708b701fd0f0}{window\+\_\+should\+\_\+close}} (\mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}} $\ast$window)
+\item 
+void \mbox{\hyperlink{namespaceVultr_1_1Platform_acaad6788a7d1e36ad0cef542261dfdea}{swap\+\_\+buffers}} (\mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}} $\ast$window)
+\item 
+void \mbox{\hyperlink{namespaceVultr_1_1Platform_acee1feb13c35da71aa3d5ad495a57911}{poll\+\_\+events}} ()
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Typedef Documentation}
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_af56c8beedb79decad354d010fb4940dc}\label{namespaceVultr_1_1Platform_af56c8beedb79decad354d010fb4940dc}} 
+\index{Vultr::Platform@{Vultr::Platform}!Monitor@{Monitor}}
+\index{Monitor@{Monitor}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{Monitor}{Monitor}}
+{\footnotesize\ttfamily typedef struct GLFWmonitor \mbox{\hyperlink{namespaceVultr_1_1Platform_af56c8beedb79decad354d010fb4940dc}{Vultr\+::\+Platform\+::\+Monitor}}}
+
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}\label{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}} 
+\index{Vultr::Platform@{Vultr::Platform}!Window@{Window}}
+\index{Window@{Window}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{Window}{Window}}
+{\footnotesize\ttfamily typedef struct GLFWwindow \mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Vultr\+::\+Platform\+::\+Window}}}
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_ad43372e4269f94ad42e188ea00f2836a}\label{namespaceVultr_1_1Platform_ad43372e4269f94ad42e188ea00f2836a}} 
+\index{Vultr::Platform@{Vultr::Platform}!get\_memory@{get\_memory}}
+\index{get\_memory@{get\_memory}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{get\_memory()}{get\_memory()}}
+{\footnotesize\ttfamily void $\ast$ Vultr\+::\+Platform\+::get\+\_\+memory (\begin{DoxyParamCaption}\item[{Platform\+Memory\+Block $\ast$}]{block }\end{DoxyParamCaption})}
+
+Gets the real memory pointer from a platform memory block.
+
+
+\begin{DoxyParams}{Parameters}
+{\em Platform\+Memory\+Block} & $\ast$block\+: The memory block to get the memory from. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void $\ast$\+: The pointer to the memory.
+\end{DoxyReturn}
+\begin{DoxyParagraph}{Errors\+:}
+Asserts if a nullptr memory block is provided.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Thread Safe}
+
+\end{DoxyParagraph}
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_ae3a3b9968a5060f6ff267b051d60001d}\label{namespaceVultr_1_1Platform_ae3a3b9968a5060f6ff267b051d60001d}} 
+\index{Vultr::Platform@{Vultr::Platform}!get\_memory\_size@{get\_memory\_size}}
+\index{get\_memory\_size@{get\_memory\_size}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{get\_memory\_size()}{get\_memory\_size()}}
+{\footnotesize\ttfamily size\+\_\+t Vultr\+::\+Platform\+::get\+\_\+memory\+\_\+size (\begin{DoxyParamCaption}\item[{Platform\+Memory\+Block $\ast$}]{block }\end{DoxyParamCaption})}
+
+Get the size of a memory block
+
+
+\begin{DoxyParams}{Parameters}
+{\em Platform\+Memory\+Block} & $\ast$block\+: The memory block to get the size of. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+size\+\_\+t\+: The size of the memory block.
+\end{DoxyReturn}
+\begin{DoxyParagraph}{Errors\+:}
+Asserts if a nullptr memory block is provided.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Thread Safe}
+
+\end{DoxyParagraph}
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_aeaa4566089aebd13a86306b1d3377d61}\label{namespaceVultr_1_1Platform_aeaa4566089aebd13a86306b1d3377d61}} 
+\index{Vultr::Platform@{Vultr::Platform}!new\_thread@{new\_thread}}
+\index{new\_thread@{new\_thread}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{new\_thread()}{new\_thread()}}
+{\footnotesize\ttfamily bool Vultr\+::\+Platform\+::new\+\_\+thread (\begin{DoxyParamCaption}\item[{Thread $\ast$}]{thread }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_acee1feb13c35da71aa3d5ad495a57911}\label{namespaceVultr_1_1Platform_acee1feb13c35da71aa3d5ad495a57911}} 
+\index{Vultr::Platform@{Vultr::Platform}!poll\_events@{poll\_events}}
+\index{poll\_events@{poll\_events}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{poll\_events()}{poll\_events()}}
+{\footnotesize\ttfamily void Vultr\+::\+Platform\+::poll\+\_\+events (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_acaad6788a7d1e36ad0cef542261dfdea}\label{namespaceVultr_1_1Platform_acaad6788a7d1e36ad0cef542261dfdea}} 
+\index{Vultr::Platform@{Vultr::Platform}!swap\_buffers@{swap\_buffers}}
+\index{swap\_buffers@{swap\_buffers}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{swap\_buffers()}{swap\_buffers()}}
+{\footnotesize\ttfamily void Vultr\+::\+Platform\+::swap\+\_\+buffers (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}} $\ast$}]{window }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_ab089bc222ab266928a0c820db65d1af8}\label{namespaceVultr_1_1Platform_ab089bc222ab266928a0c820db65d1af8}} 
+\index{Vultr::Platform@{Vultr::Platform}!virtual\_alloc@{virtual\_alloc}}
+\index{virtual\_alloc@{virtual\_alloc}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{virtual\_alloc()}{virtual\_alloc()}}
+{\footnotesize\ttfamily Platform\+Memory\+Block $\ast$ Vultr\+::\+Platform\+::virtual\+\_\+alloc (\begin{DoxyParamCaption}\item[{void $\ast$}]{address\+\_\+hint,  }\item[{size\+\_\+t}]{size }\end{DoxyParamCaption})}
+
+Reserves virtual address space memory from the operating system.
+
+
+\begin{DoxyParams}{Parameters}
+{\em void} & $\ast$address\+\_\+hint\+: The requested address of the memory block. Does not have to be followed. \\
+\hline
+{\em size\+\_\+t} & size\+: The size of memory to allocate.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyParagraph}{Errors\+:}
+Will return nullptr if the allocation failed.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Thread Safe}
+
+\end{DoxyParagraph}
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_af665082bcf5b045775afe8c6b379e7ef}\label{namespaceVultr_1_1Platform_af665082bcf5b045775afe8c6b379e7ef}} 
+\index{Vultr::Platform@{Vultr::Platform}!virtual\_free@{virtual\_free}}
+\index{virtual\_free@{virtual\_free}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{virtual\_free()}{virtual\_free()}}
+{\footnotesize\ttfamily void Vultr\+::\+Platform\+::virtual\+\_\+free (\begin{DoxyParamCaption}\item[{Platform\+Memory\+Block $\ast$}]{block }\end{DoxyParamCaption})}
+
+Frees virtual address memory from the operating system.
+
+
+\begin{DoxyParams}{Parameters}
+{\em Platform\+Memory\+Block} & $\ast$block\+: The block of memory to free.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyParagraph}{Errors\+:}
+Will assert if a nullptr memory block is provided.
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{Thread Safe}
+
+\end{DoxyParagraph}
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_aeff5074a720deb4b97f65a858f94285b}\label{namespaceVultr_1_1Platform_aeff5074a720deb4b97f65a858f94285b}} 
+\index{Vultr::Platform@{Vultr::Platform}!window\_get\_mode@{window\_get\_mode}}
+\index{window\_get\_mode@{window\_get\_mode}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{window\_get\_mode()}{window\_get\_mode()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode}{Window\+Mode}} Vultr\+::\+Platform\+::window\+\_\+get\+\_\+mode (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{namespaceVultr_1_1Platform_af56c8beedb79decad354d010fb4940dc}{Monitor}} $\ast$}]{monitor }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_aa224c44fe72ef438081e218781db6c1f}\label{namespaceVultr_1_1Platform_aa224c44fe72ef438081e218781db6c1f}} 
+\index{Vultr::Platform@{Vultr::Platform}!window\_set\_context@{window\_set\_context}}
+\index{window\_set\_context@{window\_set\_context}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{window\_set\_context()}{window\_set\_context()}}
+{\footnotesize\ttfamily void Vultr\+::\+Platform\+::window\+\_\+set\+\_\+context (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}} $\ast$}]{window }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_a5b00fbc97291da160f2b36e0a4a34b0e}\label{namespaceVultr_1_1Platform_a5b00fbc97291da160f2b36e0a4a34b0e}} 
+\index{Vultr::Platform@{Vultr::Platform}!window\_set\_hint@{window\_set\_hint}}
+\index{window\_set\_hint@{window\_set\_hint}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{window\_set\_hint()}{window\_set\_hint()}}
+{\footnotesize\ttfamily void Vultr\+::\+Platform\+::window\+\_\+set\+\_\+hint (\begin{DoxyParamCaption}\item[{int}]{hint,  }\item[{int}]{value }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespaceVultr_1_1Platform_a67964b4133c88c368892708b701fd0f0}\label{namespaceVultr_1_1Platform_a67964b4133c88c368892708b701fd0f0}} 
+\index{Vultr::Platform@{Vultr::Platform}!window\_should\_close@{window\_should\_close}}
+\index{window\_should\_close@{window\_should\_close}!Vultr::Platform@{Vultr::Platform}}
+\doxysubsubsection{\texorpdfstring{window\_should\_close()}{window\_should\_close()}}
+{\footnotesize\ttfamily bool Vultr\+::\+Platform\+::window\+\_\+should\+\_\+close (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}} $\ast$}]{window }\end{DoxyParamCaption})}
+

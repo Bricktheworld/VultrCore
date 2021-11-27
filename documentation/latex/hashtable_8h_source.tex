@@ -1,0 +1,239 @@
+\hypertarget{hashtable_8h_source}{}\doxysection{hashtable.\+h}
+\label{hashtable_8h_source}\index{src/types/hashtable.h@{src/types/hashtable.h}}
+\mbox{\hyperlink{hashtable_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 }
+\DoxyCodeLine{3 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespacevtl}{vtl}}}
+\DoxyCodeLine{4 \{}
+\DoxyCodeLine{5 \}}
+\DoxyCodeLine{6 }
+\DoxyCodeLine{7 \textcolor{comment}{// \#pragma once}}
+\DoxyCodeLine{8 \textcolor{comment}{// \#include <types/types.h>}}
+\DoxyCodeLine{9 \textcolor{comment}{// \#include <equals.h>}}
+\DoxyCodeLine{10 \textcolor{comment}{// \#include <stdio.h>}}
+\DoxyCodeLine{11 \textcolor{comment}{// \#include <string.h>}}
+\DoxyCodeLine{12 \textcolor{comment}{// \#include <assert.h>}}
+\DoxyCodeLine{13 \textcolor{comment}{// \#include <iterator>}}
+\DoxyCodeLine{14 \textcolor{comment}{// \#include <cstddef>}}
+\DoxyCodeLine{15 }
+\DoxyCodeLine{16 \textcolor{comment}{// namespace vtl}}
+\DoxyCodeLine{17 \textcolor{comment}{// \{}}
+\DoxyCodeLine{18 \textcolor{comment}{// \#define TABLE\_SIZE 10}}
+\DoxyCodeLine{19 }
+\DoxyCodeLine{20 \textcolor{comment}{//     template <typename k, typename v>}}
+\DoxyCodeLine{21 \textcolor{comment}{//     struct HashNode}}
+\DoxyCodeLine{22 \textcolor{comment}{//     \{}}
+\DoxyCodeLine{23 \textcolor{comment}{//         k key;}}
+\DoxyCodeLine{24 \textcolor{comment}{//         v value;}}
+\DoxyCodeLine{25 \textcolor{comment}{//     \};}}
+\DoxyCodeLine{26 }
+\DoxyCodeLine{27 \textcolor{comment}{//     namespace internal}}
+\DoxyCodeLine{28 \textcolor{comment}{//     \{}}
+\DoxyCodeLine{29 }
+\DoxyCodeLine{30 \textcolor{comment}{//         template <typename k, typename v>}}
+\DoxyCodeLine{31 \textcolor{comment}{//         HashNode<k, v> *init\_node(const HashNode<k, v> \&other)}}
+\DoxyCodeLine{32 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{33 \textcolor{comment}{//             auto *n = (HashNode<k, v> *)malloc(sizeof(HashNode<k, v>));}}
+\DoxyCodeLine{34 \textcolor{comment}{//             n-\/>key = other.key;}}
+\DoxyCodeLine{35 \textcolor{comment}{//             n-\/>value = other.value;}}
+\DoxyCodeLine{36 \textcolor{comment}{//             return n;}}
+\DoxyCodeLine{37 \textcolor{comment}{//         \}}}
+\DoxyCodeLine{38 \textcolor{comment}{//     \} // namespace internal}}
+\DoxyCodeLine{39 }
+\DoxyCodeLine{40 \textcolor{comment}{//     // For providing custom hash functions}}
+\DoxyCodeLine{41 \textcolor{comment}{//     typedef uint (*hash\_function)(void *);}}
+\DoxyCodeLine{42 }
+\DoxyCodeLine{43 \textcolor{comment}{//     // Default hash functions with explicit instantiation}}
+\DoxyCodeLine{44 \textcolor{comment}{//     template <typename k>}}
+\DoxyCodeLine{45 \textcolor{comment}{//     uint hash(k key);}}
+\DoxyCodeLine{46 }
+\DoxyCodeLine{47 \textcolor{comment}{//     template <typename k, typename v>}}
+\DoxyCodeLine{48 \textcolor{comment}{//     struct HashTable}}
+\DoxyCodeLine{49 \textcolor{comment}{//     \{}}
+\DoxyCodeLine{50 \textcolor{comment}{//         HashTable()}}
+\DoxyCodeLine{51 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{52 \textcolor{comment}{//             for (int i = 0; i < TABLE\_SIZE; i++)}}
+\DoxyCodeLine{53 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{54 \textcolor{comment}{//                 internal\_array[i] = nullptr;}}
+\DoxyCodeLine{55 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{56 \textcolor{comment}{//         \}}}
+\DoxyCodeLine{57 \textcolor{comment}{//         \string~HashTable()}}
+\DoxyCodeLine{58 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{59 \textcolor{comment}{//             assert(hashtable\_exists(t, key) \&\& "{}Cannot delete nonexistent key-\/value pair inhashtable!"{});}}
+\DoxyCodeLine{60 \textcolor{comment}{//             int index = hash(key);}}
+\DoxyCodeLine{61 \textcolor{comment}{//             auto *node = t.internal\_array[index];}}
+\DoxyCodeLine{62 \textcolor{comment}{//             free(node);}}
+\DoxyCodeLine{63 \textcolor{comment}{//             t.internal\_array[index] = nullptr;}}
+\DoxyCodeLine{64 \textcolor{comment}{//         \}}}
+\DoxyCodeLine{65 }
+\DoxyCodeLine{66 \textcolor{comment}{//         v \&operator[](k key)}}
+\DoxyCodeLine{67 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{68 \textcolor{comment}{//             int index = hash(key);}}
+\DoxyCodeLine{69 \textcolor{comment}{//             auto *node = internal\_array[index];}}
+\DoxyCodeLine{70 \textcolor{comment}{//             if (node != nullptr)}}
+\DoxyCodeLine{71 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{72 \textcolor{comment}{//                 if (!generic\_equals(node-\/>key, key))}}
+\DoxyCodeLine{73 \textcolor{comment}{//                 \{}}
+\DoxyCodeLine{74 \textcolor{comment}{//                     assert(true \&\& "{}Collision!"{});}}
+\DoxyCodeLine{75 \textcolor{comment}{//                 \}}}
+\DoxyCodeLine{76 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{77 \textcolor{comment}{//             else}}
+\DoxyCodeLine{78 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{79 \textcolor{comment}{//                 internal\_array[index] = (HashNode<k, v> *)malloc(sizeof(HashNode<k, v>));}}
+\DoxyCodeLine{80 \textcolor{comment}{//                 internal\_array[index]-\/>key = key;}}
+\DoxyCodeLine{81 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{82 \textcolor{comment}{//             return internal\_array[index]-\/>value;}}
+\DoxyCodeLine{83 \textcolor{comment}{//         \}}}
+\DoxyCodeLine{84 }
+\DoxyCodeLine{85 \textcolor{comment}{//         struct Iterator}}
+\DoxyCodeLine{86 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{87 \textcolor{comment}{//             typedef std::random\_access\_iterator\_tag IteratorCategory;}}
+\DoxyCodeLine{88 \textcolor{comment}{//             typedef HashNode<k, v> ValueType;}}
+\DoxyCodeLine{89 \textcolor{comment}{//             typedef ValueType **Pointer;}}
+\DoxyCodeLine{90 \textcolor{comment}{//             typedef ValueType \&Reference;}}
+\DoxyCodeLine{91 \textcolor{comment}{//             Iterator(Pointer p\_ptr) : ptr(p\_ptr)}}
+\DoxyCodeLine{92 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{93 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{94 }
+\DoxyCodeLine{95 \textcolor{comment}{//             Iterator \&operator++()}}
+\DoxyCodeLine{96 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{97 \textcolor{comment}{//                 // OMG THE FIRST TIME I'VE LITERALLY EVER USED DO WHILE}}
+\DoxyCodeLine{98 \textcolor{comment}{//                 do}}
+\DoxyCodeLine{99 \textcolor{comment}{//                 \{}}
+\DoxyCodeLine{100 \textcolor{comment}{//                     ptr++;}}
+\DoxyCodeLine{101 \textcolor{comment}{//                 \} while (*ptr == nullptr);}}
+\DoxyCodeLine{102 \textcolor{comment}{//                 return *this;}}
+\DoxyCodeLine{103 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{104 }
+\DoxyCodeLine{105 \textcolor{comment}{//             Iterator operator++(int)}}
+\DoxyCodeLine{106 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{107 \textcolor{comment}{//                 Iterator iterator = *this;}}
+\DoxyCodeLine{108 \textcolor{comment}{//                 ++(*this);}}
+\DoxyCodeLine{109 \textcolor{comment}{//                 return iterator;}}
+\DoxyCodeLine{110 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{111 }
+\DoxyCodeLine{112 \textcolor{comment}{//             Iterator \&operator-\/-\/()}}
+\DoxyCodeLine{113 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{114 \textcolor{comment}{//                 do}}
+\DoxyCodeLine{115 \textcolor{comment}{//                 \{}}
+\DoxyCodeLine{116 \textcolor{comment}{//                     ptr-\/-\/;}}
+\DoxyCodeLine{117 \textcolor{comment}{//                 \} while (*ptr == nullptr);}}
+\DoxyCodeLine{118 \textcolor{comment}{//                 return *this;}}
+\DoxyCodeLine{119 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{120 }
+\DoxyCodeLine{121 \textcolor{comment}{//             Iterator operator-\/-\/(int)}}
+\DoxyCodeLine{122 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{123 \textcolor{comment}{//                 Iterator iterator = *this;}}
+\DoxyCodeLine{124 \textcolor{comment}{//                 -\/-\/(*this);}}
+\DoxyCodeLine{125 \textcolor{comment}{//                 return iterator;}}
+\DoxyCodeLine{126 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{127 }
+\DoxyCodeLine{128 \textcolor{comment}{//             Pointer *operator-\/>()}}
+\DoxyCodeLine{129 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{130 \textcolor{comment}{//                 while (*ptr == nullptr)}}
+\DoxyCodeLine{131 \textcolor{comment}{//                 \{}}
+\DoxyCodeLine{132 \textcolor{comment}{//                     (*this)++;}}
+\DoxyCodeLine{133 \textcolor{comment}{//                 \}}}
+\DoxyCodeLine{134 \textcolor{comment}{//                 return *ptr;}}
+\DoxyCodeLine{135 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{136 }
+\DoxyCodeLine{137 \textcolor{comment}{//             Reference operator*()}}
+\DoxyCodeLine{138 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{139 \textcolor{comment}{//                 while (*ptr == nullptr)}}
+\DoxyCodeLine{140 \textcolor{comment}{//                 \{}}
+\DoxyCodeLine{141 \textcolor{comment}{//                     (*this)++;}}
+\DoxyCodeLine{142 \textcolor{comment}{//                 \}}}
+\DoxyCodeLine{143 \textcolor{comment}{//                 return **ptr;}}
+\DoxyCodeLine{144 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{145 }
+\DoxyCodeLine{146 \textcolor{comment}{//             bool operator==(const Iterator \&other) const}}
+\DoxyCodeLine{147 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{148 \textcolor{comment}{//                 return ptr == other.ptr;}}
+\DoxyCodeLine{149 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{150 }
+\DoxyCodeLine{151 \textcolor{comment}{//             bool operator!=(const Iterator \&other) const}}
+\DoxyCodeLine{152 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{153 \textcolor{comment}{//                 return !(*this == other);}}
+\DoxyCodeLine{154 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{155 }
+\DoxyCodeLine{156 \textcolor{comment}{//           private:}}
+\DoxyCodeLine{157 \textcolor{comment}{//             Pointer ptr;}}
+\DoxyCodeLine{158 \textcolor{comment}{//         \};}}
+\DoxyCodeLine{159 }
+\DoxyCodeLine{160 \textcolor{comment}{//         Iterator begin()}}
+\DoxyCodeLine{161 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{162 \textcolor{comment}{//             HashNode<k, v> **ptr = internal\_array;}}
+\DoxyCodeLine{163 \textcolor{comment}{//             while (ptr < internal\_array + TABLE\_SIZE \&\& *ptr == nullptr)}}
+\DoxyCodeLine{164 \textcolor{comment}{//             \{}}
+\DoxyCodeLine{165 \textcolor{comment}{//                 ptr++;}}
+\DoxyCodeLine{166 \textcolor{comment}{//             \}}}
+\DoxyCodeLine{167 \textcolor{comment}{//             return Iterator(ptr);}}
+\DoxyCodeLine{168 \textcolor{comment}{//         \}}}
+\DoxyCodeLine{169 \textcolor{comment}{//         Iterator end()}}
+\DoxyCodeLine{170 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{171 \textcolor{comment}{//             return Iterator(internal\_array + TABLE\_SIZE);}}
+\DoxyCodeLine{172 \textcolor{comment}{//         \}}}
+\DoxyCodeLine{173 }
+\DoxyCodeLine{174 \textcolor{comment}{//       private:}}
+\DoxyCodeLine{175 \textcolor{comment}{//         HashNode<k, v> *internal\_array[TABLE\_SIZE];}}
+\DoxyCodeLine{176 \textcolor{comment}{//     \};}}
+\DoxyCodeLine{177 }
+\DoxyCodeLine{178 \textcolor{comment}{//     template <typename k, typename v>}}
+\DoxyCodeLine{179 \textcolor{comment}{//     HashTable<k, v> new\_hashtable()}}
+\DoxyCodeLine{180 \textcolor{comment}{//     \{}}
+\DoxyCodeLine{181 \textcolor{comment}{//         HashTable<k, v> t = \{\};}}
+\DoxyCodeLine{182 \textcolor{comment}{//         return t;}}
+\DoxyCodeLine{183 \textcolor{comment}{//     \}}}
+\DoxyCodeLine{184 }
+\DoxyCodeLine{185 \textcolor{comment}{//     template <typename k, typename v>}}
+\DoxyCodeLine{186 \textcolor{comment}{//     bool hashtable\_insert(HashTable<k, v> \&t, HashNode<k, v> node)}}
+\DoxyCodeLine{187 \textcolor{comment}{//     \{}}
+\DoxyCodeLine{188 \textcolor{comment}{//         int index = hash(node.key);}}
+\DoxyCodeLine{189 \textcolor{comment}{//         if (t.internal\_array[index] != nullptr)}}
+\DoxyCodeLine{190 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{191 \textcolor{comment}{//             return false;}}
+\DoxyCodeLine{192 \textcolor{comment}{//         \}}}
+\DoxyCodeLine{193 \textcolor{comment}{//         auto *new\_node = internal::init\_node(node);}}
+\DoxyCodeLine{194 }
+\DoxyCodeLine{195 \textcolor{comment}{//         t.internal\_array[index] = new\_node;}}
+\DoxyCodeLine{196 \textcolor{comment}{//         return true;}}
+\DoxyCodeLine{197 \textcolor{comment}{//     \}}}
+\DoxyCodeLine{198 }
+\DoxyCodeLine{199 \textcolor{comment}{//     template <typename k, typename v>}}
+\DoxyCodeLine{200 \textcolor{comment}{//     bool hashtable\_exists(const HashTable<k, v> \&t, k key)}}
+\DoxyCodeLine{201 \textcolor{comment}{//     \{}}
+\DoxyCodeLine{202 \textcolor{comment}{//         int index = hash(key);}}
+\DoxyCodeLine{203 \textcolor{comment}{//         if (t.internal\_array[index] != nullptr)}}
+\DoxyCodeLine{204 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{205 \textcolor{comment}{//             return generic\_equals(t.internal\_array[index], key);}}
+\DoxyCodeLine{206 \textcolor{comment}{//         \}}}
+\DoxyCodeLine{207 \textcolor{comment}{//         else}}
+\DoxyCodeLine{208 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{209 \textcolor{comment}{//             return false;}}
+\DoxyCodeLine{210 \textcolor{comment}{//         \}}}
+\DoxyCodeLine{211 \textcolor{comment}{//     \}}}
+\DoxyCodeLine{212 }
+\DoxyCodeLine{213 \textcolor{comment}{//     //}}
+\DoxyCodeLine{214 \textcolor{comment}{//     //}}
+\DoxyCodeLine{215 \textcolor{comment}{//     //}}
+\DoxyCodeLine{216 \textcolor{comment}{//     // Default hash functions}}
+\DoxyCodeLine{217 \textcolor{comment}{//     //}}
+\DoxyCodeLine{218 \textcolor{comment}{//     //}}
+\DoxyCodeLine{219 \textcolor{comment}{//     //}}
+\DoxyCodeLine{220 \textcolor{comment}{//     template <>}}
+\DoxyCodeLine{221 \textcolor{comment}{//     inline u32 hash<const char *>(const char *key)}}
+\DoxyCodeLine{222 \textcolor{comment}{//     \{}}
+\DoxyCodeLine{223 \textcolor{comment}{//         int length = strlen(key);}}
+\DoxyCodeLine{224 \textcolor{comment}{//         u32 hash\_value = 0;}}
+\DoxyCodeLine{225 \textcolor{comment}{//         for (int i = 0; i < length; i++)}}
+\DoxyCodeLine{226 \textcolor{comment}{//         \{}}
+\DoxyCodeLine{227 \textcolor{comment}{//             hash\_value += key[i];}}
+\DoxyCodeLine{228 \textcolor{comment}{//             hash\_value = (key[i] * hash\_value) \% TABLE\_SIZE;}}
+\DoxyCodeLine{229 \textcolor{comment}{//         \}}}
+\DoxyCodeLine{230 \textcolor{comment}{//         return hash\_value;}}
+\DoxyCodeLine{231 \textcolor{comment}{//     \}}}
+\DoxyCodeLine{232 }
+\DoxyCodeLine{233 \textcolor{comment}{// \} // namespace vtl}}
+
+\end{DoxyCode}

@@ -1,0 +1,25 @@
+\hypertarget{vertex__array_8h_source}{}\doxysection{vertex\+\_\+array.\+h}
+\label{vertex__array_8h_source}\index{src/render/types/vertex\_array.h@{src/render/types/vertex\_array.h}}
+\mbox{\hyperlink{vertex__array_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{types_8h}{types/types.h}}>}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include <assert.h>}}
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include <glm/glm.hpp>}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{vertex_8h}{render/types/vertex.h}}>}}
+\DoxyCodeLine{6 }
+\DoxyCodeLine{7 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespaceVultr}{Vultr}}}
+\DoxyCodeLine{8 \{}
+\DoxyCodeLine{9     \textcolor{keyword}{typedef} \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{namespaceVultr_abb4686b7339d42c2a1926c048a934e6d}{VertexArray}};}
+\DoxyCodeLine{10 }
+\DoxyCodeLine{11     \mbox{\hyperlink{namespaceVultr_abb4686b7339d42c2a1926c048a934e6d}{VertexArray}} \mbox{\hyperlink{namespaceVultr_ad0e56099771ff9323a06468d2016f837}{new\_vertex\_array}}();}
+\DoxyCodeLine{12     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a17d5f6de70c6c21913aafdca1f434b2e}{delete\_vertex\_array}}(\mbox{\hyperlink{namespaceVultr_abb4686b7339d42c2a1926c048a934e6d}{VertexArray}} vao);}
+\DoxyCodeLine{13 }
+\DoxyCodeLine{14     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a3b6a102474acbd9628caf3ed9b79b886}{bind\_vertex\_array}}(\mbox{\hyperlink{namespaceVultr_abb4686b7339d42c2a1926c048a934e6d}{VertexArray}} vao);}
+\DoxyCodeLine{15     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a939abc0d75f6aae222b95ffd05c568ee}{unbind\_vertex\_array}}();}
+\DoxyCodeLine{16 }
+\DoxyCodeLine{17     \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{18     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a3ebfa4cf308d006baecc3e92589eef1a}{setup\_vertex\_array}}();}
+\DoxyCodeLine{19 \} \textcolor{comment}{// namespace Vultr}}
+
+\end{DoxyCode}

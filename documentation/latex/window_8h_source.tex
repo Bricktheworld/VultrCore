@@ -1,0 +1,49 @@
+\hypertarget{window_8h_source}{}\doxysection{window.\+h}
+\label{window_8h_source}\index{src/platform/window/window.h@{src/platform/window/window.h}}
+\mbox{\hyperlink{window_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 }
+\DoxyCodeLine{3 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespaceVultr_1_1Platform}{Vultr::Platform}}}
+\DoxyCodeLine{4 \{}
+\DoxyCodeLine{5     \textcolor{keyword}{typedef} \textcolor{keyword}{struct }GLFWmonitor \mbox{\hyperlink{namespaceVultr_1_1Platform_af56c8beedb79decad354d010fb4940dc}{Monitor}};}
+\DoxyCodeLine{6     \textcolor{keyword}{typedef} \textcolor{keyword}{struct }GLFWwindow \mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}};}
+\DoxyCodeLine{7 }
+\DoxyCodeLine{8     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode}{WindowMode}}}
+\DoxyCodeLine{9     \{}
+\DoxyCodeLine{10         \textcolor{keywordtype}{int} \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode_a69a24fddffa9ed27d54818ee993965fe}{width}};}
+\DoxyCodeLine{11         \textcolor{keywordtype}{int} \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode_aa3350438db21ecb4052a831dd35d1b62}{height}};}
+\DoxyCodeLine{12         \textcolor{keywordtype}{int} \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode_a1e79c184501497361b6b0a1d2426935f}{red\_bits}};}
+\DoxyCodeLine{13         \textcolor{keywordtype}{int} \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode_ac0d0d1e92d36274a8f47d36220508bb4}{green\_bits}};}
+\DoxyCodeLine{14         \textcolor{keywordtype}{int} \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode_a29de1b528a48adf75429f3dbe9b8f0e0}{blue\_bits}};}
+\DoxyCodeLine{15         \textcolor{keywordtype}{int} \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode_a9db86987e166af0ceae2afacd7a8c3ec}{refresh\_rate}};}
+\DoxyCodeLine{16     \};}
+\DoxyCodeLine{17 }
+\DoxyCodeLine{18     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1Platform_1_1WindowHint}{WindowHint}}}
+\DoxyCodeLine{19     \{}
+\DoxyCodeLine{20         \textcolor{keywordtype}{int} \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowHint_adab1cdb25fdb0c87177161e51247dacc}{hint}};}
+\DoxyCodeLine{21         \textcolor{keywordtype}{int} \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowHint_ac71ed0d81cdc75d9e17f9173ed8ebe1b}{value}};}
+\DoxyCodeLine{22     \};}
+\DoxyCodeLine{23 }
+\DoxyCodeLine{24     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1Platform_1_1DisplayMode}{DisplayMode}}}
+\DoxyCodeLine{25     \{}
+\DoxyCodeLine{26         \textcolor{keyword}{enum} \mbox{\hyperlink{structVultr_1_1Platform_1_1DisplayMode_a58dd39c720c009c057a849c683a5772a}{Mode}}}
+\DoxyCodeLine{27         \{}
+\DoxyCodeLine{28             \mbox{\hyperlink{structVultr_1_1Platform_1_1DisplayMode_a58dd39c720c009c057a849c683a5772aa3534d5804fe54dfc7217edeba00de407}{windowed}},}
+\DoxyCodeLine{29             \mbox{\hyperlink{structVultr_1_1Platform_1_1DisplayMode_a58dd39c720c009c057a849c683a5772aa5972ce36632850c5e013bdb69c428692}{borderless\_windowed}},}
+\DoxyCodeLine{30             \mbox{\hyperlink{structVultr_1_1Platform_1_1DisplayMode_a58dd39c720c009c057a849c683a5772aa2b5afaad58dd92ecdd05322ede7d23b5}{fullscreen}}}
+\DoxyCodeLine{31         \};}
+\DoxyCodeLine{32     \};}
+\DoxyCodeLine{33 }
+\DoxyCodeLine{34     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_1_1Platform_aa224c44fe72ef438081e218781db6c1f}{window\_set\_context}}(\mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}} *window);}
+\DoxyCodeLine{35     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_1_1Platform_a5b00fbc97291da160f2b36e0a4a34b0e}{window\_set\_hint}}(\textcolor{keywordtype}{int} hint, \textcolor{keywordtype}{int} value);}
+\DoxyCodeLine{36     \mbox{\hyperlink{structVultr_1_1Platform_1_1WindowMode}{WindowMode}} \mbox{\hyperlink{namespaceVultr_1_1Platform_aeff5074a720deb4b97f65a858f94285b}{window\_get\_mode}}(\mbox{\hyperlink{namespaceVultr_1_1Platform_af56c8beedb79decad354d010fb4940dc}{Monitor}} *monitor);}
+\DoxyCodeLine{37     \textcolor{comment}{// Window *new\_window(DisplayMode::Mode mode, Monitor *monitor, const char *title, std::vector<WindowHint> window\_hints);}}
+\DoxyCodeLine{38     \textcolor{comment}{// Window *new\_window(int width, int height, const char *title, Monitor *monitor, Window *window, std::vector<WindowHint> window\_hints);}}
+\DoxyCodeLine{39 }
+\DoxyCodeLine{40     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_1_1Platform_a67964b4133c88c368892708b701fd0f0}{window\_should\_close}}(\mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}} *window);}
+\DoxyCodeLine{41     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_1_1Platform_acaad6788a7d1e36ad0cef542261dfdea}{swap\_buffers}}(\mbox{\hyperlink{namespaceVultr_1_1Platform_a98fe14a11433639719dd6b3b69a2f838}{Window}} *window);}
+\DoxyCodeLine{42     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_1_1Platform_acee1feb13c35da71aa3d5ad495a57911}{poll\_events}}();}
+\DoxyCodeLine{43 \} \textcolor{comment}{// namespace Vultr::Platform}}
+
+\end{DoxyCode}

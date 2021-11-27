@@ -1,0 +1,40 @@
+\hypertarget{vultr__memory_8h_source}{}\doxysection{vultr\+\_\+memory.\+h}
+\label{vultr__memory_8h_source}\index{src/core/memory/vultr\_memory.h@{src/core/memory/vultr\_memory.h}}
+\mbox{\hyperlink{vultr__memory_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{types_8h}{types/types.h}}>}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{platform_8h}{platform/platform.h}}>}}
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include <string.h>}}
+\DoxyCodeLine{5 }
+\DoxyCodeLine{6 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespaceVultr}{Vultr}}}
+\DoxyCodeLine{7 \{}
+\DoxyCodeLine{8     \textcolor{keyword}{enum struct} \mbox{\hyperlink{namespaceVultr_a48377f1c34ea7708a2807abc0468f9b4}{AllocatorType}} : \mbox{\hyperlink{types_8h_a92c50087ca0e64fa93fc59402c55f8ca}{u8}}}
+\DoxyCodeLine{9     \{}
+\DoxyCodeLine{10         \mbox{\hyperlink{namespaceVultr_a48377f1c34ea7708a2807abc0468f9b4a6adf97f83acf6453d4a6a4b1070f3754}{None}}     = 0x0,}
+\DoxyCodeLine{11         \mbox{\hyperlink{namespaceVultr_a48377f1c34ea7708a2807abc0468f9b4a32a843da6ea40ab3b17a3421ccdf671b}{Linear}}   = 0x1,}
+\DoxyCodeLine{12         \mbox{\hyperlink{namespaceVultr_a48377f1c34ea7708a2807abc0468f9b4a2187e1021a911b3807cc1bea2eb1a9ca}{Stack}}    = 0x2,}
+\DoxyCodeLine{13         \mbox{\hyperlink{namespaceVultr_a48377f1c34ea7708a2807abc0468f9b4adef36b726efed529b13ba240dd331a12}{Pool}}     = 0x4,}
+\DoxyCodeLine{14         \mbox{\hyperlink{namespaceVultr_a48377f1c34ea7708a2807abc0468f9b4afd38c04e7c4e2d2f900516d6a9a41206}{FreeList}} = 0x8,}
+\DoxyCodeLine{15     \};}
+\DoxyCodeLine{16 }
+\DoxyCodeLine{17 \textcolor{preprocessor}{\#define MAX\_ALLOCATORS 16}}
+\DoxyCodeLine{18     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1MemoryArena}{MemoryArena}}}
+\DoxyCodeLine{19     \{}
+\DoxyCodeLine{20         Platform::PlatformMemoryBlock *\mbox{\hyperlink{structVultr_1_1MemoryArena_ae116218bed230e7bb552408cb9ea28f0}{memory}} = \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{21         \mbox{\hyperlink{namespaceVultr_a48377f1c34ea7708a2807abc0468f9b4}{AllocatorType}} \mbox{\hyperlink{structVultr_1_1MemoryArena_aa7deaaa1695b8c7216db79e523d362f6}{allocator\_types}}[\mbox{\hyperlink{vultr__memory_8h_aff008d52737cefdb0cabb57e9c08c2e0}{MAX\_ALLOCATORS}}];}
+\DoxyCodeLine{22         \textcolor{keywordtype}{void} *\mbox{\hyperlink{structVultr_1_1MemoryArena_af42acb132d474483e27e21092731f6e8}{allocators}}[\mbox{\hyperlink{vultr__memory_8h_aff008d52737cefdb0cabb57e9c08c2e0}{MAX\_ALLOCATORS}}];}
+\DoxyCodeLine{23         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1MemoryArena_a151b6316cb8cd3081f008ad2a23f27fb}{next\_index}}        = 0;}
+\DoxyCodeLine{24         \textcolor{keywordtype}{void} *\mbox{\hyperlink{structVultr_1_1MemoryArena_afcd008a4ec26add49065f62e9b8f3afd}{next\_free\_chunk}} = \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{25     \};}
+\DoxyCodeLine{26 }
+\DoxyCodeLine{35     \mbox{\hyperlink{structVultr_1_1MemoryArena}{MemoryArena}} *\mbox{\hyperlink{namespaceVultr_a929c6d24cd94fc7db45dbe17832e0648}{init\_mem\_arena}}(\textcolor{keywordtype}{size\_t} size, \mbox{\hyperlink{types_8h_a92c50087ca0e64fa93fc59402c55f8ca}{u8}} alignment = 16);}
+\DoxyCodeLine{36 }
+\DoxyCodeLine{37     \textcolor{keywordtype}{void} *\mbox{\hyperlink{namespaceVultr_a548f983819265f7737fe0b40ff9a5502}{mem\_arena\_designate}}(\mbox{\hyperlink{structVultr_1_1MemoryArena}{MemoryArena}} *arena, \mbox{\hyperlink{namespaceVultr_a48377f1c34ea7708a2807abc0468f9b4}{AllocatorType}} type, \textcolor{keywordtype}{size\_t} size);}
+\DoxyCodeLine{38 }
+\DoxyCodeLine{39     \textcolor{keywordtype}{void} *\mbox{\hyperlink{namespaceVultr_a547e17185c914dfb40cc7e8bd1fb6a95}{mem\_arena\_get\_allocator}}(\mbox{\hyperlink{structVultr_1_1MemoryArena}{MemoryArena}} *arena, \textcolor{keywordtype}{void} *data);}
+\DoxyCodeLine{40 }
+\DoxyCodeLine{46     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_abb98829237d6961bb5207ec09b0ba870}{destroy\_mem\_arena}}(\mbox{\hyperlink{structVultr_1_1MemoryArena}{MemoryArena}} *arena);}
+\DoxyCodeLine{47 \} \textcolor{comment}{// namespace Vultr}}
+
+\end{DoxyCode}

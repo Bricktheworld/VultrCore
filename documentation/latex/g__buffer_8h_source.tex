@@ -1,0 +1,51 @@
+\hypertarget{g__buffer_8h_source}{}\doxysection{g\+\_\+buffer.\+h}
+\label{g__buffer_8h_source}\index{src/render/types/g\_buffer.h@{src/render/types/g\_buffer.h}}
+\mbox{\hyperlink{g__buffer_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{comment}{// \#pragma once}}
+\DoxyCodeLine{2 \textcolor{comment}{// \#include "{}frame\_buffer.h"{}}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{comment}{// namespace Vultr}}
+\DoxyCodeLine{5 \textcolor{comment}{// \{}}
+\DoxyCodeLine{6 \textcolor{comment}{// class GBuffer : public FrameBuffer}}
+\DoxyCodeLine{7 \textcolor{comment}{// \{}}
+\DoxyCodeLine{8 \textcolor{comment}{//   public:}}
+\DoxyCodeLine{9 \textcolor{comment}{//     GBuffer();}}
+\DoxyCodeLine{10 \textcolor{comment}{//     \string~GBuffer();}}
+\DoxyCodeLine{11 }
+\DoxyCodeLine{12 \textcolor{comment}{//     void Init(int width, int height);}}
+\DoxyCodeLine{13 }
+\DoxyCodeLine{14 \textcolor{comment}{//     void Resize(int width, int height);}}
+\DoxyCodeLine{15 }
+\DoxyCodeLine{16 \textcolor{comment}{//     void BindPositionTexture(unsigned int slot);}}
+\DoxyCodeLine{17 }
+\DoxyCodeLine{18 \textcolor{comment}{//     void BindNormalTexture(unsigned int slot);}}
+\DoxyCodeLine{19 }
+\DoxyCodeLine{20 \textcolor{comment}{//     void BindColorSpecularTexture(unsigned int slot);}}
+\DoxyCodeLine{21 }
+\DoxyCodeLine{22 \textcolor{comment}{//     void BindLightSpecularTexture(unsigned int slot);}}
+\DoxyCodeLine{23 }
+\DoxyCodeLine{24 \textcolor{comment}{//     // Set the draw buffers to be the postion, color, and normals}}
+\DoxyCodeLine{25 \textcolor{comment}{//     void SetWritePNC();}}
+\DoxyCodeLine{26 }
+\DoxyCodeLine{27 \textcolor{comment}{//     // Set the draw buffers to be the light}}
+\DoxyCodeLine{28 \textcolor{comment}{//     void SetWriteLight();}}
+\DoxyCodeLine{29 }
+\DoxyCodeLine{30 \textcolor{comment}{//     void SetWriteNone();}}
+\DoxyCodeLine{31 }
+\DoxyCodeLine{32 \textcolor{comment}{//   private:}}
+\DoxyCodeLine{33 \textcolor{comment}{//     unsigned int position = 0;}}
+\DoxyCodeLine{34 \textcolor{comment}{//     unsigned int normal = 0;}}
+\DoxyCodeLine{35 \textcolor{comment}{//     unsigned int color\_specular = 0;}}
+\DoxyCodeLine{36 \textcolor{comment}{//     unsigned int light = 0;}}
+\DoxyCodeLine{37 \textcolor{comment}{//     unsigned int rbo\_depth = 0;}}
+\DoxyCodeLine{38 }
+\DoxyCodeLine{39 \textcolor{comment}{//     unsigned int *pnc\_attachments = nullptr;}}
+\DoxyCodeLine{40 \textcolor{comment}{//     unsigned int *light\_attachments = nullptr;}}
+\DoxyCodeLine{41 }
+\DoxyCodeLine{42 \textcolor{comment}{//     int width = 1920;}}
+\DoxyCodeLine{43 \textcolor{comment}{//     int height = 1080;}}
+\DoxyCodeLine{44 \textcolor{comment}{// \};}}
+\DoxyCodeLine{45 \textcolor{comment}{// \} // namespace Vultr}}
+
+\end{DoxyCode}

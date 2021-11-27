@@ -1,0 +1,22 @@
+\hypertarget{mesh__importer_8h_source}{}\doxysection{mesh\+\_\+importer.\+h}
+\label{mesh__importer_8h_source}\index{src/filesystem/importers/mesh\_importer.h@{src/filesystem/importers/mesh\_importer.h}}
+\mbox{\hyperlink{mesh__importer_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#include <map>}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{mesh_8h}{render/types/mesh.h}}>}}
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include <string>}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{file_8h}{filesystem/file.h}}>}}
+\DoxyCodeLine{6 }
+\DoxyCodeLine{7 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespaceVultr_1_1MeshImporter}{Vultr::MeshImporter}}}
+\DoxyCodeLine{8 \{}
+\DoxyCodeLine{9     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_1_1MeshImporter_a96b0a910dd097ef97f37efc4cff0f76f}{mesh\_import}}(\mbox{\hyperlink{structVultr_1_1Mesh}{Mesh}} *mesh, \textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1File}{ModelSource}} *source);}
+\DoxyCodeLine{10     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_1_1MeshImporter_a8353a896c30e0fea251f48aaae6d41f0}{mesh\_import\_file}}(\mbox{\hyperlink{structVultr_1_1Mesh}{Mesh}} *mesh, \textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1File}{ModelSource}} *source);}
+\DoxyCodeLine{11     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_1_1MeshImporter_a311bc14c0c4fc14b8ae43f3087113e42}{mesh\_import\_memory}}(\mbox{\hyperlink{structVultr_1_1Mesh}{Mesh}} *mesh, \textcolor{keyword}{const} \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{char} *data, \mbox{\hyperlink{types_8h_a3f7e2bcbb0b4c338f3c4f6c937cd4234}{u64}} size);}
+\DoxyCodeLine{12     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_1_1MeshImporter_a351135bb0fe1ed456e039d5ca88d123f}{mesh\_load\_gpu}}(\mbox{\hyperlink{structVultr_1_1Mesh}{Mesh}} *mesh);}
+\DoxyCodeLine{13     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_1_1MeshImporter_aa4705235e7262489700e6bdb6655f0be}{init\_quad}}(\mbox{\hyperlink{structVultr_1_1Mesh}{Mesh}} *mesh);}
+\DoxyCodeLine{14     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_1_1MeshImporter_ae2d0aef2e653fcc10d671e0991eea0bd}{init\_skybox}}(\mbox{\hyperlink{structVultr_1_1Mesh}{Mesh}} *mesh);}
+\DoxyCodeLine{15 }
+\DoxyCodeLine{16 \} \textcolor{comment}{// namespace Vultr::MeshImporter}}
+
+\end{DoxyCode}

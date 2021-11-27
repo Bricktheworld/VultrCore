@@ -1,0 +1,208 @@
+\hypertarget{structvtl_1_1DynamicArray}{}\doxysection{vtl\+::Dynamic\+Array\texorpdfstring{$<$}{<} T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold \texorpdfstring{$>$}{>} Struct Template Reference}
+\label{structvtl_1_1DynamicArray}\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+
+
+{\ttfamily \#include $<$dynamic\+\_\+array.\+h$>$}
+
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{structvtl_1_1DynamicArray_a1cc92b20550cf11e6be934f199ced1db}{Dynamic\+Array}} ()
+\item 
+\mbox{\hyperlink{structvtl_1_1DynamicArray_a5474e5efbd03eb52c38362e5dd03bb0a}{Dynamic\+Array}} (T $\ast$array, size\+\_\+t count)
+\item 
+\mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}}$<$ T $>$ \& \mbox{\hyperlink{structvtl_1_1DynamicArray_a9015b018e3c1045828e2f819a0125679}{operator=}} (const \mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}}$<$ T $>$ \&other)=delete
+\item 
+\mbox{\hyperlink{structvtl_1_1DynamicArray_ac0a8b09622044d9c1ba493fde64b256f}{Dynamic\+Array}} (const \mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}}$<$ T $>$ \&other)=delete
+\item 
+\mbox{\hyperlink{structvtl_1_1DynamicArray_a2d1672769d2f4e39d9eb0241473d3d04}{$\sim$\+Dynamic\+Array}} ()
+\item 
+T $\ast$ \mbox{\hyperlink{structvtl_1_1DynamicArray_ac06cbc17c400974f008f36f4b2454ff0}{push\+\_\+back}} (const T \&element)
+\item 
+T $\ast$ \mbox{\hyperlink{structvtl_1_1DynamicArray_af1561715c7a70027af21f43af1fa5498}{insert}} (\mbox{\hyperlink{types_8h_ae9b1af5c037e57a98884758875d3a7c4}{s32}} index, T element)
+\item 
+void \mbox{\hyperlink{structvtl_1_1DynamicArray_a510f22049a05f713da66aa798ea53568}{remove}} (size\+\_\+t index)
+\item 
+void \mbox{\hyperlink{structvtl_1_1DynamicArray_ae75fba1e02ca0c6785f455fcb4aa655f}{remove\+\_\+last}} ()
+\item 
+bool \mbox{\hyperlink{structvtl_1_1DynamicArray_adb4a83f155119af2172c0ef7d2f5a616}{empty}} () const
+\item 
+void \mbox{\hyperlink{structvtl_1_1DynamicArray_acd304d127859617d2a1efe6589d179c0}{clear}} ()
+\item 
+T \& \mbox{\hyperlink{structvtl_1_1DynamicArray_ad2ce8de56a0750d0ce7d1c2d24537b28}{operator\mbox{[}$\,$\mbox{]}}} (int index) const
+\item 
+\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \mbox{\hyperlink{structvtl_1_1DynamicArray_a762ef36cec2f626c7c023f37193f71ea}{begin}} () const
+\item 
+\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \mbox{\hyperlink{structvtl_1_1DynamicArray_a2c520cff3f9d536608e033d42a4df796}{end}} () const
+\end{DoxyCompactItemize}
+\doxysubsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+size\+\_\+t \mbox{\hyperlink{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}{len}} = 0
+\item 
+size\+\_\+t \mbox{\hyperlink{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}{\+\_\+size}} = reserved
+\item 
+\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}} \mbox{\hyperlink{structvtl_1_1DynamicArray_a808eb5f909646648e3c11948a4c72d18}{growth\+\_\+factor}} = (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})growth\+\_\+numerator / (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})growth\+\_\+denominator
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{structvtl_1_1DynamicArray_a97e7b6ae8d9deabf071ad4b298eb1c39}{reallocate}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+T $\ast$ \mbox{\hyperlink{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}{\+\_\+array}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a1cc92b20550cf11e6be934f199ced1db}\label{structvtl_1_1DynamicArray_a1cc92b20550cf11e6be934f199ced1db}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!DynamicArray@{DynamicArray}}
+\index{DynamicArray@{DynamicArray}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{DynamicArray()}{DynamicArray()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+\mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::\mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}} (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a5474e5efbd03eb52c38362e5dd03bb0a}\label{structvtl_1_1DynamicArray_a5474e5efbd03eb52c38362e5dd03bb0a}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!DynamicArray@{DynamicArray}}
+\index{DynamicArray@{DynamicArray}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{DynamicArray()}{DynamicArray()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+\mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::\mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}} (\begin{DoxyParamCaption}\item[{T $\ast$}]{array,  }\item[{size\+\_\+t}]{count }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_ac0a8b09622044d9c1ba493fde64b256f}\label{structvtl_1_1DynamicArray_ac0a8b09622044d9c1ba493fde64b256f}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!DynamicArray@{DynamicArray}}
+\index{DynamicArray@{DynamicArray}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{DynamicArray()}{DynamicArray()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+\mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::\mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}} (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}}$<$ T $>$ \&}]{other }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a2d1672769d2f4e39d9eb0241473d3d04}\label{structvtl_1_1DynamicArray_a2d1672769d2f4e39d9eb0241473d3d04}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!````~DynamicArray@{$\sim$DynamicArray}}
+\index{````~DynamicArray@{$\sim$DynamicArray}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{$\sim$DynamicArray()}{~DynamicArray()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+\mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::$\sim$\mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}} (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a762ef36cec2f626c7c023f37193f71ea}\label{structvtl_1_1DynamicArray_a762ef36cec2f626c7c023f37193f71ea}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!begin@{begin}}
+\index{begin@{begin}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{begin()}{begin()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::begin (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_acd304d127859617d2a1efe6589d179c0}\label{structvtl_1_1DynamicArray_acd304d127859617d2a1efe6589d179c0}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!clear@{clear}}
+\index{clear@{clear}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{clear()}{clear()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+void \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::clear (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_adb4a83f155119af2172c0ef7d2f5a616}\label{structvtl_1_1DynamicArray_adb4a83f155119af2172c0ef7d2f5a616}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!empty@{empty}}
+\index{empty@{empty}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{empty()}{empty()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+bool \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::empty (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a2c520cff3f9d536608e033d42a4df796}\label{structvtl_1_1DynamicArray_a2c520cff3f9d536608e033d42a4df796}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!end@{end}}
+\index{end@{end}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{end()}{end()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+\mbox{\hyperlink{structvtl_1_1DynamicArray_1_1Iterator}{Iterator}} \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::end (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_af1561715c7a70027af21f43af1fa5498}\label{structvtl_1_1DynamicArray_af1561715c7a70027af21f43af1fa5498}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!insert@{insert}}
+\index{insert@{insert}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{insert()}{insert()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+T $\ast$ \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::insert (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{types_8h_ae9b1af5c037e57a98884758875d3a7c4}{s32}}}]{index,  }\item[{T}]{element }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a9015b018e3c1045828e2f819a0125679}\label{structvtl_1_1DynamicArray_a9015b018e3c1045828e2f819a0125679}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!operator=@{operator=}}
+\index{operator=@{operator=}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+\mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}}$<$ T $>$ \& \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::operator= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}}$<$ T $>$ \&}]{other }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_ad2ce8de56a0750d0ce7d1c2d24537b28}\label{structvtl_1_1DynamicArray_ad2ce8de56a0750d0ce7d1c2d24537b28}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!operator\mbox{[}\mbox{]}@{operator[]}}
+\index{operator\mbox{[}\mbox{]}@{operator[]}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{operator[]()}{operator[]()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+T \& \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::operator\mbox{[}$\,$\mbox{]} (\begin{DoxyParamCaption}\item[{int}]{index }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_ac06cbc17c400974f008f36f4b2454ff0}\label{structvtl_1_1DynamicArray_ac06cbc17c400974f008f36f4b2454ff0}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!push\_back@{push\_back}}
+\index{push\_back@{push\_back}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{push\_back()}{push\_back()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+T $\ast$ \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::push\+\_\+back (\begin{DoxyParamCaption}\item[{const T \&}]{element }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a97e7b6ae8d9deabf071ad4b298eb1c39}\label{structvtl_1_1DynamicArray_a97e7b6ae8d9deabf071ad4b298eb1c39}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!reallocate@{reallocate}}
+\index{reallocate@{reallocate}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{reallocate()}{reallocate()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+void \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::reallocate (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a510f22049a05f713da66aa798ea53568}\label{structvtl_1_1DynamicArray_a510f22049a05f713da66aa798ea53568}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!remove@{remove}}
+\index{remove@{remove}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{remove()}{remove()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+void \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::remove (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{index }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_ae75fba1e02ca0c6785f455fcb4aa655f}\label{structvtl_1_1DynamicArray_ae75fba1e02ca0c6785f455fcb4aa655f}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!remove\_last@{remove\_last}}
+\index{remove\_last@{remove\_last}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{remove\_last()}{remove\_last()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+void \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::remove\+\_\+last (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Field Documentation}
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}\label{structvtl_1_1DynamicArray_a1918868714866e60f286d513b2611d7d}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!\_array@{\_array}}
+\index{\_array@{\_array}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{\_array}{\_array}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+T$\ast$ \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::\+\_\+array\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}\label{structvtl_1_1DynamicArray_a7059b9dd36ed39e84c8da544a829c272}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!\_size@{\_size}}
+\index{\_size@{\_size}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{\_size}{\_size}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+size\+\_\+t \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::\+\_\+size = reserved}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a808eb5f909646648e3c11948a4c72d18}\label{structvtl_1_1DynamicArray_a808eb5f909646648e3c11948a4c72d18}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!growth\_factor@{growth\_factor}}
+\index{growth\_factor@{growth\_factor}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{growth\_factor}{growth\_factor}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}} \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::growth\+\_\+factor = (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})growth\+\_\+numerator / (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})growth\+\_\+denominator}
+
+\mbox{\Hypertarget{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}\label{structvtl_1_1DynamicArray_a3dfeab50dbbeec56b90584d35c24b617}} 
+\index{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}!len@{len}}
+\index{len@{len}!vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$@{vtl::DynamicArray$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold $>$}}
+\doxysubsubsection{\texorpdfstring{len}{len}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30$>$ \\
+size\+\_\+t \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl\+::\+Dynamic\+Array}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold $>$\+::len = 0}
+
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/types/\mbox{\hyperlink{dynamic__array_8h}{dynamic\+\_\+array.\+h}}\end{DoxyCompactItemize}

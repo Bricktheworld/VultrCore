@@ -1,0 +1,329 @@
+\hypertarget{resource__manager_8h_source}{}\doxysection{resource\+\_\+manager.\+h}
+\label{resource__manager_8h_source}\index{src/filesystem/resource\_manager.h@{src/filesystem/resource\_manager.h}}
+\mbox{\hyperlink{resource__manager_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{comment}{// TODO: Reimplement using custom hashmap}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{3 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{virtual__filesystem_8h}{filesystem/virtual\_filesystem.h}}>}}
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{texture_8h}{render/types/texture.h}}>}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{shader_8h}{render/types/shader.h}}>}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{mesh_8h}{render/types/mesh.h}}>}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{queue_8h}{types/queue.h}}>}}
+\DoxyCodeLine{8 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{dynamic__array_8h}{types/dynamic\_array.h}}>}}
+\DoxyCodeLine{9 }
+\DoxyCodeLine{10 \textcolor{keyword}{namespace }\mbox{\hyperlink{namespaceVultr}{Vultr}}}
+\DoxyCodeLine{11 \{}
+\DoxyCodeLine{12     \textcolor{keyword}{enum struct} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8}{ResourceType}} : \mbox{\hyperlink{types_8h_a92c50087ca0e64fa93fc59402c55f8ca}{u8}}}
+\DoxyCodeLine{13     \{}
+\DoxyCodeLine{14         \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8accc0377a8afbf50e7094f5c23a8af223}{INVALID}} = 0x0,}
+\DoxyCodeLine{15         \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a3f92f542bd9ec48f912b9350e22736ac}{TEXTURE}} = 0x1,}
+\DoxyCodeLine{16         \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8aa05d35337eb28027e70aef2ea40ff1df}{SHADER}}  = 0x2,}
+\DoxyCodeLine{17         \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a5b65fe46c5dd90ebcec69c472c3be1d9}{MESH}}    = 0x4,}
+\DoxyCodeLine{18         \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a4aaf23261cd3bd2064183cf1b53f1023}{FONT}}    = 0x8,}
+\DoxyCodeLine{19     \};}
+\DoxyCodeLine{20 }
+\DoxyCodeLine{21     \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{22     \textcolor{keyword}{constexpr} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8}{ResourceType}} \mbox{\hyperlink{namespaceVultr_a98962366b5101190834e518214a721cd}{get\_resource\_type}}();}
+\DoxyCodeLine{23 }
+\DoxyCodeLine{24     \textcolor{keyword}{template} <>}
+\DoxyCodeLine{25     \textcolor{keyword}{inline} \textcolor{keyword}{constexpr} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8}{ResourceType}} \mbox{\hyperlink{namespaceVultr_aaf455c8fdb4a36242e2cfdc3f37f50ea}{get\_resource\_type<Texture>}}()}
+\DoxyCodeLine{26     \{}
+\DoxyCodeLine{27         \textcolor{keywordflow}{return} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a3f92f542bd9ec48f912b9350e22736ac}{ResourceType::TEXTURE}};}
+\DoxyCodeLine{28     \}}
+\DoxyCodeLine{29 }
+\DoxyCodeLine{30     \textcolor{keyword}{template} <>}
+\DoxyCodeLine{31     \textcolor{keyword}{inline} \textcolor{keyword}{constexpr} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8}{ResourceType}} \mbox{\hyperlink{namespaceVultr_ae8b06f426564eb3dc27d0c49d67f4261}{get\_resource\_type<Shader>}}()}
+\DoxyCodeLine{32     \{}
+\DoxyCodeLine{33         \textcolor{keywordflow}{return} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8aa05d35337eb28027e70aef2ea40ff1df}{ResourceType::SHADER}};}
+\DoxyCodeLine{34     \}}
+\DoxyCodeLine{35 }
+\DoxyCodeLine{36     \textcolor{keyword}{template} <>}
+\DoxyCodeLine{37     \textcolor{keyword}{inline} \textcolor{keyword}{constexpr} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8}{ResourceType}} \mbox{\hyperlink{namespaceVultr_a5111238cbaf0f91983598349eddfe29f}{get\_resource\_type<Mesh>}}()}
+\DoxyCodeLine{38     \{}
+\DoxyCodeLine{39         \textcolor{keywordflow}{return} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a5b65fe46c5dd90ebcec69c472c3be1d9}{ResourceType::MESH}};}
+\DoxyCodeLine{40     \}}
+\DoxyCodeLine{41 }
+\DoxyCodeLine{42     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{ResourceQueueItem}}}
+\DoxyCodeLine{43     \{}
+\DoxyCodeLine{44         \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8}{ResourceType}} \mbox{\hyperlink{structVultr_1_1ResourceQueueItem_a544a861270e652e509f84d8dbc52803a}{type}} = \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8accc0377a8afbf50e7094f5c23a8af223}{ResourceType::INVALID}};}
+\DoxyCodeLine{45         \mbox{\hyperlink{namespaceVultr_ac96c8797b43eb081c559358c80fc3ba9}{VFileHandle}} \mbox{\hyperlink{structVultr_1_1ResourceQueueItem_ac8f5dd63900ee8f179ee671cd403bafd}{file}}  = 0;}
+\DoxyCodeLine{46         \textcolor{keywordtype}{void} *\mbox{\hyperlink{structVultr_1_1ResourceQueueItem_a9b8f1202aea4f16fa3aef30dd8b0abe4}{temp\_buf}}    = \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{47     \};}
+\DoxyCodeLine{48 }
+\DoxyCodeLine{49     \textcolor{comment}{// Load file data asynchronously on separate thread}}
+\DoxyCodeLine{50     \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{51     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_aa7bab6829a47c88e8d0e9da48c64ad0f}{load\_resource}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1VirtualFilesystem}{VirtualFilesystem}} *vfs, \mbox{\hyperlink{namespaceVultr_ac96c8797b43eb081c559358c80fc3ba9}{VFileHandle}} file, T *resource, \mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{ResourceQueueItem}} *item);}
+\DoxyCodeLine{52 }
+\DoxyCodeLine{53     \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{54     \textcolor{keywordtype}{bool} \mbox{\hyperlink{namespaceVultr_a44bf450bde34382518be08a705214cc7}{finalize\_resource}}(\mbox{\hyperlink{namespaceVultr_ac96c8797b43eb081c559358c80fc3ba9}{VFileHandle}} file, T *data, \textcolor{keywordtype}{void} *buffer);}
+\DoxyCodeLine{55 }
+\DoxyCodeLine{56     \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{57     \textcolor{keywordtype}{void} \mbox{\hyperlink{namespaceVultr_a95af69a1cd1c5b060f380fc61ebf2b59}{free\_resource}}(T *resource);}
+\DoxyCodeLine{58 }
+\DoxyCodeLine{59     \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{60     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1ResourceData}{ResourceData}}}
+\DoxyCodeLine{61     \{}
+\DoxyCodeLine{62         \textcolor{keywordtype}{bool} \mbox{\hyperlink{structVultr_1_1ResourceData_a554f6ce6ca3718c94ec68a581ed6b9e0}{loaded}} = \textcolor{keyword}{false};}
+\DoxyCodeLine{63         \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} \mbox{\hyperlink{structVultr_1_1ResourceData_a521c5a5e1c02de87e8ec94e2917fc31d}{counter}} = 1;}
+\DoxyCodeLine{64         T \mbox{\hyperlink{structVultr_1_1ResourceData_a03f7f20d66d7d2ee400efcf472cc0028}{data}};}
+\DoxyCodeLine{65     \};}
+\DoxyCodeLine{66 }
+\DoxyCodeLine{67     \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{68     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1ResourceCache}{ResourceCache}}}
+\DoxyCodeLine{69     \{}
+\DoxyCodeLine{70         \mbox{\hyperlink{structvtl_1_1DynamicArray}{vtl::DynamicArray<ResourceData<T>}}> \mbox{\hyperlink{structVultr_1_1ResourceCache_a1a8f6a07f3de521b8737f72e220882b9}{cache}};}
+\DoxyCodeLine{71 }
+\DoxyCodeLine{72         \textcolor{comment}{// std::unordered\_map<size\_t, VFileHandle> asset\_to\_index\{\};}}
+\DoxyCodeLine{73         \textcolor{comment}{// std::unordered\_map<VFileHandle, size\_t> index\_to\_asset\{\};}}
+\DoxyCodeLine{74     \};}
+\DoxyCodeLine{75 }
+\DoxyCodeLine{76     \textcolor{keyword}{struct }\mbox{\hyperlink{structVultr_1_1ResourceManager}{ResourceManager}}}
+\DoxyCodeLine{77     \{}
+\DoxyCodeLine{78         \mbox{\hyperlink{structvtl_1_1Queue}{vtl::Queue<ResourceQueueItem>}} \mbox{\hyperlink{structVultr_1_1ResourceManager_a9809a55abf293957479d0760255eb0ca}{free\_queue}};}
+\DoxyCodeLine{79         \mbox{\hyperlink{structvtl_1_1Queue}{vtl::Queue<ResourceQueueItem>}} \mbox{\hyperlink{structVultr_1_1ResourceManager_a559c241340d44079d53282806df6949a}{load\_queue}};}
+\DoxyCodeLine{80         \mbox{\hyperlink{structvtl_1_1Queue}{vtl::Queue<ResourceQueueItem>}} \mbox{\hyperlink{structVultr_1_1ResourceManager_a9cedbd74d701f539d7a4c546c772e663}{finalize\_queue}};}
+\DoxyCodeLine{81 }
+\DoxyCodeLine{82         \mbox{\hyperlink{structVultr_1_1ResourceCache}{ResourceCache<Texture>}} \mbox{\hyperlink{structVultr_1_1ResourceManager_aa92c8efc1789ad1d667b997af014af5a}{texture\_cache}};}
+\DoxyCodeLine{83         \mbox{\hyperlink{structVultr_1_1ResourceCache}{ResourceCache<Shader>}} \mbox{\hyperlink{structVultr_1_1ResourceManager_a3545742246c4953dd00c6271321fbb9a}{shader\_cache}};}
+\DoxyCodeLine{84         \mbox{\hyperlink{structVultr_1_1ResourceCache}{ResourceCache<Mesh>}} \mbox{\hyperlink{structVultr_1_1ResourceManager_aaf45c300db4f0b00a107b52979931c34}{mesh\_cache}};}
+\DoxyCodeLine{85 }
+\DoxyCodeLine{86         \mbox{\hyperlink{namespacevtl_adc91b7ec14024659cb575eeabc7f0d77}{vtl::mutex}} \mbox{\hyperlink{structVultr_1_1ResourceManager_ae0b528bdc43f06a581a47ef000f83041}{mutex}};}
+\DoxyCodeLine{87 }
+\DoxyCodeLine{88         \mbox{\hyperlink{structVultr_1_1ResourceManager_a74629f99a60462038d79a9487503cfb9}{ResourceManager}}()  = \textcolor{keywordflow}{default};}
+\DoxyCodeLine{89         \mbox{\hyperlink{structVultr_1_1ResourceManager_aa387d55d3f8f47f3fbb71e61f9e17292}{\string~ResourceManager}}() = \textcolor{keywordflow}{default};}
+\DoxyCodeLine{90 }
+\DoxyCodeLine{91         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{92         \mbox{\hyperlink{structVultr_1_1ResourceCache}{ResourceCache<T>}} *\mbox{\hyperlink{structVultr_1_1ResourceManager_aaf72d9acce75d3b4f3613cd3aff0faeb}{get\_cache}}();}
+\DoxyCodeLine{93 }
+\DoxyCodeLine{94         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{95         \textcolor{keywordtype}{void} \mbox{\hyperlink{structVultr_1_1ResourceManager_ab4df2bd005405b9bd6e3467988ecea07}{incr}}(\mbox{\hyperlink{namespaceVultr_ac96c8797b43eb081c559358c80fc3ba9}{VFileHandle}} file)}
+\DoxyCodeLine{96         \{}
+\DoxyCodeLine{97             \mbox{\hyperlink{structVultr_1_1ResourceManager_ae0b528bdc43f06a581a47ef000f83041}{mutex}}.lock();}
+\DoxyCodeLine{98 }
+\DoxyCodeLine{99             \textcolor{keyword}{auto} *c = get\_cache<T>();}
+\DoxyCodeLine{100 }
+\DoxyCodeLine{101             \textcolor{keywordflow}{if} (c-\/>asset\_to\_index.find(file) != c-\/>asset\_to\_index.end())}
+\DoxyCodeLine{102             \{}
+\DoxyCodeLine{103                 c-\/>cache[c-\/>asset\_to\_index[file]].counter++;}
+\DoxyCodeLine{104             \}}
+\DoxyCodeLine{105             \textcolor{keywordflow}{else}}
+\DoxyCodeLine{106             \{}
+\DoxyCodeLine{107                 \textcolor{keywordtype}{size\_t} new\_index = c-\/>cache.len;}
+\DoxyCodeLine{108 }
+\DoxyCodeLine{109                 c-\/>asset\_to\_index[file]      = new\_index;}
+\DoxyCodeLine{110                 c-\/>index\_to\_asset[new\_index] = file;}
+\DoxyCodeLine{111 }
+\DoxyCodeLine{112                 c-\/>cache.push\_back(\mbox{\hyperlink{structVultr_1_1ResourceData}{ResourceData<T>}}());}
+\DoxyCodeLine{113                 \mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{ResourceQueueItem}} item;}
+\DoxyCodeLine{114                 item.\mbox{\hyperlink{structVultr_1_1ResourceQueueItem_ac8f5dd63900ee8f179ee671cd403bafd}{file}} = file;}
+\DoxyCodeLine{115                 item.\mbox{\hyperlink{structVultr_1_1ResourceQueueItem_a544a861270e652e509f84d8dbc52803a}{type}} = get\_resource\_type<T>();}
+\DoxyCodeLine{116                 \mbox{\hyperlink{structVultr_1_1ResourceManager_a559c241340d44079d53282806df6949a}{load\_queue}}.push(item);}
+\DoxyCodeLine{117             \}}
+\DoxyCodeLine{118 }
+\DoxyCodeLine{119             \mbox{\hyperlink{structVultr_1_1ResourceManager_ae0b528bdc43f06a581a47ef000f83041}{mutex}}.unlock();}
+\DoxyCodeLine{120         \}}
+\DoxyCodeLine{121 }
+\DoxyCodeLine{122         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{123         \textcolor{keywordtype}{void} \mbox{\hyperlink{structVultr_1_1ResourceManager_a7b848476684aec0928fa0c41595931b0}{decr}}(\mbox{\hyperlink{namespaceVultr_ac96c8797b43eb081c559358c80fc3ba9}{VFileHandle}} file)}
+\DoxyCodeLine{124         \{}
+\DoxyCodeLine{125             \mbox{\hyperlink{structVultr_1_1ResourceManager_ae0b528bdc43f06a581a47ef000f83041}{mutex}}.lock();}
+\DoxyCodeLine{126             \textcolor{keyword}{auto} *c = get\_cache<T>();}
+\DoxyCodeLine{127 }
+\DoxyCodeLine{128             assert(c-\/>asset\_to\_index.find(file) != c-\/>asset\_to\_index.end() \&\& \textcolor{stringliteral}{"{}Attempting to remove nonexistent asset"{}});}
+\DoxyCodeLine{129 }
+\DoxyCodeLine{130             \textcolor{keyword}{auto} *count = \&c-\/>cache[c-\/>asset\_to\_index[file]].counter;}
+\DoxyCodeLine{131 }
+\DoxyCodeLine{132             \textcolor{keywordflow}{if} (*count > 0)}
+\DoxyCodeLine{133             \{}
+\DoxyCodeLine{134                 (*count)-\/-\/;}
+\DoxyCodeLine{135                 \mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{ResourceQueueItem}} item;}
+\DoxyCodeLine{136                 item.\mbox{\hyperlink{structVultr_1_1ResourceQueueItem_ac8f5dd63900ee8f179ee671cd403bafd}{file}} = file;}
+\DoxyCodeLine{137                 item.\mbox{\hyperlink{structVultr_1_1ResourceQueueItem_a544a861270e652e509f84d8dbc52803a}{type}} = get\_resource\_type<T>();}
+\DoxyCodeLine{138                 \mbox{\hyperlink{structVultr_1_1ResourceManager_a9809a55abf293957479d0760255eb0ca}{free\_queue}}.push(item);}
+\DoxyCodeLine{139             \}}
+\DoxyCodeLine{140 }
+\DoxyCodeLine{141             \mbox{\hyperlink{structVultr_1_1ResourceManager_ae0b528bdc43f06a581a47ef000f83041}{mutex}}.unlock();}
+\DoxyCodeLine{142         \}}
+\DoxyCodeLine{143 }
+\DoxyCodeLine{144         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{145         T *\mbox{\hyperlink{structVultr_1_1ResourceManager_a0778d95704b7e890e236a49e1c6dbc17}{get\_asset}}(\mbox{\hyperlink{namespaceVultr_ac96c8797b43eb081c559358c80fc3ba9}{VFileHandle}} file)}
+\DoxyCodeLine{146         \{}
+\DoxyCodeLine{147             \textcolor{keyword}{auto} *c = get\_cache<T>();}
+\DoxyCodeLine{148 }
+\DoxyCodeLine{149             assert(has\_asset<T>(file) \&\& \textcolor{stringliteral}{"{}Retreive nonexistent asset!"{}});}
+\DoxyCodeLine{150             assert(is\_asset\_loaded<T>(file) \&\& \textcolor{stringliteral}{"{}Asset not loaded!"{}});}
+\DoxyCodeLine{151 }
+\DoxyCodeLine{152             \textcolor{keywordflow}{return} \&c-\/>cache[c-\/>asset\_to\_index.at(file)].data;}
+\DoxyCodeLine{153         \}}
+\DoxyCodeLine{154 }
+\DoxyCodeLine{155         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{156         \textcolor{keywordtype}{bool} \mbox{\hyperlink{structVultr_1_1ResourceManager_a737ec64da58c7e645dbbb451fb6a4a8c}{has\_asset}}(\mbox{\hyperlink{namespaceVultr_ac96c8797b43eb081c559358c80fc3ba9}{VFileHandle}} file)}
+\DoxyCodeLine{157         \{}
+\DoxyCodeLine{158             \textcolor{keyword}{auto} *c = get\_cache<T>();}
+\DoxyCodeLine{159             \textcolor{keywordflow}{return} c-\/>asset\_to\_index.find(file) != c-\/>asset\_to\_index.end();}
+\DoxyCodeLine{160         \}}
+\DoxyCodeLine{161 }
+\DoxyCodeLine{162         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{163         \textcolor{keywordtype}{bool} \mbox{\hyperlink{structVultr_1_1ResourceManager_a49d7e11bf4bafc698be00d2c69fe3e5e}{is\_asset\_loaded}}(\mbox{\hyperlink{namespaceVultr_ac96c8797b43eb081c559358c80fc3ba9}{VFileHandle}} file)}
+\DoxyCodeLine{164         \{}
+\DoxyCodeLine{165             \textcolor{keyword}{auto} *c = get\_cache<T>();}
+\DoxyCodeLine{166 }
+\DoxyCodeLine{167             assert(has\_asset<T>(file) \&\& \textcolor{stringliteral}{"{}Nonexistent asset!"{}});}
+\DoxyCodeLine{168             \textcolor{keywordflow}{return} c-\/>cache[c-\/>asset\_to\_index[file]].loaded;}
+\DoxyCodeLine{169         \}}
+\DoxyCodeLine{170 }
+\DoxyCodeLine{171         \textcolor{keywordtype}{void} \mbox{\hyperlink{structVultr_1_1ResourceManager_a48580112f2d7438de93ee1192b96818c}{load\_asset}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1VirtualFilesystem}{VirtualFilesystem}} *vfs, \mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{ResourceQueueItem}} *item)}
+\DoxyCodeLine{172         \{}
+\DoxyCodeLine{173             \mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{ResourceQueueItem}} res;}
+\DoxyCodeLine{174             \textcolor{keywordflow}{switch} (item-\/>\mbox{\hyperlink{structVultr_1_1ResourceQueueItem_a544a861270e652e509f84d8dbc52803a}{type}})}
+\DoxyCodeLine{175             \{}
+\DoxyCodeLine{176                 \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a3f92f542bd9ec48f912b9350e22736ac}{ResourceType::TEXTURE}}:}
+\DoxyCodeLine{177                     internal\_load\_asset<Texture>(vfs, item, \&res);}
+\DoxyCodeLine{178                     \textcolor{keywordflow}{break};}
+\DoxyCodeLine{179                 \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a5b65fe46c5dd90ebcec69c472c3be1d9}{ResourceType::MESH}}:}
+\DoxyCodeLine{180                     internal\_load\_asset<Mesh>(vfs, item, \&res);}
+\DoxyCodeLine{181                     \textcolor{keywordflow}{break};}
+\DoxyCodeLine{182                 \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8aa05d35337eb28027e70aef2ea40ff1df}{ResourceType::SHADER}}:}
+\DoxyCodeLine{183                     internal\_load\_asset<Shader>(vfs, item, \&res);}
+\DoxyCodeLine{184                     \textcolor{keywordflow}{break};}
+\DoxyCodeLine{185                 \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a4aaf23261cd3bd2064183cf1b53f1023}{ResourceType::FONT}}:}
+\DoxyCodeLine{186                     assert(item-\/>\mbox{\hyperlink{structVultr_1_1ResourceQueueItem_a544a861270e652e509f84d8dbc52803a}{type}} != \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a4aaf23261cd3bd2064183cf1b53f1023}{ResourceType::FONT}} \&\& \textcolor{stringliteral}{"{}Not implemented!"{}});}
+\DoxyCodeLine{187                     \textcolor{keywordflow}{break};}
+\DoxyCodeLine{188                 \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8accc0377a8afbf50e7094f5c23a8af223}{ResourceType::INVALID}}:}
+\DoxyCodeLine{189                 \textcolor{keywordflow}{default}:}
+\DoxyCodeLine{190                     assert(item-\/>\mbox{\hyperlink{structVultr_1_1ResourceQueueItem_a544a861270e652e509f84d8dbc52803a}{type}} != \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8accc0377a8afbf50e7094f5c23a8af223}{ResourceType::INVALID}} \&\& \textcolor{stringliteral}{"{}Attempting to free invalid type!"{}});}
+\DoxyCodeLine{191                     \textcolor{keywordflow}{break};}
+\DoxyCodeLine{192             \}}
+\DoxyCodeLine{193 }
+\DoxyCodeLine{194             \textcolor{keywordflow}{if} (res.\mbox{\hyperlink{structVultr_1_1ResourceQueueItem_a544a861270e652e509f84d8dbc52803a}{type}} != \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8accc0377a8afbf50e7094f5c23a8af223}{ResourceType::INVALID}})}
+\DoxyCodeLine{195             \{}
+\DoxyCodeLine{196                 \mbox{\hyperlink{structVultr_1_1ResourceManager_a9cedbd74d701f539d7a4c546c772e663}{finalize\_queue}}.push(res);}
+\DoxyCodeLine{197             \}}
+\DoxyCodeLine{198         \}}
+\DoxyCodeLine{199 }
+\DoxyCodeLine{200         \textcolor{keywordtype}{void} \mbox{\hyperlink{structVultr_1_1ResourceManager_aa1c3d2ae38bad64271df3198244e8b18}{finalize\_assets}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1VirtualFilesystem}{VirtualFilesystem}} *vfs)}
+\DoxyCodeLine{201         \{}
+\DoxyCodeLine{202             \textcolor{keywordflow}{while} (!\mbox{\hyperlink{structVultr_1_1ResourceManager_a9cedbd74d701f539d7a4c546c772e663}{finalize\_queue}}.empty())}
+\DoxyCodeLine{203             \{}
+\DoxyCodeLine{204                 \textcolor{keyword}{auto} item = *\mbox{\hyperlink{structVultr_1_1ResourceManager_a9cedbd74d701f539d7a4c546c772e663}{finalize\_queue}}.front();}
+\DoxyCodeLine{205                 \mbox{\hyperlink{structVultr_1_1ResourceManager_a9cedbd74d701f539d7a4c546c772e663}{finalize\_queue}}.pop();}
+\DoxyCodeLine{206                 \textcolor{keywordflow}{switch} (item.type)}
+\DoxyCodeLine{207                 \{}
+\DoxyCodeLine{208                     \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a3f92f542bd9ec48f912b9350e22736ac}{ResourceType::TEXTURE}}:}
+\DoxyCodeLine{209                         internal\_finalize\_asset<Texture>(vfs, \&item);}
+\DoxyCodeLine{210                         \textcolor{keywordflow}{break};}
+\DoxyCodeLine{211                     \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a5b65fe46c5dd90ebcec69c472c3be1d9}{ResourceType::MESH}}:}
+\DoxyCodeLine{212                         internal\_finalize\_asset<Mesh>(vfs, \&item);}
+\DoxyCodeLine{213                         \textcolor{keywordflow}{break};}
+\DoxyCodeLine{214                     \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8aa05d35337eb28027e70aef2ea40ff1df}{ResourceType::SHADER}}:}
+\DoxyCodeLine{215                         internal\_finalize\_asset<Shader>(vfs, \&item);}
+\DoxyCodeLine{216                         \textcolor{keywordflow}{break};}
+\DoxyCodeLine{217                     \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a4aaf23261cd3bd2064183cf1b53f1023}{ResourceType::FONT}}:}
+\DoxyCodeLine{218                         assert(item.type != \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a4aaf23261cd3bd2064183cf1b53f1023}{ResourceType::FONT}} \&\& \textcolor{stringliteral}{"{}Not implemented!"{}});}
+\DoxyCodeLine{219                         \textcolor{keywordflow}{break};}
+\DoxyCodeLine{220                     \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8accc0377a8afbf50e7094f5c23a8af223}{ResourceType::INVALID}}:}
+\DoxyCodeLine{221                     \textcolor{keywordflow}{default}:}
+\DoxyCodeLine{222                         assert(item.type != \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8accc0377a8afbf50e7094f5c23a8af223}{ResourceType::INVALID}} \&\& \textcolor{stringliteral}{"{}Attempting to free invalid type!"{}});}
+\DoxyCodeLine{223                         \textcolor{keywordflow}{break};}
+\DoxyCodeLine{224                 \}}
+\DoxyCodeLine{225             \}}
+\DoxyCodeLine{226         \}}
+\DoxyCodeLine{227 }
+\DoxyCodeLine{228         \textcolor{keywordtype}{void} \mbox{\hyperlink{structVultr_1_1ResourceManager_a39cc1fa7909ae0853131e647a523bd62}{garbage\_collect}}()}
+\DoxyCodeLine{229         \{}
+\DoxyCodeLine{230             \textcolor{comment}{// TODO: Dirty hack, this is not how this should be solved. This makes it so that if anything AT ALL is being queued to be loaded, then we can't remove any assets. The proper way of doing this would be}}
+\DoxyCodeLine{231             \textcolor{comment}{// to allow garbage collection only when we are not actively loading any assets, however I'm not versed enough in threading to know how to solve this properly.}}
+\DoxyCodeLine{232             \textcolor{keywordflow}{if} (\mbox{\hyperlink{structVultr_1_1ResourceManager_a559c241340d44079d53282806df6949a}{load\_queue}}.empty())}
+\DoxyCodeLine{233             \{}
+\DoxyCodeLine{234                 \textcolor{keywordflow}{while} (!\mbox{\hyperlink{structVultr_1_1ResourceManager_a9809a55abf293957479d0760255eb0ca}{free\_queue}}.empty())}
+\DoxyCodeLine{235                 \{}
+\DoxyCodeLine{236                     \textcolor{keyword}{auto} item = *\mbox{\hyperlink{structVultr_1_1ResourceManager_a9cedbd74d701f539d7a4c546c772e663}{finalize\_queue}}.front();}
+\DoxyCodeLine{237                     \mbox{\hyperlink{structVultr_1_1ResourceManager_a9cedbd74d701f539d7a4c546c772e663}{finalize\_queue}}.pop();}
+\DoxyCodeLine{238 }
+\DoxyCodeLine{239                     \textcolor{keywordflow}{switch} (item.type)}
+\DoxyCodeLine{240                     \{}
+\DoxyCodeLine{241                         \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a3f92f542bd9ec48f912b9350e22736ac}{ResourceType::TEXTURE}}:}
+\DoxyCodeLine{242                             internal\_garbage\_collect<Texture>(\&item);}
+\DoxyCodeLine{243                             \textcolor{keywordflow}{break};}
+\DoxyCodeLine{244                         \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a5b65fe46c5dd90ebcec69c472c3be1d9}{ResourceType::MESH}}:}
+\DoxyCodeLine{245                             internal\_garbage\_collect<Mesh>(\&item);}
+\DoxyCodeLine{246                             \textcolor{keywordflow}{break};}
+\DoxyCodeLine{247                         \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8aa05d35337eb28027e70aef2ea40ff1df}{ResourceType::SHADER}}:}
+\DoxyCodeLine{248                             internal\_garbage\_collect<Shader>(\&item);}
+\DoxyCodeLine{249                             \textcolor{keywordflow}{break};}
+\DoxyCodeLine{250                         \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a4aaf23261cd3bd2064183cf1b53f1023}{ResourceType::FONT}}:}
+\DoxyCodeLine{251                             assert(item.type != \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8a4aaf23261cd3bd2064183cf1b53f1023}{ResourceType::FONT}} \&\& \textcolor{stringliteral}{"{}Not implemented!"{}});}
+\DoxyCodeLine{252                             \textcolor{keywordflow}{break};}
+\DoxyCodeLine{253                         \textcolor{keywordflow}{case} \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8accc0377a8afbf50e7094f5c23a8af223}{ResourceType::INVALID}}:}
+\DoxyCodeLine{254                         \textcolor{keywordflow}{default}:}
+\DoxyCodeLine{255                             assert(item.type != \mbox{\hyperlink{namespaceVultr_ac049067d5fcbcca281e627a996730bc8accc0377a8afbf50e7094f5c23a8af223}{ResourceType::INVALID}} \&\& \textcolor{stringliteral}{"{}Attempting to free invalid type!"{}});}
+\DoxyCodeLine{256                             \textcolor{keywordflow}{break};}
+\DoxyCodeLine{257                     \}}
+\DoxyCodeLine{258                 \}}
+\DoxyCodeLine{259             \}}
+\DoxyCodeLine{260         \}}
+\DoxyCodeLine{261 }
+\DoxyCodeLine{262         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{263         \textcolor{keywordtype}{void} \mbox{\hyperlink{structVultr_1_1ResourceManager_a9e18094a16c79a13716f8a529e3bac89}{internal\_garbage\_collect}}(\mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{ResourceQueueItem}} *item)}
+\DoxyCodeLine{264         \{}
+\DoxyCodeLine{265             \textcolor{comment}{// auto *c = get\_cache<T>();}}
+\DoxyCodeLine{266             \textcolor{comment}{// assert(item-\/>type == get\_resource\_type<T>() \&\& "{}You've severely fucked up if you got to this point."{});}}
+\DoxyCodeLine{267             \textcolor{comment}{// auto asset = item-\/>file;}}
+\DoxyCodeLine{268 }
+\DoxyCodeLine{269             \textcolor{comment}{// auto index\_of\_removed\_asset = c-\/>asset\_to\_index[asset];}}
+\DoxyCodeLine{270             \textcolor{comment}{// auto index\_of\_last\_element = c-\/>cache.len -\/ 1;}}
+\DoxyCodeLine{271 }
+\DoxyCodeLine{272             \textcolor{comment}{// // Free the resource first}}
+\DoxyCodeLine{273             \textcolor{comment}{// T *resource = \&c-\/>cache[index\_of\_removed\_asset].data;}}
+\DoxyCodeLine{274             \textcolor{comment}{// free\_resource<T>(resource);}}
+\DoxyCodeLine{275 }
+\DoxyCodeLine{276             \textcolor{comment}{// // Then replace the removed data with data from the last element}}
+\DoxyCodeLine{277             \textcolor{comment}{// c-\/>cache[index\_of\_removed\_asset] = c-\/>cache[index\_of\_last\_element];}}
+\DoxyCodeLine{278 }
+\DoxyCodeLine{279             \textcolor{comment}{// // Update the maps for the newly moved element}}
+\DoxyCodeLine{280             \textcolor{comment}{// VFileHandle asset\_of\_last\_element = c-\/>index\_to\_asset[index\_of\_last\_element];}}
+\DoxyCodeLine{281             \textcolor{comment}{// c-\/>asset\_to\_index[asset\_of\_last\_element] = index\_of\_removed\_asset;}}
+\DoxyCodeLine{282             \textcolor{comment}{// c-\/>index\_to\_asset[index\_of\_removed\_asset] = asset\_of\_last\_element;}}
+\DoxyCodeLine{283 }
+\DoxyCodeLine{284             \textcolor{comment}{// // Remove the asset requested from the maps}}
+\DoxyCodeLine{285             \textcolor{comment}{// c-\/>asset\_to\_index.erase(asset);}}
+\DoxyCodeLine{286             \textcolor{comment}{// c-\/>index\_to\_asset.erase(index\_of\_last\_element);}}
+\DoxyCodeLine{287 }
+\DoxyCodeLine{288             \textcolor{comment}{// // Remove the data from the last asset from our array}}
+\DoxyCodeLine{289             \textcolor{comment}{// c-\/>cache.remove\_last();}}
+\DoxyCodeLine{290         \}}
+\DoxyCodeLine{291 }
+\DoxyCodeLine{292         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{293         \textcolor{keywordtype}{void} \mbox{\hyperlink{structVultr_1_1ResourceManager_aab73bbebcdb10ba8b4ccaeaf86fd43e6}{internal\_load\_asset}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1VirtualFilesystem}{VirtualFilesystem}} *vfs, \mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{ResourceQueueItem}} *item, \mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{ResourceQueueItem}} *res)}
+\DoxyCodeLine{294         \{}
+\DoxyCodeLine{295             \textcolor{keyword}{auto} *c = get\_cache<T>();}
+\DoxyCodeLine{296             \textcolor{comment}{// load\_resource<T>(vfs, item-\/>file, \&c-\/>cache[c-\/>asset\_to\_index[item-\/>file]].data, res);}}
+\DoxyCodeLine{297         \}}
+\DoxyCodeLine{298 }
+\DoxyCodeLine{299         \textcolor{keyword}{template} <\textcolor{keyword}{typename} T>}
+\DoxyCodeLine{300         \textcolor{keywordtype}{void} \mbox{\hyperlink{structVultr_1_1ResourceManager_adadb22be505e513f621d4f4681662501}{internal\_finalize\_asset}}(\textcolor{keyword}{const} \mbox{\hyperlink{structVultr_1_1VirtualFilesystem}{VirtualFilesystem}} *vfs, \mbox{\hyperlink{structVultr_1_1ResourceQueueItem}{ResourceQueueItem}} *item)}
+\DoxyCodeLine{301         \{}
+\DoxyCodeLine{302             \textcolor{keyword}{auto} *c = get\_cache<T>();}
+\DoxyCodeLine{303             \textcolor{comment}{// finalize\_resource<T>(item-\/>file, \&c-\/>cache[c-\/>asset\_to\_index[item-\/>file]].data, item-\/>temp\_buf);}}
+\DoxyCodeLine{304         \}}
+\DoxyCodeLine{305     \};}
+\DoxyCodeLine{306     \textcolor{keyword}{template} <>}
+\DoxyCodeLine{307     \textcolor{keyword}{inline} \mbox{\hyperlink{structVultr_1_1ResourceCache}{ResourceCache<Texture>}} *\mbox{\hyperlink{structVultr_1_1ResourceManager_aaf72d9acce75d3b4f3613cd3aff0faeb}{ResourceManager::get\_cache}}()}
+\DoxyCodeLine{308     \{}
+\DoxyCodeLine{309         \textcolor{keywordflow}{return} \&\mbox{\hyperlink{structVultr_1_1ResourceManager_aa92c8efc1789ad1d667b997af014af5a}{texture\_cache}};}
+\DoxyCodeLine{310     \}}
+\DoxyCodeLine{311 }
+\DoxyCodeLine{312     \textcolor{keyword}{template} <>}
+\DoxyCodeLine{313     \textcolor{keyword}{inline} \mbox{\hyperlink{structVultr_1_1ResourceCache}{ResourceCache<Shader>}} *\mbox{\hyperlink{structVultr_1_1ResourceManager_aaf72d9acce75d3b4f3613cd3aff0faeb}{ResourceManager::get\_cache}}()}
+\DoxyCodeLine{314     \{}
+\DoxyCodeLine{315         \textcolor{keywordflow}{return} \&\mbox{\hyperlink{structVultr_1_1ResourceManager_a3545742246c4953dd00c6271321fbb9a}{shader\_cache}};}
+\DoxyCodeLine{316     \}}
+\DoxyCodeLine{317 }
+\DoxyCodeLine{318     \textcolor{keyword}{template} <>}
+\DoxyCodeLine{319     \textcolor{keyword}{inline} ResourceCache<Mesh> *\mbox{\hyperlink{structVultr_1_1ResourceManager_aaf72d9acce75d3b4f3613cd3aff0faeb}{ResourceManager::get\_cache}}()}
+\DoxyCodeLine{320     \{}
+\DoxyCodeLine{321         \textcolor{keywordflow}{return} \&\mbox{\hyperlink{structVultr_1_1ResourceManager_aaf45c300db4f0b00a107b52979931c34}{mesh\_cache}};}
+\DoxyCodeLine{322     \}}
+\DoxyCodeLine{323 \} \textcolor{comment}{// namespace Vultr}}
+
+\end{DoxyCode}

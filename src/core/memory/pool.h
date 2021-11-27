@@ -27,7 +27,7 @@ namespace Vultr
      *
      * @error The method will return nullptr if the memory arena has run out of memory and cannot allocate.
      *
-     * @no_thread_saftey
+     * @no_thread_safety
      */
     PoolAllocator *init_pool_allocator(MemoryArena *arena, u32 allocation_size, u32 count);
 
@@ -44,7 +44,7 @@ namespace Vultr
      *
      * @error The method will return nullptr if the memory arena has run out of memory and cannot allocate.
      *
-     * @no_thread_saftey
+     * @no_thread_safety
      */
     PoolAllocator *init_pool_allocator(MemoryArena *arena, PoolRegion *regions, u32 region_count);
 

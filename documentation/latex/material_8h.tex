@@ -1,0 +1,71 @@
+\hypertarget{material_8h}{}\doxysection{src/render/types/material.h File Reference}
+\label{material_8h}\index{src/render/types/material.h@{src/render/types/material.h}}
+{\ttfamily \#include $<$functional$>$}\newline
+{\ttfamily \#include $<$types/types.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}shader.\+h\char`\"{}}\newline
+{\ttfamily \#include $<$filesystem/file.\+h$>$}\newline
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1Color}{Vultr\+::\+Color}}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1MaterialUniform}{Vultr\+::\+Material\+Uniform}}
+\item 
+union \mbox{\hyperlink{unionVultr_1_1MaterialUniform_1_1Data}{Vultr\+::\+Material\+Uniform\+::\+Data}}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1Material}{Vultr\+::\+Material}}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1Material_1_1TextureResource}{Vultr\+::\+Material\+::\+Texture\+Resource}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceVultr}{Vultr}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{material_8h_a4d68c6261a34b0ebce406bd262042e12}{MAX\+\_\+\+UNIFORMS}}~16
+\item 
+\#define \mbox{\hyperlink{material_8h_ad9baa7b67cf0e61b398d500b8b76fbf3}{MAX\+\_\+\+MATERIAL\+\_\+\+TEXTURES}}~8
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{namespaceVultr_a591f4484a42b0afaed79f36ff93fdcb9}{Vultr\+::bool\+\_\+uniform}} (Material \&material, const char $\ast$location, bool value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_aa026f125c79fe9130fe4d45e0615a342}{Vultr\+::u32\+\_\+uniform}} (Material \&material, const char $\ast$location, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a1b362439961081315d2fe55822fb64ae}{Vultr\+::s32\+\_\+uniform}} (Material \&material, const char $\ast$location, \mbox{\hyperlink{types_8h_ae9b1af5c037e57a98884758875d3a7c4}{s32}} value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a1f294e72c067a7438e1b4d35e815971b}{Vultr\+::f32\+\_\+uniform}} (Material \&material, const char $\ast$location, \mbox{\hyperlink{types_8h_a5f6906312a689f27d70e9d086649d3fd}{f32}} value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_ab8187c6f014a48f4b9670cfbff5e304d}{Vultr\+::vec2\+\_\+uniform}} (Material \&material, const char $\ast$location, Vec2 value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_afc504b2a8b6075645e1297f4a5939392}{Vultr\+::vec3\+\_\+uniform}} (Material \&material, const char $\ast$location, Vec3 value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a4c2bcdf3c5f946bc71f39dbbc959e3e2}{Vultr\+::vec4\+\_\+uniform}} (Material \&material, const char $\ast$location, Vec4 value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_adae558477ac781fc8cb7f969946dd5e4}{Vultr\+::color\+\_\+uniform}} (Material \&material, const char $\ast$location, Color value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a491ba8412a0e48bf17cba66c0ed99918}{Vultr\+::mat4\+\_\+uniform}} (Material \&material, const char $\ast$location, Mat4 value)
+\item 
+void \mbox{\hyperlink{namespaceVultr_aa8523a5850cfe45ed449319aab383e3c}{Vultr\+::texture\+\_\+uniform}} (Material \&material, const char $\ast$location, const Texture\+Source \&source, const char $\ast$is\+\_\+set\+\_\+location=\char`\"{}\char`\"{})
+\item 
+void \mbox{\hyperlink{namespaceVultr_a3d2f81285202956e8779fe70d73c0087}{Vultr\+::material\+\_\+bind\+\_\+uniforms}} (const Material \&material, Shader $\ast$shader)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Macro Definition Documentation}
+\mbox{\Hypertarget{material_8h_ad9baa7b67cf0e61b398d500b8b76fbf3}\label{material_8h_ad9baa7b67cf0e61b398d500b8b76fbf3}} 
+\index{material.h@{material.h}!MAX\_MATERIAL\_TEXTURES@{MAX\_MATERIAL\_TEXTURES}}
+\index{MAX\_MATERIAL\_TEXTURES@{MAX\_MATERIAL\_TEXTURES}!material.h@{material.h}}
+\doxysubsubsection{\texorpdfstring{MAX\_MATERIAL\_TEXTURES}{MAX\_MATERIAL\_TEXTURES}}
+{\footnotesize\ttfamily \#define MAX\+\_\+\+MATERIAL\+\_\+\+TEXTURES~8}
+
+\mbox{\Hypertarget{material_8h_a4d68c6261a34b0ebce406bd262042e12}\label{material_8h_a4d68c6261a34b0ebce406bd262042e12}} 
+\index{material.h@{material.h}!MAX\_UNIFORMS@{MAX\_UNIFORMS}}
+\index{MAX\_UNIFORMS@{MAX\_UNIFORMS}!material.h@{material.h}}
+\doxysubsubsection{\texorpdfstring{MAX\_UNIFORMS}{MAX\_UNIFORMS}}
+{\footnotesize\ttfamily \#define MAX\+\_\+\+UNIFORMS~16}
+

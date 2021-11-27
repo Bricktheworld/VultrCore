@@ -19,7 +19,7 @@ namespace Vultr
      *
      * @error The method will return nullptr if the memory arena has run out of memory and cannot allocate.
      *
-     * @no_thread_saftey
+     * @no_thread_safety
      */
     FreeListAllocator *init_free_list_allocator(MemoryArena *arena, size_t size, u8 alignment);
 

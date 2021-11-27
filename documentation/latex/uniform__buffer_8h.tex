@@ -1,0 +1,31 @@
+\hypertarget{uniform__buffer_8h}{}\doxysection{src/render/types/uniform\+\_\+buffer.h File Reference}
+\label{uniform__buffer_8h}\index{src/render/types/uniform\_buffer.h@{src/render/types/uniform\_buffer.h}}
+{\ttfamily \#include $<$types/types.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}shader.\+h\char`\"{}}\newline
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structVultr_1_1UniformBuffer}{Vultr\+::\+Uniform\+Buffer}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \mbox{\hyperlink{namespaceVultr}{Vultr}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{namespaceVultr_a11869be15864d0f376d5deee5b85d738}{Vultr\+::is\+\_\+valid\+\_\+uniform\+\_\+buffer}} (const Uniform\+Buffer \&ubo)
+\item 
+Uniform\+Buffer \mbox{\hyperlink{namespaceVultr_af6b7e04375a95c3863327253de6334e1}{Vultr\+::invalid\+\_\+uniform\+\_\+buffer}} ()
+\item 
+Uniform\+Buffer \mbox{\hyperlink{namespaceVultr_ab8a8047598898a9133cfd070d6a9a048}{Vultr\+::new\+\_\+uniform\+\_\+buffer}} (const char $\ast$label, \mbox{\hyperlink{types_8h_ace9d960e74685e2cd84b36132dbbf8aa}{u16}} binding\+\_\+point, size\+\_\+t size)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a6698c60967e3332b590d426cf054182d}{Vultr\+::delete\+\_\+uniform\+\_\+buffer}} (const Uniform\+Buffer \&ubo)
+\item 
+void \mbox{\hyperlink{namespaceVultr_a6fb1a1ee0ef66a102f1b94d1e4b0ae05}{Vultr\+::bind\+\_\+uniform\+\_\+buffer}} (const Uniform\+Buffer \&ubo)
+\item 
+void \mbox{\hyperlink{namespaceVultr_add6f21f15a8616b45bd42497e4d3dd23}{Vultr\+::unbind\+\_\+all\+\_\+uniform\+\_\+buffers}} ()
+\item 
+void \mbox{\hyperlink{namespaceVultr_a71834943d83e8c5e5a358dd38dbb1f9b}{Vultr\+::attach\+\_\+shader\+\_\+uniform\+\_\+buffer}} (Shader $\ast$shader, Uniform\+Buffer \&ubo)
+\end{DoxyCompactItemize}

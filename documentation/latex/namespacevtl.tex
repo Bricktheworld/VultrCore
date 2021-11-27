@@ -1,0 +1,132 @@
+\hypertarget{namespacevtl}{}\doxysection{vtl Namespace Reference}
+\label{namespacevtl}\index{vtl@{vtl}}
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}
+\item 
+struct \mbox{\hyperlink{structvtl_1_1DynamicArray}{Dynamic\+Array}}
+\item 
+struct \mbox{\hyperlink{structvtl_1_1ListNode}{List\+Node}}
+\item 
+struct \mbox{\hyperlink{structvtl_1_1Queue}{Queue}}
+\item 
+struct \mbox{\hyperlink{structvtl_1_1Stack}{Stack}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef std\+::thread \mbox{\hyperlink{namespacevtl_ab480726395164a1737af7491af9540cb}{thread}}
+\item 
+typedef std\+::mutex \mbox{\hyperlink{namespacevtl_adc91b7ec14024659cb575eeabc7f0d77}{mutex}}
+\item 
+typedef std\+::condition\+\_\+variable \mbox{\hyperlink{namespacevtl_a7d8495d7884ddb7182a5b2db93ab0915}{condition\+\_\+variable}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename T $>$ }\\\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \mbox{\hyperlink{namespacevtl_a69249894e75c3a75d18e9c6101a01419}{new\+\_\+doubly\+\_\+linked\+\_\+list}} ()
+\item 
+{\footnotesize template$<$typename T $>$ }\\\mbox{\hyperlink{structvtl_1_1ListNode}{List\+Node}}$<$ T $>$ $\ast$ \mbox{\hyperlink{namespacevtl_a4f7df5578e37246807a8a41f7d7a0131}{doubly\+\_\+linked\+\_\+list\+\_\+push\+\_\+back}} (\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&l, T value)
+\item 
+{\footnotesize template$<$typename T $>$ }\\\mbox{\hyperlink{structvtl_1_1ListNode}{List\+Node}}$<$ T $>$ $\ast$ \mbox{\hyperlink{namespacevtl_acd766e206d37851efe69acef38a5cb03}{doubly\+\_\+linked\+\_\+list\+\_\+insert}} (\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&l, T value, int index)
+\item 
+{\footnotesize template$<$typename T $>$ }\\T \mbox{\hyperlink{namespacevtl_adaac35b5ea1af05e8698f5e4134f292e}{doubly\+\_\+linked\+\_\+list\+\_\+delete}} (\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&l, int index)
+\item 
+{\footnotesize template$<$typename T $>$ }\\bool \mbox{\hyperlink{namespacevtl_a9a549b637d082c5aa38fbe7ae6fd4f8c}{doubly\+\_\+linked\+\_\+list\+\_\+exists}} (\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&l, T value)
+\item 
+{\footnotesize template$<$typename T $>$ }\\int \mbox{\hyperlink{namespacevtl_af297130d0d8d6357e1f5cdfd8888ee8c}{doubly\+\_\+linked\+\_\+list\+\_\+find}} (\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&l, T value)
+\item 
+{\footnotesize template$<$typename T $>$ }\\T \mbox{\hyperlink{namespacevtl_a99d3d5624cf5bada9e416517dcac3d4d}{doubly\+\_\+linked\+\_\+list\+\_\+delete}} (\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&l, T value)
+\item 
+{\footnotesize template$<$typename T $>$ }\\T \& \mbox{\hyperlink{namespacevtl_a45032a194571b73f26b88844ea11ca17}{doubly\+\_\+linked\+\_\+list\+\_\+get}} (const \mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&l, int index)
+\item 
+{\footnotesize template$<$typename T $>$ }\\\mbox{\hyperlink{types_8h_a91ad9478d81a7aaf2593e8d9c3d06a14}{uint}} \mbox{\hyperlink{namespacevtl_a81c342f7a88d3775ccd06a87722ac1b5}{doubly\+\_\+linked\+\_\+list\+\_\+length}} (\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&l)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Typedef Documentation}
+\mbox{\Hypertarget{namespacevtl_a7d8495d7884ddb7182a5b2db93ab0915}\label{namespacevtl_a7d8495d7884ddb7182a5b2db93ab0915}} 
+\index{vtl@{vtl}!condition\_variable@{condition\_variable}}
+\index{condition\_variable@{condition\_variable}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{condition\_variable}{condition\_variable}}
+{\footnotesize\ttfamily typedef std\+::condition\+\_\+variable \mbox{\hyperlink{namespacevtl_a7d8495d7884ddb7182a5b2db93ab0915}{vtl\+::condition\+\_\+variable}}}
+
+\mbox{\Hypertarget{namespacevtl_adc91b7ec14024659cb575eeabc7f0d77}\label{namespacevtl_adc91b7ec14024659cb575eeabc7f0d77}} 
+\index{vtl@{vtl}!mutex@{mutex}}
+\index{mutex@{mutex}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{mutex}{mutex}}
+{\footnotesize\ttfamily typedef std\+::mutex \mbox{\hyperlink{namespacevtl_adc91b7ec14024659cb575eeabc7f0d77}{vtl\+::mutex}}}
+
+\mbox{\Hypertarget{namespacevtl_ab480726395164a1737af7491af9540cb}\label{namespacevtl_ab480726395164a1737af7491af9540cb}} 
+\index{vtl@{vtl}!thread@{thread}}
+\index{thread@{thread}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{thread}{thread}}
+{\footnotesize\ttfamily typedef std\+::thread \mbox{\hyperlink{namespacevtl_ab480726395164a1737af7491af9540cb}{vtl\+::thread}}}
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{namespacevtl_adaac35b5ea1af05e8698f5e4134f292e}\label{namespacevtl_adaac35b5ea1af05e8698f5e4134f292e}} 
+\index{vtl@{vtl}!doubly\_linked\_list\_delete@{doubly\_linked\_list\_delete}}
+\index{doubly\_linked\_list\_delete@{doubly\_linked\_list\_delete}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{doubly\_linked\_list\_delete()}{doubly\_linked\_list\_delete()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+T vtl\+::doubly\+\_\+linked\+\_\+list\+\_\+delete (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&}]{l,  }\item[{int}]{index }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacevtl_a99d3d5624cf5bada9e416517dcac3d4d}\label{namespacevtl_a99d3d5624cf5bada9e416517dcac3d4d}} 
+\index{vtl@{vtl}!doubly\_linked\_list\_delete@{doubly\_linked\_list\_delete}}
+\index{doubly\_linked\_list\_delete@{doubly\_linked\_list\_delete}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{doubly\_linked\_list\_delete()}{doubly\_linked\_list\_delete()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+T vtl\+::doubly\+\_\+linked\+\_\+list\+\_\+delete (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&}]{l,  }\item[{T}]{value }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacevtl_a9a549b637d082c5aa38fbe7ae6fd4f8c}\label{namespacevtl_a9a549b637d082c5aa38fbe7ae6fd4f8c}} 
+\index{vtl@{vtl}!doubly\_linked\_list\_exists@{doubly\_linked\_list\_exists}}
+\index{doubly\_linked\_list\_exists@{doubly\_linked\_list\_exists}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{doubly\_linked\_list\_exists()}{doubly\_linked\_list\_exists()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+bool vtl\+::doubly\+\_\+linked\+\_\+list\+\_\+exists (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&}]{l,  }\item[{T}]{value }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacevtl_af297130d0d8d6357e1f5cdfd8888ee8c}\label{namespacevtl_af297130d0d8d6357e1f5cdfd8888ee8c}} 
+\index{vtl@{vtl}!doubly\_linked\_list\_find@{doubly\_linked\_list\_find}}
+\index{doubly\_linked\_list\_find@{doubly\_linked\_list\_find}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{doubly\_linked\_list\_find()}{doubly\_linked\_list\_find()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+int vtl\+::doubly\+\_\+linked\+\_\+list\+\_\+find (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&}]{l,  }\item[{T}]{value }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacevtl_a45032a194571b73f26b88844ea11ca17}\label{namespacevtl_a45032a194571b73f26b88844ea11ca17}} 
+\index{vtl@{vtl}!doubly\_linked\_list\_get@{doubly\_linked\_list\_get}}
+\index{doubly\_linked\_list\_get@{doubly\_linked\_list\_get}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{doubly\_linked\_list\_get()}{doubly\_linked\_list\_get()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+T \& vtl\+::doubly\+\_\+linked\+\_\+list\+\_\+get (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&}]{l,  }\item[{int}]{index }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacevtl_acd766e206d37851efe69acef38a5cb03}\label{namespacevtl_acd766e206d37851efe69acef38a5cb03}} 
+\index{vtl@{vtl}!doubly\_linked\_list\_insert@{doubly\_linked\_list\_insert}}
+\index{doubly\_linked\_list\_insert@{doubly\_linked\_list\_insert}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{doubly\_linked\_list\_insert()}{doubly\_linked\_list\_insert()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{structvtl_1_1ListNode}{List\+Node}}$<$ T $>$ $\ast$ vtl\+::doubly\+\_\+linked\+\_\+list\+\_\+insert (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&}]{l,  }\item[{T}]{value,  }\item[{int}]{index }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacevtl_a81c342f7a88d3775ccd06a87722ac1b5}\label{namespacevtl_a81c342f7a88d3775ccd06a87722ac1b5}} 
+\index{vtl@{vtl}!doubly\_linked\_list\_length@{doubly\_linked\_list\_length}}
+\index{doubly\_linked\_list\_length@{doubly\_linked\_list\_length}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{doubly\_linked\_list\_length()}{doubly\_linked\_list\_length()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{types_8h_a91ad9478d81a7aaf2593e8d9c3d06a14}{uint}} vtl\+::doubly\+\_\+linked\+\_\+list\+\_\+length (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&}]{l }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacevtl_a4f7df5578e37246807a8a41f7d7a0131}\label{namespacevtl_a4f7df5578e37246807a8a41f7d7a0131}} 
+\index{vtl@{vtl}!doubly\_linked\_list\_push\_back@{doubly\_linked\_list\_push\_back}}
+\index{doubly\_linked\_list\_push\_back@{doubly\_linked\_list\_push\_back}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{doubly\_linked\_list\_push\_back()}{doubly\_linked\_list\_push\_back()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{structvtl_1_1ListNode}{List\+Node}}$<$ T $>$ $\ast$ vtl\+::doubly\+\_\+linked\+\_\+list\+\_\+push\+\_\+back (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ \&}]{l,  }\item[{T}]{value }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{namespacevtl_a69249894e75c3a75d18e9c6101a01419}\label{namespacevtl_a69249894e75c3a75d18e9c6101a01419}} 
+\index{vtl@{vtl}!new\_doubly\_linked\_list@{new\_doubly\_linked\_list}}
+\index{new\_doubly\_linked\_list@{new\_doubly\_linked\_list}!vtl@{vtl}}
+\doxysubsubsection{\texorpdfstring{new\_doubly\_linked\_list()}{new\_doubly\_linked\_list()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{structvtl_1_1DoublyLinkedList}{Doubly\+Linked\+List}}$<$ T $>$ vtl\+::new\+\_\+doubly\+\_\+linked\+\_\+list (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+

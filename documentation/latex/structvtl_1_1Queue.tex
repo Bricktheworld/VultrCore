@@ -1,0 +1,179 @@
+\hypertarget{structvtl_1_1Queue}{}\doxysection{vtl\+::Queue\texorpdfstring{$<$}{<} T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded \texorpdfstring{$>$}{>} Struct Template Reference}
+\label{structvtl_1_1Queue}\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+
+
+{\ttfamily \#include $<$queue.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{structvtl_1_1Queue_a57676627fa1db451b7938abdc00c4e74}{Queue}} ()
+\item 
+\mbox{\hyperlink{structvtl_1_1Queue_aeef60edf597d55656e0552bd871fda0c}{$\sim$\+Queue}} ()
+\item 
+\mbox{\hyperlink{structvtl_1_1Queue_ab3d1e2a584e03b5bf86609e4390901ca}{Queue}} (const \mbox{\hyperlink{structvtl_1_1Queue}{Queue}} \&)=delete
+\item 
+\mbox{\hyperlink{structvtl_1_1Queue}{Queue}} \& \mbox{\hyperlink{structvtl_1_1Queue_ab93a1972c8b0be7b7f70b500c5c62bb7}{operator=}} (const \mbox{\hyperlink{structvtl_1_1Queue}{Queue}} \&)=delete
+\item 
+T $\ast$ \mbox{\hyperlink{structvtl_1_1Queue_ac0d8cd8850e7eb9f85fa09254a66545e}{front}} ()
+\item 
+void \mbox{\hyperlink{structvtl_1_1Queue_ac408e12246ea5f630d7ba237d9b7823b}{push}} (const T \&item)
+\item 
+void \mbox{\hyperlink{structvtl_1_1Queue_ac8615a1ac48712168f91d826ed741bdb}{pop}} ()
+\item 
+void \mbox{\hyperlink{structvtl_1_1Queue_a625f7cd2db6867c26f27dd8ebb8cd65f}{pop\+\_\+wait}} ()
+\item 
+bool \mbox{\hyperlink{structvtl_1_1Queue_aa5a2a9bd272bc6ea689082d71df72d7d}{empty}} () const
+\item 
+void \mbox{\hyperlink{structvtl_1_1Queue_addae4488b0c2f2da9dc58b0b9a09c9a0}{clear}} ()
+\item 
+void \mbox{\hyperlink{structvtl_1_1Queue_a6d5a8448705b67146f0e4feeab530f03}{\+\_\+reallocate}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+T $\ast$ \mbox{\hyperlink{structvtl_1_1Queue_a5a88c1ab2397ec97e0d72b5423263413}{\+\_\+array}} = nullptr
+\item 
+size\+\_\+t \mbox{\hyperlink{structvtl_1_1Queue_aa63828f1b5f98e7e99a582faf159ad3e}{len}} = 0
+\item 
+size\+\_\+t \mbox{\hyperlink{structvtl_1_1Queue_a7ce9517bbf2fcb6d8ce48a2ed236b8f4}{\+\_\+size}} = reserved
+\item 
+\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}} \mbox{\hyperlink{structvtl_1_1Queue_aba5af9fccdd15aa7183bef9c392af0ef}{growth\+\_\+factor}} = (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})growth\+\_\+numerator / (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})growth\+\_\+denominator
+\item 
+\mbox{\hyperlink{namespacevtl_adc91b7ec14024659cb575eeabc7f0d77}{vtl\+::mutex}} \mbox{\hyperlink{structvtl_1_1Queue_a16d6adf1012891a2648afd0f10dede81}{queue\+\_\+mutex}}
+\item 
+\mbox{\hyperlink{namespacevtl_a7d8495d7884ddb7182a5b2db93ab0915}{vtl\+::condition\+\_\+variable}} \mbox{\hyperlink{structvtl_1_1Queue_a9e45a4a4e0b14e31e36da1a9b235e18b}{queue\+\_\+cond}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{structvtl_1_1Queue_a57676627fa1db451b7938abdc00c4e74}\label{structvtl_1_1Queue_a57676627fa1db451b7938abdc00c4e74}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!Queue@{Queue}}
+\index{Queue@{Queue}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{Queue()}{Queue()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+\mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::\mbox{\hyperlink{structvtl_1_1Queue}{Queue}} (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_aeef60edf597d55656e0552bd871fda0c}\label{structvtl_1_1Queue_aeef60edf597d55656e0552bd871fda0c}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!````~Queue@{$\sim$Queue}}
+\index{````~Queue@{$\sim$Queue}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{$\sim$Queue()}{~Queue()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+\mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::$\sim$\mbox{\hyperlink{structvtl_1_1Queue}{Queue}} (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_ab3d1e2a584e03b5bf86609e4390901ca}\label{structvtl_1_1Queue_ab3d1e2a584e03b5bf86609e4390901ca}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!Queue@{Queue}}
+\index{Queue@{Queue}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{Queue()}{Queue()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+\mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::\mbox{\hyperlink{structvtl_1_1Queue}{Queue}} (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{structvtl_1_1Queue}{Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$ \&}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{structvtl_1_1Queue_a6d5a8448705b67146f0e4feeab530f03}\label{structvtl_1_1Queue_a6d5a8448705b67146f0e4feeab530f03}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!\_reallocate@{\_reallocate}}
+\index{\_reallocate@{\_reallocate}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{\_reallocate()}{\_reallocate()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+void \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::\+\_\+reallocate (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_addae4488b0c2f2da9dc58b0b9a09c9a0}\label{structvtl_1_1Queue_addae4488b0c2f2da9dc58b0b9a09c9a0}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!clear@{clear}}
+\index{clear@{clear}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{clear()}{clear()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+void \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::clear (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_aa5a2a9bd272bc6ea689082d71df72d7d}\label{structvtl_1_1Queue_aa5a2a9bd272bc6ea689082d71df72d7d}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!empty@{empty}}
+\index{empty@{empty}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{empty()}{empty()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+bool \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::empty (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_ac0d8cd8850e7eb9f85fa09254a66545e}\label{structvtl_1_1Queue_ac0d8cd8850e7eb9f85fa09254a66545e}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!front@{front}}
+\index{front@{front}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{front()}{front()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+T $\ast$ \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::front (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_ab93a1972c8b0be7b7f70b500c5c62bb7}\label{structvtl_1_1Queue_ab93a1972c8b0be7b7f70b500c5c62bb7}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!operator=@{operator=}}
+\index{operator=@{operator=}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+\mbox{\hyperlink{structvtl_1_1Queue}{Queue}} \& \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::operator= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{structvtl_1_1Queue}{Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$ \&}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_ac8615a1ac48712168f91d826ed741bdb}\label{structvtl_1_1Queue_ac8615a1ac48712168f91d826ed741bdb}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!pop@{pop}}
+\index{pop@{pop}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{pop()}{pop()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+void \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::pop (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_a625f7cd2db6867c26f27dd8ebb8cd65f}\label{structvtl_1_1Queue_a625f7cd2db6867c26f27dd8ebb8cd65f}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!pop\_wait@{pop\_wait}}
+\index{pop\_wait@{pop\_wait}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{pop\_wait()}{pop\_wait()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+void \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::pop\+\_\+wait (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_ac408e12246ea5f630d7ba237d9b7823b}\label{structvtl_1_1Queue_ac408e12246ea5f630d7ba237d9b7823b}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!push@{push}}
+\index{push@{push}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{push()}{push()}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+void \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::push (\begin{DoxyParamCaption}\item[{const T \&}]{item }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Field Documentation}
+\mbox{\Hypertarget{structvtl_1_1Queue_a5a88c1ab2397ec97e0d72b5423263413}\label{structvtl_1_1Queue_a5a88c1ab2397ec97e0d72b5423263413}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!\_array@{\_array}}
+\index{\_array@{\_array}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{\_array}{\_array}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+T$\ast$ \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::\+\_\+array = nullptr}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_a7ce9517bbf2fcb6d8ce48a2ed236b8f4}\label{structvtl_1_1Queue_a7ce9517bbf2fcb6d8ce48a2ed236b8f4}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!\_size@{\_size}}
+\index{\_size@{\_size}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{\_size}{\_size}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+size\+\_\+t \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::\+\_\+size = reserved}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_aba5af9fccdd15aa7183bef9c392af0ef}\label{structvtl_1_1Queue_aba5af9fccdd15aa7183bef9c392af0ef}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!growth\_factor@{growth\_factor}}
+\index{growth\_factor@{growth\_factor}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{growth\_factor}{growth\_factor}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}} \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::growth\+\_\+factor = (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})growth\+\_\+numerator / (\mbox{\hyperlink{types_8h_a94dab5770726ccbef8c7d026cfbdf8e5}{f64}})growth\+\_\+denominator}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_aa63828f1b5f98e7e99a582faf159ad3e}\label{structvtl_1_1Queue_aa63828f1b5f98e7e99a582faf159ad3e}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!len@{len}}
+\index{len@{len}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{len}{len}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+size\+\_\+t \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::len = 0}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_a9e45a4a4e0b14e31e36da1a9b235e18b}\label{structvtl_1_1Queue_a9e45a4a4e0b14e31e36da1a9b235e18b}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!queue\_cond@{queue\_cond}}
+\index{queue\_cond@{queue\_cond}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{queue\_cond}{queue\_cond}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+\mbox{\hyperlink{namespacevtl_a7d8495d7884ddb7182a5b2db93ab0915}{vtl\+::condition\+\_\+variable}} \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::queue\+\_\+cond}
+
+\mbox{\Hypertarget{structvtl_1_1Queue_a16d6adf1012891a2648afd0f10dede81}\label{structvtl_1_1Queue_a16d6adf1012891a2648afd0f10dede81}} 
+\index{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}!queue\_mutex@{queue\_mutex}}
+\index{queue\_mutex@{queue\_mutex}!vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$@{vtl::Queue$<$ T, reserved, growth\_numerator, growth\_denominator, decay\_percent\_threshold, threaded $>$}}
+\doxysubsubsection{\texorpdfstring{queue\_mutex}{queue\_mutex}}
+{\footnotesize\ttfamily template$<$typename T , size\+\_\+t reserved = 10, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+numerator = 3, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} growth\+\_\+denominator = 2, \mbox{\hyperlink{types_8h_afaa62991928fb9fb18ff0db62a040aba}{u32}} decay\+\_\+percent\+\_\+threshold = 30, bool threaded = false$>$ \\
+\mbox{\hyperlink{namespacevtl_adc91b7ec14024659cb575eeabc7f0d77}{vtl\+::mutex}} \mbox{\hyperlink{structvtl_1_1Queue}{vtl\+::\+Queue}}$<$ T, reserved, growth\+\_\+numerator, growth\+\_\+denominator, decay\+\_\+percent\+\_\+threshold, threaded $>$\+::queue\+\_\+mutex}
+
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/types/\mbox{\hyperlink{queue_8h}{queue.\+h}}\end{DoxyCompactItemize}
