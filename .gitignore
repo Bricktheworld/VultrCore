@@ -1,5 +1,7 @@
 build/
 release/
+documentation/html
+documentation/latex
 VultrHelper
 VultrHelper.exe
 *.generated.h
