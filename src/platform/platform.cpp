@@ -1,4 +1,4 @@
-#ifdef _WIN32
+#if defined _WIN32
 // TODO(Brandon): Add entry point if it not compiling shared library.
 // #include "entry_point/win32_main.cpp"
 #include "memory/win32_memory.cpp"

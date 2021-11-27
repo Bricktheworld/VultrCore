@@ -3,6 +3,7 @@
 
 namespace Vultr
 {
+    struct PoolAllocator;
     namespace Platform
     {
         /**
@@ -61,9 +62,6 @@ namespace Vultr
          * A struct containing platform thread information.
          */
         struct Thread;
-
-        // TODO(Brandon): Implement threading.
-        bool new_thread(Thread *thread);
 
         /**
          * Load a dynamic library into memory.

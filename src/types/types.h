@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <stdlib.h>
 #include <assert.h>
+#include <type_traits>
 
 typedef unsigned int uint;
 typedef uint64_t u64;
