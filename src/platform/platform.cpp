@@ -7,6 +7,7 @@
 // #include "entry_point/linux_main.cpp"
 #include "memory/linux_memory.cpp"
 #include "dynamic_library/linux_dynamic_library.cpp"
+#include "threads/linux_threads.cpp"
 #else
 // TODO(Brandon): Determine what needs to be ported to MacOS.
 #endif

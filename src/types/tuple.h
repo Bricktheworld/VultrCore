@@ -5,52 +5,66 @@
 
 namespace vtl
 {
-    // template <class Fn, typename Arg>
-    // decltype(auto) apply_if_invocable(Fn fn, Arg &&arg)
-    // {
-    //     if constexpr (std::is_invocable_v<Fn, Arg>)
-    //         return fn(std::forward<Arg>(arg));
-    //     else
-    //         return std::forward<Arg>(arg);
-    // }
+    template <size_t i, typename T>
+    struct TupleLeaf
+    {
+        T val;
+        TupleLeaf(const T &val) : val(val) {}
+    };
 
-    // template <typename Tuple, class Fn, size_t... Is>
-    // auto apply_if_impl(Tuple &&t, Fn fn, std::index_sequence<Is...>)
-    // {
-    //     return std::make_tuple(apply_if_invocable(fn, std::get<Is>(std::forward<Tuple>(t)))...);
-    // }
+    template <size_t i, typename... Ts>
+    struct TupleImpl;
 
-    // template <class Tuple, class Fn>
-    // auto apply_if(Tuple &&t, Fn fn)
-    // {
-    //     return apply_if_impl(std::forward<Tuple>(t), fn, std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<Tuple>>>{});
-    // }
+    template <size_t i>
+    struct TupleImpl<i>
+    {
+    };
 
-    // template <bool>
-    // class Select
-    // {
-    //   public:
-    //     template <typename F, typename T>
-    //     T &operator()(F &, T &t) const
-    //     {
-    //         return t;
-    //     }
-    // };
+    template <size_t i, typename CurrT, typename... TailTs>
+    struct TupleImpl<i, CurrT, TailTs...> : public TupleLeaf<i, CurrT>, public TupleImpl<i + 1, TailTs...>
+    {
+        TupleImpl(const CurrT &curr, const TailTs &...rest) : TupleLeaf<i, CurrT>(curr), TupleImpl<i + 1, TailTs...>(rest...) {}
+    };
 
-    // template <>
-    // class Select<true>
-    // {
-    //   public:
-    //     template <typename F, typename T>
-    //     auto operator()(F &f, T &t) const -> decltype(f(t))
-    //     {
-    //         return f(t);
-    //     }
-    // };
+    template <size_t...>
+    struct Sequence
+    {
+    };
 
-    // template <typename Fn, typename Tuple, size_t... Is>
-    // auto apply_if_impl(Tuple t, Fn &&f, std::index_sequence<Is...>)
-    // {
-    //     return std::make_tuple(Select<std::is_same_v<std::string, std::tuple_element_t<Is, Tuple>>>()(f, std::get<Is>(t))...);
-    // }
+    template <size_t N, size_t... S>
+    struct SequenceImpl : SequenceImpl<N - 1, N - 1, S...>
+    {
+    };
+
+    template <size_t... S>
+    struct SequenceImpl<0, S...>
+    {
+        typedef Sequence<S...> type;
+    };
+
+    template <typename... Ts>
+    struct Tuple : TupleImpl<0, Ts...>
+    {
+        Tuple() = default;
+        Tuple(const Ts &...args) : TupleImpl<0, Ts...>(args...) {}
+
+        template <size_t i, typename T>
+        T &get()
+        {
+            return TupleLeaf<i, T>::val;
+        }
+
+        template <typename ReturnT>
+        ReturnT apply(ReturnT (*delegate)(Ts...))
+        {
+            return apply_impl(delegate, typename SequenceImpl<sizeof...(Ts)>::type());
+        }
+
+      private:
+        template <size_t... S, typename ReturnT>
+        ReturnT apply_impl(ReturnT (*delegate)(Ts...), Sequence<S...>)
+        {
+            return delegate(this->get<S, Ts>()...);
+        }
+    };
 } // namespace vtl

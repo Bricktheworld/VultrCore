@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <type_traits>
+#include <atomic>
 
 typedef unsigned int uint;
 typedef uint64_t u64;
@@ -18,6 +19,29 @@ typedef int8_t s8;
 typedef float f32;
 typedef double f64;
 typedef char byte;
+
+// Atomic types.
+typedef std::atomic<unsigned int> atomic_uint;
+typedef std::atomic<uint64_t> atomic_u64;
+typedef std::atomic<uint32_t> atomic_u32;
+typedef std::atomic<uint16_t> atomic_u16;
+typedef std::atomic<uint8_t> atomic_u8;
+typedef std::atomic<int> atomic_int;
+typedef std::atomic<int64_t> atomic_s64;
+typedef std::atomic<int32_t> atomic_s32;
+typedef std::atomic<int16_t> atomic_s16;
+typedef std::atomic<int8_t> atomic_s8;
+
+typedef std::atomic<bool> atomic_bool;
+typedef std::atomic<char> atomic_char;
+typedef std::atomic<signed char> atomic_schar;
+typedef std::atomic<unsigned char> atomic_uchar;
+typedef std::atomic<short> atomic_short;
+typedef std::atomic<unsigned short> atomic_ushort;
+
+typedef std::atomic<intptr_t> atomic_intptr_t;
+typedef std::atomic<uintptr_t> atomic_uintptr_t;
+typedef std::atomic<size_t> atomic_size_t;
 
 #define U8Max 255
 #define U16Max 65535

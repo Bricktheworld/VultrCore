@@ -3,9 +3,10 @@
 
 namespace Vultr
 {
-    struct PoolAllocator;
     namespace Platform
     {
+        struct EntryArgs;
+
         /**
          * A virtually allocated memory block.
          */
@@ -111,4 +112,9 @@ namespace Vultr
         void *dl_load_symbol(void *dll, const char *symbol);
 
     } // namespace Platform
+
+    /**
+     * Main entry point for the vultr engine. This is the cross platform method that must be implemented in a source file.
+     */
+    int vultr_main(Platform::EntryArgs *args);
 } // namespace Vultr
