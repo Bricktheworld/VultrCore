@@ -34,7 +34,7 @@ add_library(${This} STATIC ${Sources})
 set(TargetIncludeDirs src vendor)
 
 if(UNIX)
-  set(Libs GL glfw3 X11 Xxf86vm Xrandr pthread Xi dl freetype ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/LINUX/libassimp.so)
+  set(Libs GL glfw3 X11 Xxf86vm Xrandr pthread Xi dl freetype ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/LINUX/libassimp.so ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/LINUX/libSDL2main.a)
   link_directories(${CMAKE_BINARY_DIR}/res)
   file(GLOB_RECURSE VultrExeSources "src/platform/entry_point/linux_main.cpp")
 endif(UNIX)
