@@ -5,6 +5,7 @@
 namespace Vultr
 {
     struct LinearAllocator;
+    typedef LinearAllocator FrameAllocator;
 
     /**
      * Initialize a new linear allocator. This allocator is best used for memory that is allocated at the start of the program and isn't freed until the end of the program or temporary memory that is allocated once
