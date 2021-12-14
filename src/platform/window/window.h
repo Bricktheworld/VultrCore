@@ -1,4 +1,5 @@
 #pragma once
+#include <types/types.h>
 
 namespace Vultr::Platform
 {
@@ -7,12 +8,12 @@ namespace Vultr::Platform
 
     struct WindowMode
     {
-        int width;
-        int height;
-        int red_bits;
-        int green_bits;
-        int blue_bits;
-        int refresh_rate;
+        u32 width;
+        u32 height;
+        u16 red_bits;
+        u16 green_bits;
+        u16 blue_bits;
+        u8 refresh_rate;
     };
 
     struct WindowHint
@@ -34,8 +35,8 @@ namespace Vultr::Platform
     void window_set_context(Window *window);
     void window_set_hint(int hint, int value);
     WindowMode window_get_mode(Monitor *monitor);
-    // Window *new_window(DisplayMode::Mode mode, Monitor *monitor, const char *title, std::vector<WindowHint> window_hints);
-    // Window *new_window(int width, int height, const char *title, Monitor *monitor, Window *window, std::vector<WindowHint> window_hints);
+    Window *new_window(DisplayMode::Mode mode, Monitor *monitor, const char *title, WindowHint *window_hints, size_t window_hints_len);
+    Window *new_window(int width, int height, const char *title, Monitor *monitor, Window *window, WindowHint *window_hints, size_t window_hints_len);
 
     bool window_should_close(Window *window);
     void swap_buffers(Window *window);

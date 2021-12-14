@@ -3,16 +3,17 @@
 #include <assert.h>
 #include <memory>
 #include "types.h"
+#include <core/memory/vultr_memory.h>
 
 namespace vtl
 {
     template <typename T, size_t reserved = 10, u32 growth_numerator = 3, u32 growth_denominator = 2, u32 decay_percent_threshold = 30>
-    struct DynamicArray
+    struct DynamicArray : Vultr::MemoryStruct
     {
         // Initialize an empty DynamicArray
         // Reserved specifies a _size of the DynamicArray that will be reserved initially
         // which will be empty
-        DynamicArray()
+        DynamicArray(Vultr::Allocator *a) : Vultr::MemoryStruct(a)
         {
             _size = reserved;
             len   = 0;
@@ -22,7 +23,7 @@ namespace vtl
             }
         }
 
-        DynamicArray(T *array, size_t count)
+        DynamicArray(Vultr::Allocator *a, T *array, size_t count) : Vultr::MemoryStruct(a)
         {
             assert(count != 0 && "Count must be greater than 0!");
             assert(array != nullptr && "Array must not be null!");
@@ -207,11 +208,11 @@ namespace vtl
             {
                 if (_array == nullptr)
                 {
-                    // _array = (T *)malloc(_size * sizeof(T));
+                    _array = malloc(_size * sizeof(T));
                 }
                 else
                 {
-                    // _array = (T *)realloc(_array, _size * sizeof(T));
+                    _array = realloc(_array, _size * sizeof(T));
                 }
             }
         }

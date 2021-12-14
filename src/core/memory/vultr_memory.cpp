@@ -1,4 +1,4 @@
-#include "vultr_memory.h"
+#include "vultr_memory_internal.h"
 #include "linear.cpp"
 #include "pool.cpp"
 #include "free_list.cpp"

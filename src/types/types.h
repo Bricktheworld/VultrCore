@@ -115,6 +115,18 @@ typedef std::atomic<size_t> atomic_size_t;
 #define PRODUCTION_ASSERT(condition, message)
 #endif
 
+#ifdef _WIN32
+// TODO(Brandon): Figure out windows assertions.
+#define THROW(message)
+#elif __linux__
+#define THROW(message)                                                                                                                                                                                                \
+    fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                             \
+    fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                          \
+    abort();
+#else
+#define PRODUCTION_ASSERT(condition, message)
+#endif
+
 #define NOT_IMPLEMENTED(message) PRODUCTION_ASSERT(false, message)
 
 #define BIT_IS_HIGH(x, n) (((x) >> (n)) & 1UL)

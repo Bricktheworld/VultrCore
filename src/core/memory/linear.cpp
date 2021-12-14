@@ -2,13 +2,6 @@
 
 namespace Vultr
 {
-    struct LinearAllocator
-    {
-        size_t size;
-        size_t used;
-        void *next = nullptr;
-    };
-
     static void *next_start(LinearAllocator *allocator) { return allocator + 1; }
 
     LinearAllocator *init_linear_allocator(MemoryArena *arena, size_t size)

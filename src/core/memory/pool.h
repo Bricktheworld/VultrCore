@@ -1,10 +1,21 @@
 #pragma once
 #include <types/types.h>
-#include "vultr_memory.h"
+#include "vultr_memory_internal.h"
 
 namespace Vultr
 {
-    struct PoolAllocator;
+    struct PoolSegment;
+
+    /**
+     * Allocator that has segment(s) containing memory blocks of the same size which can be allocated.
+     */
+    struct PoolAllocator : public Allocator
+    {
+        PoolSegment *segments = nullptr;
+        u32 num_segments      = 0;
+
+        PoolAllocator() : Allocator(AllocatorType::Pool) {}
+    };
 
     /**
      * Describes a section of a pool allocator that has a certain chunk size and the number of chunks available to be allocated.

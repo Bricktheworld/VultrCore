@@ -14,12 +14,6 @@ namespace Vultr
         PoolMemoryBlock *free_head = nullptr;
     };
 
-    struct PoolAllocator
-    {
-        PoolSegment *segments = nullptr;
-        u32 num_segments      = 0;
-    };
-
     static void init_pool_segment(PoolSegment *segment) {}
 
     PoolAllocator *init_pool_allocator(MemoryArena *arena, u32 allocation_size, u32 count)

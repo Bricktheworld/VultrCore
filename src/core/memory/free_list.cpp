@@ -1,19 +1,8 @@
-#include "vultr_memory.h"
 #include "free_list.h"
 #include <types/types.h>
 
 namespace Vultr
 {
-    struct FreeListMemoryBlock;
-    struct FreeListAllocator
-    {
-        // TODO(Brandon): Add support for 32 bit alignment (8 bytes)
-        u8 alignment                    = 16;
-        FreeListMemoryBlock *free_root  = nullptr;
-        FreeListMemoryBlock *block_head = nullptr;
-        size_t used                     = 0;
-    };
-
     // Allocated memory does not have any additional fields.
     struct AllocatedMemory
     {

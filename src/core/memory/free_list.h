@@ -1,11 +1,25 @@
 // TODO(Brandon): Update documentation.
 #pragma once
 #include <types/types.h>
-#include "vultr_memory.h"
+#include "vultr_memory_internal.h"
 
 namespace Vultr
 {
-    struct FreeListAllocator;
+    struct FreeListMemoryBlock;
+
+    /**
+     * Memory allocator that can allocate any size with the least fragmentation possible.
+     */
+    struct FreeListAllocator : public Allocator
+    {
+        // TODO(Brandon): Add support for 32 bit alignment (8 bytes)
+        u8 alignment                    = 16;
+        FreeListMemoryBlock *free_root  = nullptr;
+        FreeListMemoryBlock *block_head = nullptr;
+        size_t used                     = 0;
+
+        FreeListAllocator() : Allocator(AllocatorType::FreeList) {}
+    };
 
     /**
      * Initialize a new free list allocator. This allocator is best used for infrequent but large allocations.

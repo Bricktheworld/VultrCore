@@ -1,10 +1,20 @@
 #pragma once
 #include <types/types.h>
-#include "vultr_memory.h"
+#include "vultr_memory_internal.h"
 
 namespace Vultr
 {
-    struct LinearAllocator;
+    /**
+     * Allocator which allocates all memory blocks in O(1) time however memory can only be freed by freeing all allocated memory.
+     */
+    struct LinearAllocator : public Allocator
+    {
+        size_t size;
+        size_t used;
+        void *next = nullptr;
+
+        LinearAllocator() : Allocator(AllocatorType::Linear) {}
+    };
 
     /**
      * Initialize a new linear allocator. This allocator is best used for memory that is allocated at the start of the program and isn't freed until the end of the program or temporary memory that is allocated once
