@@ -1,4 +1,4 @@
-#include "vultr_memory_internal.h"
+#include "vultr_memory.h"
 #include "linear.cpp"
 #include "pool.cpp"
 #include "free_list.cpp"
@@ -55,6 +55,52 @@ namespace Vultr
     {
         ASSERT(arena != nullptr && arena->memory != nullptr, "Invalid memory arena!");
         Platform::virtual_free(arena->memory);
+    }
+
+    void *malloc(Allocator *allocator, size_t size)
+    {
+        ASSERT(allocator != nullptr, "Cannot allocate from an invalid memory allocator!");
+        switch (allocator->type)
+        {
+            case AllocatorType::Linear:
+                return linear_alloc(static_cast<LinearAllocator *>(allocator), size);
+                break;
+            case AllocatorType::Pool:
+                return pool_alloc(static_cast<PoolAllocator *>(allocator), size);
+                break;
+            case AllocatorType::FreeList:
+                return free_list_alloc(static_cast<FreeListAllocator *>(allocator), size);
+                break;
+            case AllocatorType::Stack:
+                NOT_IMPLEMENTED("Stack has not yet been implemented in the engine :(");
+                break;
+            case AllocatorType::None:
+            default:
+                THROW("Invalid memory allocator, how the fuck did you even get here.");
+                return nullptr;
+        }
+    }
+
+    void free(Allocator *allocator, void *memory)
+    {
+        switch (allocator->type)
+        {
+            case AllocatorType::Linear:
+                THROW("You cannot free individual blocks of memory from a linear allocator.");
+                break;
+            case AllocatorType::Pool:
+                pool_free(static_cast<PoolAllocator *>(allocator), memory);
+                break;
+            case AllocatorType::FreeList:
+                free_list_free(static_cast<FreeListAllocator *>(allocator), memory);
+                break;
+            case AllocatorType::Stack:
+                NOT_IMPLEMENTED("Stack has not yet been implemented in the engine :(");
+                break;
+            case AllocatorType::None:
+            default:
+                THROW("Invalid memory allocator, how the fuck did you even get here.");
+        }
     }
 
 } // namespace Vultr
