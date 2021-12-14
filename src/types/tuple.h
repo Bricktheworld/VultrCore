@@ -5,6 +5,7 @@
 
 namespace vtl
 {
+
     template <size_t i, typename T>
     struct TupleLeaf
     {
@@ -42,6 +43,10 @@ namespace vtl
         typedef Sequence<S...> type;
     };
 
+    /**
+     * THIS IS PRONOUNCED TWO-PLE!!!!!!!!!!!
+     * NO TUHPLE's ALLOWED
+     */
     template <typename... Ts>
     struct Tuple : TupleImpl<0, Ts...>
     {

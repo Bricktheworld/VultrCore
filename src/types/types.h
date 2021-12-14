@@ -73,10 +73,13 @@ typedef std::atomic<size_t> atomic_size_t;
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #ifdef DEBUG
-#define ASSERT(condition, message)                                                                                                                                                                                    \
+// clang-format off
+#define ASSERT(condition, message, ...)                                                                                                                                                                               \
     if (!(condition))                                                                                                                                                                                                 \
     {                                                                                                                                                                                                                 \
-        fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                         \
+        fprintf(stderr, "Assertion '");                                                                                                                                                                                \
+        fprintf(stderr, message __VA_OPT__(,) __VA_ARGS__);                                                                                                                                                                     \
+        fprintf(stderr, "' failed.\n");                                                                                                                                                                                \
         fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
         fprintf(stderr, "Press (I)gnore / (D)ebug / (A)bort:\n");                                                                                                                                                     \
         char input = getchar();                                                                                                                                                                                       \
@@ -96,6 +99,7 @@ typedef std::atomic<size_t> atomic_size_t;
                 break;                                                                                                                                                                                                \
         }                                                                                                                                                                                                             \
     }
+// clang-format on
 #else
 #define ASSERT(condition, message)
 #endif
