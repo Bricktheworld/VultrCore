@@ -62,6 +62,11 @@ namespace Vultr::Platform
                 break;
             case DisplayMode::FULLSCREEN:
                 monitor_param = get_monitor_or_primary(monitor);
+                if (width == 0 || height == 0)
+                {
+                    width  = monitor_video_mode->width;
+                    height = monitor_video_mode->height;
+                }
                 break;
             default:
                 break;
