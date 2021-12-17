@@ -1,8 +1,10 @@
 #pragma once
 #include <types/types.h>
+#include "platform_imp.h"
 
 namespace Vultr
 {
+    struct LinearAllocator;
     namespace Platform
     {
         struct EntryArgs;
@@ -110,6 +112,26 @@ namespace Vultr
          * @thread_safe
          */
         void *dl_load_symbol(void *dll, const char *symbol);
+
+        enum struct DisplayMode : u8
+        {
+            WINDOWED            = 0x0,
+            BORDERLESS_WINDOWED = 0x1,
+            FULLSCREEN          = 0x2
+        };
+
+        struct Window;
+        struct Monitor;
+
+        Window *open_window(LinearAllocator *allocator, DisplayMode mode, Monitor *monitor, const char *title, u32 width = 0, u32 height = 0);
+        void change_window_mode(Window *window, DisplayMode mode);
+        void change_window_monitor(Window *window, Monitor *monitor);
+        void change_window_title(Window *window, const char *title);
+        void close_window(Window *window);
+
+        bool window_should_close(Window *window);
+        void swap_buffers(Window *window);
+        void poll_events(Window *window);
 
     } // namespace Platform
 

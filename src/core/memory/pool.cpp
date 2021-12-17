@@ -26,6 +26,7 @@ namespace Vultr
 
         // Designate a region within the memory arena for our allocator.
         auto *allocator = static_cast<PoolAllocator *>(mem_arena_designate(arena, AllocatorType::Pool, sizeof(PoolAllocator) + sizeof(PoolSegment) + size));
+        allocator->type = AllocatorType::Pool;
 
         // If we were unable to allocate the required size, then there is nothing to do.
         if (allocator == nullptr)

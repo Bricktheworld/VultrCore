@@ -3,11 +3,13 @@
 // #include "entry_point/win32_main.cpp"
 #include "memory/win32_memory.cpp"
 #include "dynamic_library/win32_dynamic_library.cpp"
+#include "window/desktop_window.cpp"
 #elif __linux__
 // #include "entry_point/linux_main.cpp"
 #include "memory/linux_memory.cpp"
 #include "dynamic_library/linux_dynamic_library.cpp"
 #include "threads/linux_threads.cpp"
+#include "window/desktop_window.cpp"
 #else
 // TODO(Brandon): Determine what needs to be ported to MacOS.
 #endif

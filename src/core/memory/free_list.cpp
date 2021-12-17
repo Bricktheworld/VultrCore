@@ -355,6 +355,7 @@ namespace Vultr
     {
         // Designate a region within the memory arena for our allocator.
         auto *allocator = static_cast<FreeListAllocator *>(mem_arena_designate(arena, AllocatorType::FreeList, size + sizeof(FreeListAllocator)));
+        allocator->type = AllocatorType::FreeList;
 
         // If we were unable to allocate the required size, then there is nothing to do.
         if (allocator == nullptr)

@@ -4,41 +4,39 @@
 namespace Vultr
 {
 
-    bool is_valid_mesh(const Mesh *mesh)
-    {
-        return mesh->vertices != nullptr;
-    }
+    bool is_valid_mesh(const Mesh *mesh) { return mesh->vertices != nullptr; }
 
     void new_mesh(Mesh *m, Vec3 positions[], Vec2 uvs[], Vec3 normals[], size_t vertex_count, u16 indices[], size_t index_count, bool load_gpu)
     {
-        auto *vertices = static_cast<Vertex *>(malloc(sizeof(Vertex) * vertex_count));
+        // TODO(Brandon): Reimplement.
+        // auto *vertices = static_cast<Vertex *>(malloc(sizeof(Vertex) * vertex_count));
 
-        for (size_t i = 0; i < vertex_count; i++)
-        {
-            vertices[i] = Vertex(positions[i], normals[i], uvs[i]);
-        }
+        // for (size_t i = 0; i < vertex_count; i++)
+        // {
+        //     vertices[i] = Vertex(positions[i], normals[i], uvs[i]);
+        // }
 
-        free(positions);
-        free(uvs);
-        free(normals);
+        // free(positions);
+        // free(uvs);
+        // free(normals);
 
-        m->vertices = vertices;
-        m->vertex_count = vertex_count;
-        m->indices = indices;
-        m->index_count = index_count;
+        // m->vertices     = vertices;
+        // m->vertex_count = vertex_count;
+        // m->indices      = indices;
+        // m->index_count  = index_count;
 
-        if (load_gpu)
-        {
-            mesh_init_gpu(m);
-        }
+        // if (load_gpu)
+        // {
+        //     mesh_init_gpu(m);
+        // }
     }
 
     void new_mesh(Mesh *m, Vertex vertices[], size_t vertex_count, u16 indices[], size_t index_count, bool load_gpu)
     {
-        m->vertices = vertices;
+        m->vertices     = vertices;
         m->vertex_count = vertex_count;
-        m->indices = indices;
-        m->index_count = index_count;
+        m->indices      = indices;
+        m->index_count  = index_count;
         if (load_gpu)
         {
             mesh_init_gpu(m);
@@ -64,12 +62,13 @@ namespace Vultr
 
     void delete_mesh(Mesh *mesh)
     {
-        free(mesh->vertices);
-        free(mesh->indices);
-        mesh->vertices = nullptr;
+        // TODO(Brandon): Reimplement.
+        // free(mesh->vertices);
+        // free(mesh->indices);
+        mesh->vertices     = nullptr;
         mesh->vertex_count = 0;
-        mesh->indices = nullptr;
-        mesh->index_count = 0;
+        mesh->indices      = nullptr;
+        mesh->index_count  = 0;
 
         delete_vertex_array(mesh->vao);
         delete_index_buffer(mesh->ibo);

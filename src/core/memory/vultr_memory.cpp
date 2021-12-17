@@ -2,6 +2,7 @@
 #include "linear.cpp"
 #include "pool.cpp"
 #include "free_list.cpp"
+#include <platform/platform.h>
 
 namespace Vultr
 {

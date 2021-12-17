@@ -1,6 +1,5 @@
 #pragma once
 #include <types/types.h>
-#include <platform/platform.h>
 #include <string.h>
 
 namespace Vultr
@@ -33,6 +32,11 @@ namespace Vultr
      */
 #define MAX_ALLOCATORS 16
 #endif
+
+    namespace Platform
+    {
+        struct PlatformMemoryBlock;
+    }
 
     /**
      * An arena of memory allocated from the OS that can be used for allocators throughout the program.

@@ -17,6 +17,7 @@ namespace Vultr
         allocator->next = next_start(allocator);
         allocator->size = size;
         allocator->used = 0;
+        allocator->type = AllocatorType::Linear;
 
         return allocator;
     }

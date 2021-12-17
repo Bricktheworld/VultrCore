@@ -61,32 +61,33 @@ namespace Vultr
     {
         static void mesh_import_scene(const aiScene *scene, Mesh *mesh)
         {
-            const aiMesh *imported_mesh = scene->mMeshes[0];
-            const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
+            // TODO(Brandon): Reimplement.
+            // const aiMesh *imported_mesh = scene->mMeshes[0];
+            // const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
 
-            Vertex *vertices = static_cast<Vertex *>(malloc(sizeof(Vertex) * imported_mesh->mNumVertices));
-            for (size_t i = 0; i < imported_mesh->mNumVertices; i++)
-            {
-                const aiVector3D *pPos = &(imported_mesh->mVertices[i]);
-                const aiVector3D *pNormal = &(imported_mesh->mNormals[i]);
-                const aiVector3D *pTexCoord = imported_mesh->HasTextureCoords(0) ? &(imported_mesh->mTextureCoords[0][i]) : &Zero3D;
-                const aiVector3D *pTangent = &(imported_mesh->mTangents[i]);
+            // Vertex *vertices = static_cast<Vertex *>(malloc(sizeof(Vertex) * imported_mesh->mNumVertices));
+            // for (size_t i = 0; i < imported_mesh->mNumVertices; i++)
+            // {
+            //     const aiVector3D *pPos = &(imported_mesh->mVertices[i]);
+            //     const aiVector3D *pNormal = &(imported_mesh->mNormals[i]);
+            //     const aiVector3D *pTexCoord = imported_mesh->HasTextureCoords(0) ? &(imported_mesh->mTextureCoords[0][i]) : &Zero3D;
+            //     const aiVector3D *pTangent = &(imported_mesh->mTangents[i]);
 
-                vertices[i] = Vertex(Vec3(pPos->x, pPos->y, pPos->z), Vec3(pNormal->x, pNormal->y, pNormal->z), Vec2(pTexCoord->x, pTexCoord->y), Vec3(pTangent->x, pTangent->y, pTangent->z));
-            }
+            //     vertices[i] = Vertex(Vec3(pPos->x, pPos->y, pPos->z), Vec3(pNormal->x, pNormal->y, pNormal->z), Vec2(pTexCoord->x, pTexCoord->y), Vec3(pTangent->x, pTangent->y, pTangent->z));
+            // }
 
-            unsigned short *indices = static_cast<unsigned short *>(malloc(sizeof(unsigned short) * imported_mesh->mNumFaces * 3));
-            size_t index = 0;
-            for (size_t i = 0; i < imported_mesh->mNumFaces; i++)
-            {
-                const aiFace &face = imported_mesh->mFaces[i];
-                assert(face.mNumIndices == 3);
-                indices[index] = face.mIndices[0];
-                indices[index + 1] = face.mIndices[1];
-                indices[index + 2] = face.mIndices[2];
-                index += 3;
-            }
-            new_mesh(mesh, vertices, imported_mesh->mNumVertices, indices, imported_mesh->mNumFaces * 3, false);
+            // unsigned short *indices = static_cast<unsigned short *>(malloc(sizeof(unsigned short) * imported_mesh->mNumFaces * 3));
+            // size_t index = 0;
+            // for (size_t i = 0; i < imported_mesh->mNumFaces; i++)
+            // {
+            //     const aiFace &face = imported_mesh->mFaces[i];
+            //     assert(face.mNumIndices == 3);
+            //     indices[index] = face.mIndices[0];
+            //     indices[index + 1] = face.mIndices[1];
+            //     indices[index + 2] = face.mIndices[2];
+            //     index += 3;
+            // }
+            // new_mesh(mesh, vertices, imported_mesh->mNumVertices, indices, imported_mesh->mNumFaces * 3, false);
         }
 
         bool mesh_import_file(Mesh *mesh, const ModelSource *source)
@@ -120,10 +121,7 @@ namespace Vultr
             return true;
         }
 
-        void mesh_load_gpu(Mesh *mesh)
-        {
-            mesh_init_gpu(mesh);
-        }
+        void mesh_load_gpu(Mesh *mesh) { mesh_init_gpu(mesh); }
 
         bool import_mesh(Mesh *mesh, const ModelSource *source)
         {

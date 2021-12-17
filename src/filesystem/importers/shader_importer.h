@@ -9,8 +9,8 @@ namespace Vultr::ShaderImporter
 {
     enum struct ShaderType : u8
     {
-        NONE = 0xFF,
-        VERTEX = 0,
+        NONE     = 0xFF,
+        VERTEX   = 0,
         FRAGMENT = 1
     };
     struct ShaderProgramSource
@@ -20,10 +20,11 @@ namespace Vultr::ShaderImporter
 
         ~ShaderProgramSource()
         {
-            if (vert_src != nullptr)
-                free(vert_src);
-            if (frag_src != nullptr)
-                free(frag_src);
+            // TODO(Brandon): Reimplement.
+            // if (vert_src != nullptr)
+            //     free(vert_src);
+            // if (frag_src != nullptr)
+            //     free(frag_src);
         }
     };
     bool shader_import(Shader *shader, const ShaderSource *source);
