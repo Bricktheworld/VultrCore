@@ -51,12 +51,11 @@ namespace Vultr::Platform
 
                 if (width == 0 || height == 0)
                 {
-                    int x, y, w_width, w_height;
-                    glfwGetMonitorWorkarea(get_monitor_or_primary(monitor), &x, &y, &w_width, &w_height);
-
-                    width  = w_width;
-                    height = w_height;
+                    width = monitor_video_mode->width - 500;
+                    height = monitor_video_mode->height - 500;
                 }
+                // We will resize the window later so don't do anything just yet.
+                glfwWindowHint(GLFW_VISIBLE, 0);
 
                 break;
             case DisplayMode::BORDERLESS_WINDOWED:
@@ -89,6 +88,11 @@ namespace Vultr::Platform
 
         window->glfw = glfwCreateWindow(width, height, title, monitor_param, window_param);
         ASSERT(window->glfw != nullptr, "Failed to create glfw window.");
+
+        if (mode == DisplayMode::WINDOWED) {
+            glfwMaximizeWindow(window->glfw);
+            glfwShowWindow(window->glfw);
+        }
 
         glfwMakeContextCurrent(window->glfw);
 
