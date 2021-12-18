@@ -82,6 +82,28 @@ namespace Vultr
         }
     }
 
+    void *mrealloc(Allocator *allocator, void *memory, size_t size)
+    {
+        switch (allocator->type)
+        {
+            case AllocatorType::Linear:
+                THROW("Cannot reallocate in a linear allocator, the entire point of linear is to not do that.");
+                break;
+            case AllocatorType::Pool:
+                return pool_realloc(static_cast<PoolAllocator *>(allocator), memory, size);
+                break;
+            case AllocatorType::FreeList:
+                return free_list_realloc(static_cast<FreeListAllocator *>(allocator), memory, size);
+                break;
+            case AllocatorType::Stack:
+                THROW("Cannot reallocate in a stack allocator, this is not what a stack allocator is for.");
+                break;
+            case AllocatorType::None:
+            default:
+                THROW("Invalid memory allocator, how the fuck did you even get here.");
+        }
+    }
+
     void free(Allocator *allocator, void *memory)
     {
         switch (allocator->type)

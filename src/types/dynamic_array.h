@@ -7,6 +7,9 @@
 
 namespace vtl
 {
+    /**
+     * Resizable array.
+     */
     template <typename T, size_t reserved = 10, u32 growth_numerator = 3, u32 growth_denominator = 2, u32 decay_percent_threshold = 30>
     struct DynamicArray : Vultr::MemoryStruct
     {
@@ -19,7 +22,7 @@ namespace vtl
             len   = 0;
             if (reserved > 0)
             {
-                // _array = static_cast<T *>(malloc(_size * sizeof(T)));
+                _array = alloc(_size);
             }
         }
 
@@ -35,7 +38,7 @@ namespace vtl
                 _size = reserved;
             }
 
-            // _array = static_cast<T *>(malloc(sizeof(T) * _size));
+            _array = alloc(_size);
 
             for (int i = 0; i < count; i++)
             {
@@ -50,8 +53,8 @@ namespace vtl
         // Destructor for dynamic array
         ~DynamicArray()
         {
-            // if (_array != nullptr)
-            //     free(_array);
+            if (_array != nullptr)
+                free(_array);
         }
 
         // Push element to back of dynamic_array
@@ -144,18 +147,14 @@ namespace vtl
             {
                 if (_array == nullptr)
                 {
-                    // _array = (T *)malloc(_size * sizeof(T));
+                    _array = alloc(_size);
                 }
                 else
                 {
-                    // _array = (T *)realloc(_array, _size * sizeof(T));
+                    _array = realloc(_array, _size);
                 }
             }
         }
-
-        // static DynamicArray<T> copy()
-        // {
-        // }
 
         // Ability to index into the array and assign and retreive elements by
         // reference
@@ -200,7 +199,7 @@ namespace vtl
             {
                 if (_array != nullptr)
                 {
-                    // free(_array);
+                    free(_array);
                     _array = nullptr;
                 }
             }

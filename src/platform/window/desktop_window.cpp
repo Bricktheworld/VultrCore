@@ -48,6 +48,16 @@ namespace Vultr::Platform
             case DisplayMode::WINDOWED:
                 monitor_param = nullptr;
                 window_param  = nullptr;
+
+                if (width == 0 || height == 0)
+                {
+                    int x, y, w_width, w_height;
+                    glfwGetMonitorWorkarea(get_monitor_or_primary(monitor), &x, &y, &w_width, &w_height);
+
+                    width  = w_width;
+                    height = w_height;
+                }
+
                 break;
             case DisplayMode::BORDERLESS_WINDOWED:
                 monitor_param = get_monitor_or_primary(monitor);

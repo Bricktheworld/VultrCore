@@ -7,10 +7,10 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
     auto *arena = init_mem_arena(Gigabyte(1));
     auto *la    = init_linear_allocator(arena, Kilobyte(1));
 
-    auto *window = Platform::open_window(la, Platform::DisplayMode::FULLSCREEN, nullptr, "Vultr Game Engine", 3840, 2160);
+    auto *window = Platform::open_window(la, Platform::DisplayMode::WINDOWED, nullptr, "Vultr Game Engine");
     while (!Platform::window_should_close(window))
     {
-        glViewport(0, 0, 3840, 2160);
+        // glViewport(0, 0, 3840, 2160);
         glClearColor(1, 1, 1, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         Platform::swap_buffers(window);

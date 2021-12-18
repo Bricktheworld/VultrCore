@@ -13,8 +13,23 @@ namespace Vultr
      * @param size_t size: The size of memory to allocate.
      *
      * @return void *: The newly allocated memory.
+     *
+     * @error This will return nullptr if it failed to allocate.
      */
     void *malloc(Allocator *allocator, size_t size);
+
+    /**
+     * Reallocate a block of memory using an allocator.
+     *
+     * @param Allocator *allocator: The memory allocator.
+     * @param void *memory: The memory that was allocated.
+     * @param size_t size: The size of memory to reallocate.
+     *
+     * @return void *: The reallocated memory.
+     *
+     * @error This will return nullptr if it failed to reallocate.
+     */
+    void *mrealloc(Allocator *allocator, void *memory, size_t size);
 
     /**
      * Free a block of memory using an allocator.
@@ -23,6 +38,63 @@ namespace Vultr
      * @param void *memory: The memory that was allocated.
      */
     void mfree(Allocator *allocator, void *memory);
+
+    /**
+     * Allocate some memory using a memory arena.
+     *
+     * @param Allocator *allocator: The memory allocator.
+     * @param size_t size: The size of memory to allocate.
+     *
+     * @return void *: The newly allocated memory.
+     *
+     * @error This will return nullptr if it failed to allocate.
+     */
+    void *persist_alloc(size_t size);
+
+    /**
+     * Allocate some memory using a memory arena.
+     *
+     * @param Allocator *allocator: The memory allocator.
+     * @param size_t size: The size of memory to allocate.
+     *
+     * @return void *: The newly allocated memory.
+     *
+     * @error This will return nullptr if it failed to allocate.
+     */
+    void *frame_alloc(size_t size);
+
+    /**
+     * Allocate some memory using a memory arena.
+     *
+     * @param Allocator *allocator: The memory allocator.
+     * @param size_t size: The size of memory to allocate.
+     *
+     * @return void *: The newly allocated memory.
+     *
+     * @error This will return nullptr if it failed to allocate.
+     */
+    void *pool_alloc(size_t size);
+
+    /**
+     * Reallocate a block of memory using an allocator.
+     *
+     * @param Allocator *allocator: The memory allocator.
+     * @param void *memory: The memory that was allocated.
+     * @param size_t size: The size of memory to reallocate.
+     *
+     * @return void *: The reallocated memory.
+     *
+     * @error This will return nullptr if it failed to reallocate.
+     */
+    void *pool_realloc(void *memory, size_t size);
+
+    /**
+     * Free a block of memory using an allocator.
+     *
+     * @param Allocator *allocator: The memory allocator.
+     * @param void *memory: The memory that was allocated.
+     */
+    void pool_free(void *memory);
 
     /**
      * Allocate some memory using a memory arena and call constructor.
@@ -48,6 +120,7 @@ namespace Vultr
      *
      * @param Allocator *allocator: The memory allocator.
      * @param T *memory: The memory that was allocated.
+     * @param size_t count: The number of blocks of memory of the requested size to allocate.
      *
      * @return T *: The reallocated memory.
      *
@@ -55,7 +128,7 @@ namespace Vultr
      */
     // TODO(Brandon): Add copy constructor and destructor safety.
     template <typename T>
-    T *realloc(Allocator *allocator, T *memory)
+    T *realloc(Allocator *allocator, T *memory, size_t count)
     {
         void *new_buf = nullptr;
         switch (allocator->type)
@@ -64,10 +137,10 @@ namespace Vultr
                 THROW("Cannot reallocate in a linear allocator, the entire point of linear is to not do that.");
                 break;
             case AllocatorType::Pool:
-                new_buf = pool_realloc(static_cast<PoolAllocator *>(allocator), memory, sizeof(T));
+                new_buf = pool_realloc(static_cast<PoolAllocator *>(allocator), memory, sizeof(T) * count);
                 break;
             case AllocatorType::FreeList:
-                new_buf = free_list_realloc(static_cast<FreeListAllocator *>(allocator), memory, sizeof(T));
+                new_buf = free_list_realloc(static_cast<FreeListAllocator *>(allocator), memory, sizeof(T) * count);
                 break;
             case AllocatorType::Stack:
                 THROW("Cannot reallocate in a stack allocator, this is not what a stack allocator is for.");
@@ -93,6 +166,7 @@ namespace Vultr
         memory.~T();
         mfree(allocator, memory);
     }
+
     /**
      * Class that can be inherited from to show dependency on some external allocator.
      */
@@ -104,10 +178,11 @@ namespace Vultr
         /**
          * Shorthand for a memory struct to allocate a block of memory using @ref malloc(Allocator *, size_t count, Args... args)
          *
-         * @param Allocator *allocator: The memory allocator.
          * @param size_t count: The number of blocks of memory of the requested size to allocate.
          *
          * @return T *: The newly allocated memory.
+         *
+         * @error This will crash the program if the memory failed to allocate.
          */
         template <typename T, typename... Args>
         T *alloc(size_t count, Args... args)
@@ -118,23 +193,22 @@ namespace Vultr
         /**
          * Shorthand for a memory struct to reallocate a block of memory using @ref realloc(Allocator *, T *memory)
          *
-         * @param Allocator *allocator: The memory allocator.
          * @param T *memory: The memory that was allocated.
+         * @param size_t count: The number of blocks of memory of the requested size to allocate.
          *
          * @return T *: The reallocated memory.
          *
-         * @error This will return nullptr if it failed to reallocate and will leave the original memory untouched.
+         * @error This will crash the program if it failed to reallocate.
          */
         template <typename T>
-        T *realloc(T *memory)
+        T *realloc(T *memory, size_t count)
         {
-            return realloc<T>(allocator, memory);
+            return realloc<T>(allocator, memory, count);
         }
 
         /**
          * Shorthand for a memory struct to free a block of memory using @ref realloc(Allocator *)
          *
-         * @param Allocator *allocator: The memory allocator.
          * @param T *memory: The memory that was allocated.
          */
         template <typename T>
