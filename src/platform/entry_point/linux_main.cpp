@@ -1,5 +1,6 @@
 #include <types/types.h>
-#include <editor/sources.cpp>
+
+#include <platform/platform.h>
 
 namespace Vultr
 {

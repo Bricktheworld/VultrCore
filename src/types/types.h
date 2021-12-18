@@ -18,7 +18,7 @@ typedef int16_t s16;
 typedef int8_t s8;
 typedef float f32;
 typedef double f64;
-typedef char byte;
+typedef unsigned char byte;
 
 // Atomic types.
 typedef std::atomic<unsigned int> atomic_uint;
@@ -56,9 +56,8 @@ typedef std::atomic<size_t> atomic_size_t;
 #ifdef DEBUG
 
 #ifdef _WIN32
-
-// TODO(Brandon): Figure out windows equivalent debug break
-#define DEBUG_BREAK()
+#include <Windows.h>
+#define DEBUG_BREAK() DebugBreak()
 #elif __linux__
 #include <signal.h>
 #define DEBUG_BREAK() raise(SIGTRAP)
@@ -101,7 +100,7 @@ typedef std::atomic<size_t> atomic_size_t;
     }
 // clang-format on
 #else
-#define ASSERT(condition, message)
+#define ASSERT(condition, message, ...)
 #endif
 
 #ifdef _WIN32

@@ -1,4 +1,5 @@
 // TODO: Reimplement String to be more safe
+#if 0
 #include <filesystem/virtual_filesystem.h>
 #include <filesystem/file.h>
 #include <filesystem/directory.h>
@@ -788,3 +789,4 @@ namespace Vultr
 #include "importers/mesh_importer.cpp"
 #include "importers/shader_importer.cpp"
 #include "importers/texture_importer.cpp"
+#endif

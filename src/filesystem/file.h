@@ -1,9 +1,10 @@
 // TODO: Reimplement String to be more safe
 #pragma once
+
 #define _FILE_OFFSET_BITS 64
 #include <types/types.h>
 #include <cstring>
-#include <unistd.h>
+// #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "directory.h"
@@ -58,8 +59,9 @@ namespace Vultr
 
         ~File()
         {
-            if (path != nullptr)
-                free(path);
+            // TODO(Brandon): Reimplement.
+            // if (path != nullptr)
+            //     free(path);
             path = nullptr;
         }
 
@@ -81,8 +83,9 @@ namespace Vultr
 
         void operator=(const File &other)
         {
-            if (path != nullptr)
-                free(path);
+            // TODO(Brandon): Reimplement.
+            //if (path != nullptr)
+                //free(path);
             // path = str(other.path);
         }
     };
@@ -91,7 +94,7 @@ namespace Vultr
     {
         // OK who in the c++ standard committee thought that these syntax being valid was a good idea
         // inline const constexpr consteval inline char *const *char *const []const constexpr constantinople
-        inline constexpr const char *const GENERIC_FILE[]        = {};
+        inline constexpr const char **const GENERIC_FILE        = nullptr;
         inline constexpr const char *const TEXTURE_SOURCE[]      = {".jpeg", ".jpg", ".png", ".bmp", ".dds"};
         static const size_t TEXTURE_SOURCE_LEN                   = sizeof(TEXTURE_SOURCE) / sizeof(const char *);
         inline constexpr const char *const MODEL_SOURCE[]        = {".obj", ".fbx", ".blend"};
@@ -152,7 +155,7 @@ namespace Vultr
     template <const char *const extensions[]>
     bool cast_file(const GenericFile *src, File<extensions> *dest)
     {
-        size_t dest_extension_count = sizeof(extensions) / sizeof(char *const);
+        size_t dest_extension_count = extensions != nullptr ? sizeof(extensions) / sizeof(char *const) : 0;
         if (dest_extension_count == 0)
         {
             // dest->path = str(src->path);

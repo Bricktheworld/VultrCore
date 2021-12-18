@@ -7,7 +7,7 @@ file(
 )
 
 add_executable(${This} ${Sources})
-target_link_libraries(${This} PUBLIC Vultr GTest::gtest)
+target_link_libraries(${This} PUBLIC Vultr gtest)
 
 add_test(
   NAME ${This}

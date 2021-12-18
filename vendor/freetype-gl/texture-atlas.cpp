@@ -221,7 +221,7 @@ ivec4 texture_atlas_get_region(texture_atlas_t *self, const size_t width, const 
     if (node == NULL)
     {
         freetype_gl_error(Out_Of_Memory);
-        return (ivec4){{-1, -1, 0, 0}};
+        return {{-1, -1, 0, 0}};
         /* exit( EXIT_FAILURE ); */ /* Never exit from a library */
     }
     node->x = region.x;

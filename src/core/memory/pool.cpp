@@ -18,7 +18,7 @@ namespace Vultr
 
     PoolAllocator *init_pool_allocator(MemoryArena *arena, u32 allocation_size, u32 count)
     {
-        ASSERT(count > 0, "Cannot create a pool allocator with 0 blocks");
+        ASSERT(count > 0, R"(Cannot create a pool allocator with 0 blocks)")
         ASSERT(allocation_size > sizeof(PoolMemoryBlock), "Minimum size of a chunk not reached!");
 
         // Calculate the total space in bytes this allocator will have.

@@ -1,3 +1,4 @@
+#if 0
 #include <gtest/gtest.h>
 #include <render/types/material.h>
 #include <sys/resource.h>
@@ -17,3 +18,4 @@ int main(int argc, char **argv)
     Material material = {};
     fprintf(stdout, "%lu", sizeof(material));
 }
+#endif

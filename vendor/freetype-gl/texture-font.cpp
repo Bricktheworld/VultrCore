@@ -55,7 +55,8 @@ __THREAD font_mode_t mode_default = MODE_FREE_CLOSE;
 
 #if (defined(_WIN32) || defined(_WIN64)) && !defined(__GNUC__)
 #define inline
-static inline __builtin_bswap32(uint32_t in)
+
+static inline int __builtin_bswap32(uint32_t in)
 {
     return ((in >> 24) & 0xFF) | ((in >> 8) & 0xFF00) | ((in & 0xFF00) << 8) | ((in & 0xFF) << 24);
 }
@@ -369,7 +370,7 @@ texture_font_t *texture_font_new_from_file(texture_atlas_t *atlas, const float p
     self->size = pt_size;
 
     self->location = TEXTURE_FONT_FILE;
-    self->filename = strdup(filename);
+    self->filename = _strdup(filename);
     self->mode = mode_default;
 
     if (texture_font_init(self))
@@ -963,7 +964,7 @@ int texture_font_load_glyph_gi(texture_font_t *self, uint32_t glyph_index, uint3
         {
             for (int col = 0; col < src_w; col++, src_ptr++)
             {
-                dst[col] = (struct dst_pixel_t){255, 255, 255, *src_ptr};
+                dst[col] = dst_pixel_t{255, 255, 255, *src_ptr};
             }
         }
     }
