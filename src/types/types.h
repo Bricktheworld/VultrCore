@@ -53,8 +53,15 @@ typedef std::atomic<size_t> atomic_size_t;
 #define F32Max FLT_MAX
 #define F32Min -FLT_MAX
 
-#ifdef DEBUG
 
+#ifdef _WIN32
+#define VULTR_API extern "C" __declspec(dllexport)
+#else 
+#define VULTR_API
+#endif
+
+
+#ifdef DEBUG
 #ifdef _WIN32
 #include <Windows.h>
 #define DEBUG_BREAK() DebugBreak()

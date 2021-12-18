@@ -38,7 +38,7 @@ add_library(${This} STATIC ${Sources})
 set(TargetIncludeDirs src vendor)
 
 if(UNIX)
-  set(Libs GL glfw3 X11 Xxf86vm Xrandr pthread Xi dl freetype ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/LINUX/libassimp.so ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/LINUX/libSDL2main.a)
+  set(Libs GL glfw3 X11 Xxf86vm Xrandr pthread Xi dl freetype ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/LINUX/libassimp.so)
   link_directories(${CMAKE_BINARY_DIR}/res)
   file(GLOB_RECURSE VultrExeSources "src/platform/entry_point/linux_main.cpp")
 
@@ -67,16 +67,8 @@ add_subdirectory(tests)
 # add_subdirectory(benchmark)
 
 
-if(WIN32)
-  add_custom_command(
-    TARGET Vultr POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${PROJECT_SOURCE_DIR}/vendor/libs/WIN32/assimp-vc142-mtd.dll"
-    $<TARGET_FILE_DIR:Vultr>
-  )
-endif(WIN32)
-
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+
 if(UNIX)
     set(CMAKE_CXX_FLAGS "-Wno-reorder -Wno-volatile -Wno-deprecated-enum-enum-conversion")
 endif(UNIX)

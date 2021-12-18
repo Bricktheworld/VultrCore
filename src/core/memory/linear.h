@@ -9,8 +9,9 @@ namespace Vultr
      */
     struct LinearAllocator : public Allocator
     {
-        size_t size;
-        size_t used;
+        size_t size = 0;
+        size_t used = 0;
+        bool locked = false;
         void *next = nullptr;
 
         LinearAllocator() : Allocator(AllocatorType::Linear) {}

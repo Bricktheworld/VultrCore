@@ -1,3 +1,4 @@
+#if 0
 #include <gtest/gtest.h>
 #define private public
 #define protected public
@@ -30,3 +31,4 @@ TEST(ThreadTests, NewThread)
     Platform::jthread(delegate, &return_value, some_value);
     ASSERT_TRUE(return_value);
 }
+#endif
