@@ -37,35 +37,23 @@
 #define HRESf 64.f
 #define DPI 72
 
-static float convert_F26Dot6_to_float(FT_F26Dot6 value)
-{
-    return ((float)value) / 64.0;
-}
-static FT_F26Dot6 convert_float_to_F26Dot6(float value)
-{
-    return (FT_F26Dot6)(value * 64.0);
-}
+static float convert_F26Dot6_to_float(FT_F26Dot6 value) { return ((float)value) / 64.0; }
+static FT_F26Dot6 convert_float_to_F26Dot6(float value) { return (FT_F26Dot6)(value * 64.0); }
 
 // per-thread library
 
 __THREAD texture_font_library_t *freetype_gl_library = NULL;
-__THREAD font_mode_t mode_default = MODE_FREE_CLOSE;
+__THREAD font_mode_t mode_default                    = MODE_FREE_CLOSE;
 
 // rol8 ror8
 
 #if (defined(_WIN32) || defined(_WIN64)) && !defined(__GNUC__)
 #define inline
 
-static inline int __builtin_bswap32(uint32_t in)
-{
-    return ((in >> 24) & 0xFF) | ((in >> 8) & 0xFF00) | ((in & 0xFF00) << 8) | ((in & 0xFF) << 24);
-}
+static inline int __builtin_bswap32(uint32_t in) { return ((in >> 24) & 0xFF) | ((in >> 8) & 0xFF00) | ((in & 0xFF00) << 8) | ((in & 0xFF) << 24); }
 #endif
 
-static inline uint32_t rol(uint32_t in, uint32_t x)
-{
-    return (in >> (32 - x)) | (in << x);
-}
+static inline uint32_t rol(uint32_t in, uint32_t x) { return (in >> (32 - x)) | (in << x); }
 
 // ------------------------------------------------------ texture_glyph_new ---
 texture_glyph_t *texture_glyph_new(void)
@@ -78,30 +66,27 @@ texture_glyph_t *texture_glyph_new(void)
     }
 
     self->codepoint = -1;
-    self->width = 0;
-    self->height = 0;
+    self->width     = 0;
+    self->height    = 0;
     /* Attributes that can have different images for the same codepoint */
-    self->rendermode = RENDER_NORMAL;
+    self->rendermode        = RENDER_NORMAL;
     self->outline_thickness = 0.0;
-    self->glyphmode = GLYPH_END;
+    self->glyphmode         = GLYPH_END;
     /* End of attribute part */
-    self->offset_x = 0;
-    self->offset_y = 0;
+    self->offset_x  = 0;
+    self->offset_y  = 0;
     self->advance_x = 0.0;
     self->advance_y = 0.0;
-    self->s0 = 0.0;
-    self->t0 = 0.0;
-    self->s1 = 0.0;
-    self->t1 = 0.0;
-    self->kerning = vector_new(sizeof(float **));
+    self->s0        = 0.0;
+    self->t0        = 0.0;
+    self->s1        = 0.0;
+    self->t1        = 0.0;
+    self->kerning   = vector_new(sizeof(float **));
     return self;
 }
 
 // ---------------------------------------------- texture_font_default_mode ---
-void texture_font_default_mode(font_mode_t mode)
-{
-    mode_default = mode;
-}
+void texture_font_default_mode(font_mode_t mode) { mode_default = mode; }
 
 // --------------------------------------------------- texture_glyph_delete ---
 void texture_glyph_delete(texture_glyph_t *self)
@@ -118,8 +103,8 @@ void texture_glyph_delete(texture_glyph_t *self)
 float texture_glyph_get_kerning(const texture_glyph_t *self, const char *codepoint)
 {
     uint32_t ucodepoint = utf8_to_utf32(codepoint);
-    uint32_t i = ucodepoint >> 8;
-    uint32_t j = ucodepoint & 0xFF;
+    uint32_t i          = ucodepoint >> 8;
+    uint32_t j          = ucodepoint & 0xFF;
     float *kern_index;
 
     assert(self);
@@ -209,7 +194,7 @@ void texture_font_generate_kerning(texture_font_t *self, FT_Library *library, FT
 int texture_is_color_font(texture_font_t *self)
 {
     static const uint32_t tag = FT_MAKE_TAG('C', 'B', 'D', 'T');
-    unsigned long length = 0;
+    unsigned long length      = 0;
     FT_Load_Sfnt_Table(self->face, tag, 0, NULL, &length);
     return length != 0;
 }
@@ -218,7 +203,7 @@ int texture_is_color_font(texture_font_t *self)
 
 int texture_font_set_size(texture_font_t *self, float size)
 {
-    FT_Error error = 0;
+    FT_Error error   = 0;
     FT_Matrix matrix = {(int)((1.0 / HRES) * 0x10000L), (int)((0.0) * 0x10000L), (int)((0.0) * 0x10000L), (int)((1.0) * 0x10000L)};
 
     if (FT_HAS_FIXED_SIZES(self->face))
@@ -231,19 +216,19 @@ int texture_font_set_size(texture_font_t *self, float size)
         }
 
         int best_match = 0;
-        float diff = 1e20;
+        float diff     = 1e20;
         int i;
 
         for (i = 0; i < self->face->num_fixed_sizes; ++i)
         {
             float new_size = convert_F26Dot6_to_float(self->face->available_sizes[i].size);
-            float ndiff = size > new_size ? size / new_size : new_size / size;
+            float ndiff    = size > new_size ? size / new_size : new_size / size;
             if (freetype_gl_warnings)
                 log_error("candiate: size[%i]=%f %d*%d\n", i, new_size, self->face->available_sizes[i].width, self->face->available_sizes[i].height);
             if (ndiff < diff)
             {
                 best_match = i;
-                diff = ndiff;
+                diff       = ndiff;
             }
         }
         if (freetype_gl_warnings)
@@ -293,11 +278,11 @@ void texture_font_init_size(texture_font_t *self)
         self->underline_thickness = 1.0;
     }
 
-    metrics = self->face->size->metrics;
-    self->ascender = metrics.ascender >> 6;
+    metrics         = self->face->size->metrics;
+    self->ascender  = metrics.ascender >> 6;
     self->descender = metrics.descender >> 6;
-    self->height = metrics.height >> 6;
-    self->linegap = self->height - self->ascender + self->descender;
+    self->height    = metrics.height >> 6;
+    self->linegap   = self->height - self->ascender + self->descender;
 }
 
 // ------------------------------------------------------ texture_font_init ---
@@ -307,18 +292,18 @@ static int texture_font_init(texture_font_t *self)
     assert(self->size > 0);
     assert((self->location == TEXTURE_FONT_FILE && self->filename) || (self->location == TEXTURE_FONT_MEMORY && self->memory.base && self->memory.size));
 
-    self->glyphs = vector_new(sizeof(texture_glyph_t *));
-    self->height = 0;
-    self->ascender = 0;
-    self->descender = 0;
-    self->linegap = 0;
-    self->rendermode = RENDER_NORMAL;
+    self->glyphs            = vector_new(sizeof(texture_glyph_t *));
+    self->height            = 0;
+    self->ascender          = 0;
+    self->descender         = 0;
+    self->linegap           = 0;
+    self->rendermode        = RENDER_NORMAL;
     self->outline_thickness = 0.0;
-    self->hinting = 1;
-    self->kerning = 1;
-    self->filtering = 1;
-    self->scaletex = 1;
-    self->scale = 1.0;
+    self->hinting           = 1;
+    self->kerning           = 1;
+    self->filtering         = 1;
+    self->scaletex          = 1;
+    self->scale             = 1.0;
 
     // FT_LCD_FILTER_LIGHT   is (0x00, 0x55, 0x56, 0x55, 0x00)
     // FT_LCD_FILTER_DEFAULT is (0x10, 0x40, 0x70, 0x40, 0x10)
@@ -367,11 +352,11 @@ texture_font_t *texture_font_new_from_file(texture_atlas_t *atlas, const float p
     }
 
     self->atlas = atlas;
-    self->size = pt_size;
+    self->size  = pt_size;
 
     self->location = TEXTURE_FONT_FILE;
-    self->filename = _strdup(filename);
-    self->mode = mode_default;
+    self->filename = strdup(filename);
+    self->mode     = mode_default;
 
     if (texture_font_init(self))
     {
@@ -398,12 +383,12 @@ texture_font_t *texture_font_new_from_memory(texture_atlas_t *atlas, float pt_si
     }
 
     self->atlas = atlas;
-    self->size = pt_size;
+    self->size  = pt_size;
 
-    self->location = TEXTURE_FONT_MEMORY;
+    self->location    = TEXTURE_FONT_MEMORY;
     self->memory.base = memory_base;
     self->memory.size = memory_size;
-    self->mode = mode_default;
+    self->mode        = mode_default;
 
     if (texture_font_init(self))
     {
@@ -418,7 +403,7 @@ texture_font_t *texture_font_new_from_memory(texture_atlas_t *atlas, float pt_si
 texture_font_t *texture_font_clone(texture_font_t *old, float pt_size)
 {
     texture_font_t *self;
-    FT_Error error = 0;
+    FT_Error error    = 0;
     float native_size = old->size / old->scale; // unscale fonts
 
     self = static_cast<texture_font_t *>(calloc(1, sizeof(*self)));
@@ -580,10 +565,7 @@ void texture_font_delete(texture_font_t *self)
     if (self->location == TEXTURE_FONT_FILE && self->filename)
         free(self->filename);
 
-    GLYPHS_ITERATOR(i, glyph, self->glyphs)
-    {
-        texture_glyph_delete(glyph);
-    }
+    GLYPHS_ITERATOR(i, glyph, self->glyphs) { texture_glyph_delete(glyph); }
     GLYPHS_ITERATOR_END1
     free(__glyphs);
     GLYPHS_ITERATOR_END2;
@@ -692,8 +674,8 @@ int texture_font_load_glyph_gi(texture_font_t *self, uint32_t glyph_index, uint3
     FT_Bitmap ft_bitmap;
 
     texture_glyph_t *glyph;
-    FT_Int32 flags = 0;
-    int ft_glyph_top = 0;
+    FT_Int32 flags    = 0;
+    int ft_glyph_top  = 0;
     int ft_glyph_left = 0;
 
     ivec4 region;
@@ -708,8 +690,8 @@ int texture_font_load_glyph_gi(texture_font_t *self, uint32_t glyph_index, uint3
     if (!texture_font_load_face(self, self->size))
         return 0;
 
-    flags = 0;
-    ft_glyph_top = 0;
+    flags         = 0;
+    ft_glyph_top  = 0;
     ft_glyph_left = 0;
     if (!glyph_index)
     {
@@ -791,9 +773,9 @@ int texture_font_load_glyph_gi(texture_font_t *self, uint32_t glyph_index, uint3
 
     if (self->rendermode == RENDER_NORMAL || self->rendermode == RENDER_SIGNED_DISTANCE_FIELD)
     {
-        slot = self->face->glyph;
-        ft_bitmap = slot->bitmap;
-        ft_glyph_top = slot->bitmap_top;
+        slot          = self->face->glyph;
+        ft_bitmap     = slot->bitmap;
+        ft_glyph_top  = slot->bitmap_top;
         ft_glyph_left = slot->bitmap_left;
     }
     else
@@ -852,9 +834,9 @@ int texture_font_load_glyph_gi(texture_font_t *self, uint32_t glyph_index, uint3
         }
 
         ft_bitmap_glyph = (FT_BitmapGlyph)ft_glyph;
-        ft_bitmap = ft_bitmap_glyph->bitmap;
-        ft_glyph_top = ft_bitmap_glyph->top;
-        ft_glyph_left = ft_bitmap_glyph->left;
+        ft_bitmap       = ft_bitmap_glyph->bitmap;
+        ft_glyph_top    = ft_bitmap_glyph->top;
+        ft_glyph_left   = ft_bitmap_glyph->left;
 
     cleanup_stroker:
         FT_Stroker_Done(stroker);
@@ -876,7 +858,7 @@ int texture_font_load_glyph_gi(texture_font_t *self, uint32_t glyph_index, uint3
 
     if (self->rendermode == RENDER_SIGNED_DISTANCE_FIELD)
     {
-        padding.top = 1;
+        padding.top  = 1;
         padding.left = 1;
     }
 
@@ -991,15 +973,15 @@ int texture_font_load_glyph_gi(texture_font_t *self, uint32_t glyph_index, uint3
 
     free(buffer);
 
-    glyph = texture_glyph_new();
+    glyph            = texture_glyph_new();
     glyph->codepoint = glyph_index ? ucodepoint : 0;
     ;
-    glyph->width = tgt_w;
-    glyph->height = tgt_h;
-    glyph->rendermode = self->rendermode;
+    glyph->width             = tgt_w;
+    glyph->height            = tgt_h;
+    glyph->rendermode        = self->rendermode;
     glyph->outline_thickness = self->outline_thickness;
-    glyph->offset_x = ft_glyph_left;
-    glyph->offset_y = ft_glyph_top;
+    glyph->offset_x          = ft_glyph_left;
+    glyph->offset_y          = ft_glyph_top;
     if (self->scaletex)
     {
         glyph->s0 = x / (float)self->atlas->width;
@@ -1154,8 +1136,8 @@ void texture_font_enlarge_atlas(texture_font_t *self, size_t width_new, size_t h
     assert(width_new + height_new > self->atlas->width + self->atlas->height);
     assert(width_new + height_new > self->atlas->width + self->atlas->height);
     texture_atlas_t *ta = self->atlas;
-    size_t width_old = ta->width;
-    size_t height_old = ta->height;
+    size_t width_old    = ta->width;
+    size_t height_old   = ta->height;
 
     texture_font_enlarge_texture(self, width_new, height_new);
     if (self->scaletex)
