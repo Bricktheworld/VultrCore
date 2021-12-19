@@ -8,7 +8,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
     auto *window = Platform::open_window(g_game_memory->persistent_storage, Platform::DisplayMode::WINDOWED, nullptr, "Vultr Game Engine");
 
-    auto *dl = Platform::dl_open("/home/brandon/Dev/VultrSandbox/build/libVultrDemo.so");
+    auto *dl = Platform::dl_open("C:\\Users\\Brand\\Dev\\VultrSandbox\\out\\build\\x64-Debug\\VultrDemo.dll");
     ASSERT(dl != nullptr, "Failed to load game");
 
     auto *use_game_memory = (UseGameMemoryApi)(Platform::dl_load_symbol(dl, "use_game_memory"));

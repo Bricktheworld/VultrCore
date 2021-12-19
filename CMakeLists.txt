@@ -14,6 +14,8 @@ file(
   "src/sources.cpp"
 )
 
+add_subdirectory(vendor/googletest)
+
 if(WIN32)
   add_compile_options("/std:c++latest")
   add_compile_options("/Zc:preprocessor")
@@ -21,7 +23,6 @@ endif(WIN32)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_subdirectory(vendor/googletest)
 include_directories(src vendor)
 
 add_library(${This} STATIC ${Sources})

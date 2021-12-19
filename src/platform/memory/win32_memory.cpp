@@ -31,7 +31,7 @@ namespace Vultr
             void *memory = VirtualAlloc(address_hint, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
             // If the allocation failed.
-            if (memory == (void *)-1)
+            if (memory == nullptr)
                 return nullptr;
 
             auto *block = reinterpret_cast<PlatformMemoryBlock *>(memory);
