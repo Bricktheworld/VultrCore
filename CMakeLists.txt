@@ -58,7 +58,7 @@ target_precompile_headers(${This} PUBLIC pch.h)
 
 add_subdirectory(tests)
 
-# add_subdirectory(benchmark)
+add_subdirectory(benchmark)
 
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
