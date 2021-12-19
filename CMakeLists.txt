@@ -14,23 +14,14 @@ file(
   "src/sources.cpp"
 )
 
-
-if(UNIX)
-  set(CMAKE_CXX_STANDARD 20)
-  find_package(GTest CONFIG REQUIRED)
-endif(UNIX)
-
 if(WIN32)
   add_compile_options("/std:c++latest")
   add_compile_options("/Zc:preprocessor")
-
-  set(CMAKE_CXX_STANDARD 20)
-  find_library(GLFW3 glfw3 HINTS ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/WIN32)
-  find_library(FREETYPE freetyped HINTS ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/WIN32)
-  find_library(ASSIMP assimp HINTS ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/WIN32)
-  add_subdirectory(vendor/googletest)
 endif(WIN32)
 
+set(CMAKE_CXX_STANDARD 20)
+
+add_subdirectory(vendor/googletest)
 include_directories(src vendor)
 
 add_library(${This} STATIC ${Sources})
@@ -49,7 +40,9 @@ if(WIN32)
   find_library(GLFW3 glfw3 HINTS ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/WIN32)
   find_library(FREETYPE freetyped HINTS ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/WIN32)
   find_library(ASSIMP assimp HINTS ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/WIN32)
+
   set(Libs ${GLFW3} ${FREETYPE} ${ASSIMP} opengl32)
+
   file(GLOB_RECURSE VultrExeSources "src/platform/entry_point/win32_main.cpp")
   add_executable(${Executable} WIN32 ${VultrExeSources})
 endif(WIN32)
@@ -70,5 +63,5 @@ add_subdirectory(tests)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
 if(UNIX)
-    set(CMAKE_CXX_FLAGS "-Wno-reorder -Wno-volatile -Wno-deprecated-enum-enum-conversion")
+  set(CMAKE_CXX_FLAGS "-Wno-reorder -Wno-volatile -Wno-deprecated-enum-enum-conversion")
 endif(UNIX)
