@@ -2,9 +2,9 @@
 
 namespace Vultr
 {
-    namespace Platform
-    {
-        void join_thread(Thread *thread) { pthread_join(thread->pthread, nullptr); }
-        void detach_thread(Thread *thread) { pthread_detach(thread->pthread); }
-    } // namespace Platform
+	namespace Platform
+	{
+		void join_thread(Thread *thread) { pthread_join(thread->pthread, nullptr); }
+		void detach_thread(Thread *thread) { pthread_detach(thread->pthread); }
+	} // namespace Platform
 } // namespace Vultr

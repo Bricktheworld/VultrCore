@@ -5,8 +5,8 @@
 
 namespace vtl
 {
-    typedef std::thread thread;
-    typedef std::mutex mutex;
-    typedef std::condition_variable condition_variable;
+	typedef std::thread thread;
+	typedef std::mutex mutex;
+	typedef std::condition_variable condition_variable;
 
 } // namespace vtl

@@ -1,30 +1,33 @@
 #pragma once
 #include "core/vultr_core.h"
 
-
 namespace Vultr
 {
 
 #define THREAD_SAFE_ARENAS 8
-    struct GameMemory
-    {
-        MemoryArena *arena = nullptr;
-        LinearAllocator *persistent_storage = nullptr;
-        LinearAllocator *frame_storage      = nullptr;
-    };
+	/**
+	 * Holds memory allocators that are used throughout the program.
+	 */
+	struct GameMemory
+	{
+		MemoryArena *arena                   = nullptr;
+		LinearAllocator *persistent_storage  = nullptr;
+		LinearAllocator *frame_storage       = nullptr;
+		FreeListAllocator *general_allocator = nullptr;
+		PoolAllocator *pool_allocator        = nullptr;
+	};
 
-    extern GameMemory *g_game_memory;
+	extern GameMemory *g_game_memory;
 
-    GameMemory *init_game_memory();
+	GameMemory *init_game_memory();
 
-    void destroy_game_memory(GameMemory *m);
+	void destroy_game_memory(GameMemory *m);
 
+	typedef void (*UseGameMemoryApi)(GameMemory *m);
 
-    typedef void (*UseGameMemoryApi)(GameMemory *m);
-
-    // TODO(Brandon): Update these with actual parameters.
-    typedef void (*VultrInitApi)(void);
-    typedef void (*VultrUpdateApi)(void);
+	// TODO(Brandon): Update these with actual parameters.
+	typedef void (*VultrInitApi)(void);
+	typedef void (*VultrUpdateApi)(void);
 
 } // namespace Vultr
 

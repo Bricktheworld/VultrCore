@@ -113,12 +113,12 @@ typedef std::atomic<size_t> atomic_size_t;
 #define PRODUCTION_ASSERT(condition, message)
 #elif __linux__
 #define PRODUCTION_ASSERT(condition, message)                                                                                                                                                                         \
-    if (!(condition))                                                                                                                                                                                                 \
-    {                                                                                                                                                                                                                 \
-        fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                         \
-        fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
-        abort();                                                                                                                                                                                                      \
-    }
+	if (!(condition))                                                                                                                                                                                                 \
+	{                                                                                                                                                                                                                 \
+		fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                         \
+		fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
+		abort();                                                                                                                                                                                                      \
+	}
 #else
 #define PRODUCTION_ASSERT(condition, message)
 #endif
@@ -128,9 +128,9 @@ typedef std::atomic<size_t> atomic_size_t;
 #define THROW(message)
 #elif __linux__
 #define THROW(message)                                                                                                                                                                                                \
-    fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                             \
-    fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                          \
-    abort();
+	fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                             \
+	fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                          \
+	abort();
 #else
 #define PRODUCTION_ASSERT(condition, message)
 #endif
@@ -147,54 +147,54 @@ inline constexpr u64 Terabyte(u64 val) { return Gigabyte(val) * 1024; }
 
 struct Buffer
 {
-    u64 count = 0;
-    u8 *data  = nullptr;
+	u64 count       = 0;
+	u8 *data        = nullptr;
 
-    Buffer()        = default;
-    Buffer &operator=(const Buffer &other) = delete;
+	Buffer()        = default;
+	Buffer &operator=(const Buffer &other) = delete;
 
-    ~Buffer()
-    {
-        if (data != nullptr)
-        {
-            // TODO(Brandon): Replace with custom allocator.
-            // free(data);
-        }
-    }
+	~Buffer()
+	{
+		if (data != nullptr)
+		{
+			// TODO(Brandon): Replace with custom allocator.
+			// free(data);
+		}
+	}
 };
 
 typedef Buffer String;
 
 inline u64 str_len(const char *string)
 {
-    u32 count = 0;
-    if (string != nullptr)
-    {
-        while (*string++)
-        {
-            count++;
-        }
-    }
-    return count;
+	u32 count = 0;
+	if (string != nullptr)
+	{
+		while (*string++)
+		{
+			count++;
+		}
+	}
+	return count;
 }
 
 inline u64 str_len(const String &string) { return string.count; }
 
 inline String str_new(const char *string)
 {
-    String result;
-    result.count = str_len(string);
-    // TODO(Brandon): Replace with custom allocator.
-    // result.data  = static_cast<u8 *>(malloc(sizeof(u8) * result.count));
+	String result;
+	result.count = str_len(string);
+	// TODO(Brandon): Replace with custom allocator.
+	// result.data  = static_cast<u8 *>(malloc(sizeof(u8) * result.count));
 
-    return result;
+	return result;
 }
 
 inline void str_free(String string)
 {
-    if (string.data != nullptr)
-    {
-        // TODO(Brandon): Replace with custom allocator.
-        // free(string.data);
-    }
+	if (string.data != nullptr)
+	{
+		// TODO(Brandon): Replace with custom allocator.
+		// free(string.data);
+	}
 }

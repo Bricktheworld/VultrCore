@@ -12,5 +12,5 @@ bool generic_equals(T first, T second)
 template <>
 inline bool generic_equals<const char *>(const char *first, const char *second)
 {
-    return strcmp(first, second) == 0;
+	return strcmp(first, second) == 0;
 }

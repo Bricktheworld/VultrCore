@@ -6,14 +6,14 @@
 
 namespace Vultr
 {
-    typedef u32 VertexArray;
+	typedef u32 VertexArray;
 
-    VertexArray new_vertex_array();
-    void delete_vertex_array(VertexArray vao);
+	VertexArray new_vertex_array();
+	void delete_vertex_array(VertexArray vao);
 
-    void bind_vertex_array(VertexArray vao);
-    void unbind_vertex_array();
+	void bind_vertex_array(VertexArray vao);
+	void unbind_vertex_array();
 
-    template <typename T>
-    void setup_vertex_array();
+	template <typename T>
+	void setup_vertex_array();
 } // namespace Vultr

@@ -5,43 +5,43 @@
 
 namespace Vultr
 {
-    struct IFile;
+	struct IFile;
 
-    struct Directory
-    {
-        Directory() = default;
-        Directory(const char *path);
-        Directory(const Directory *dir, const char *path);
-        ~Directory();
+	struct Directory
+	{
+		Directory() = default;
+		Directory(const char *path);
+		Directory(const Directory *dir, const char *path);
+		~Directory();
 
-        void operator=(const Directory &other);
-        char *path = nullptr;
-    };
+		void operator=(const Directory &other);
+		char *path   = nullptr;
+	};
 
-    const char *dirbasename(const Directory *dir, size_t *len);
+	const char *dirbasename(const Directory *dir, size_t *len);
 
-    bool dircurrentworking(Directory *dir);
-    bool dirchangeworking(const Directory *dir);
+	bool dircurrentworking(Directory *dir);
+	bool dirchangeworking(const Directory *dir);
 
-    bool dirhasparent(const Directory *dir);
-    void dirparent(const Directory *dir, Directory *parent);
-    void dirparent(const IFile *file, Directory *parent);
+	bool dirhasparent(const Directory *dir);
+	void dirparent(const Directory *dir, Directory *parent);
+	void dirparent(const IFile *file, Directory *parent);
 
-    bool dirmake(const Directory *dir);
-    bool dirmake(const char *path, Directory *dir);
+	bool dirmake(const Directory *dir);
+	bool dirmake(const char *path, Directory *dir);
 
-    bool dirremove(const Directory *dir);
-    bool dirrename(Directory *dir, const char *name);
+	bool dirremove(const Directory *dir);
+	bool dirrename(Directory *dir, const char *name);
 
-    bool dirmove(Directory *src, const Directory *dest);
-    bool dirmove(Directory *src, const char *dest);
+	bool dirmove(Directory *src, const Directory *dest);
+	bool dirmove(Directory *src, const char *dest);
 
-    bool dircopy(Directory *src, const char *dest);
+	bool dircopy(Directory *src, const char *dest);
 
-    bool direxists(const Directory *dir);
+	bool direxists(const Directory *dir);
 
-    u32 dirfilecount(const Directory *dir);
-    u32 dirsubdirectorycount(const Directory *dir);
+	u32 dirfilecount(const Directory *dir);
+	u32 dirsubdirectorycount(const Directory *dir);
 
-    Directory *dirsubdirs(const Directory *dir, size_t *len);
+	Directory *dirsubdirs(const Directory *dir, size_t *len);
 } // namespace Vultr

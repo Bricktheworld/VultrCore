@@ -1,11 +1,12 @@
 BasedOnStyle: Microsoft
 ColumnLimit: 215
-SortIncludes: false
+SortIncludes: Never
 AlwaysBreakTemplateDeclarations: Yes
 NamespaceIndentation: All
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterCaseLabel: true
 IndentCaseLabels: true
-AllowShortFunctionsOnASingleLine: true
-AlignConsecutiveAssignments: true
+AllowShortFunctionsOnASingleLine: All
+AlignConsecutiveAssignments: AcrossEmptyLines
+UseTab: ForContinuationAndIndentation
