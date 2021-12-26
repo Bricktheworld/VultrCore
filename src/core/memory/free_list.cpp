@@ -361,17 +361,20 @@ namespace Vultr
 	{
 		// Designate a region within the memory arena for our allocator.
 		auto *allocator = static_cast<FreeListAllocator *>(mem_arena_designate(arena, AllocatorType::FreeList, size + sizeof(FreeListAllocator)));
-		allocator->type = AllocatorType::FreeList;
 
 		// If we were unable to allocate the required size, then there is nothing to do.
 		if (allocator == nullptr)
 			return nullptr;
+
+		// Set the type of allocator.
+		allocator->type = AllocatorType::FreeList;
 
 		// Set up the alignment.
 		allocator->alignment = alignment;
 
 		// The head block will come after the memory allocator.
 		allocator->block_head = reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(allocator) + sizeof(FreeListAllocator));
+		allocator->free_root = nullptr;
 
 		// Memory block head.
 		auto *h = allocator->block_head;
@@ -400,9 +403,9 @@ namespace Vultr
 			return nullptr;
 		}
 
-		b->size                        = new_size | lowest_bits;
+		b->size         = new_size | lowest_bits;
 
-		FreeListMemoryBlock *new_block = reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(b) + new_size + HEADER_SIZE);
+		auto *new_block = reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(b) + new_size + HEADER_SIZE);
 		init_free_mb(new_block, old_size - new_size - HEADER_SIZE, b, b->next);
 
 		b->next = new_block;
@@ -497,7 +500,7 @@ namespace Vultr
 		size_t current_size = get_mb_size(block);
 
 		auto *next          = block->next;
-		auto next_is_free   = next ? mb_is_free(next) : false;
+		auto next_is_free   = next != nullptr && mb_is_free(next);
 		auto next_size      = next ? get_mb_size(next) : 0;
 
 		if (next_is_free && next_size + current_size + HEADER_SIZE >= size)
@@ -778,7 +781,7 @@ namespace Vultr
 
 	static void fix_double_black(FreeListAllocator *allocator, FreeListMemoryBlock *n)
 	{
-		while (1)
+		while (true)
 		{
 			// Recurse until reach the root.
 			if (n == allocator->free_root)
@@ -884,13 +887,13 @@ namespace Vultr
 		auto x_color   = is_red(x);
 		auto *x_left   = get_left(x);
 		auto *x_right  = get_right(x);
-		auto x_is_lc   = x_parent != nullptr ? is_left_child(x) : false;
+		auto x_is_lc   = x_parent != nullptr && is_left_child(x);
 
 		auto *y_parent = get_parent(y);
 		auto y_color   = is_red(y);
 		auto *y_left   = get_left(y);
 		auto *y_right  = get_right(y);
-		auto y_is_lc   = y_parent != nullptr ? is_left_child(y) : false;
+		auto y_is_lc   = y_parent != nullptr && is_left_child(y);
 
 		if (y_parent == x)
 		{
@@ -974,7 +977,7 @@ namespace Vultr
 
 	void rbt_delete(FreeListAllocator *allocator, FreeListMemoryBlock *n)
 	{
-		while (1)
+		while (true)
 		{
 			ASSERT(n != nullptr, "Cannot delete null memory block!");
 

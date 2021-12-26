@@ -44,6 +44,7 @@ namespace Vultr
 			arena->allocators[index]      = chunk;
 			arena->allocator_types[index] = type;
 			arena->next_index++;
+			arena->next_free_chunk = reinterpret_cast<byte *>(chunk) + size;
 			return chunk;
 		}
 		else
@@ -58,19 +59,19 @@ namespace Vultr
 		Platform::virtual_free(arena->memory);
 	}
 
-	void *malloc(Allocator *allocator, size_t size)
+	void *mem_alloc(Allocator *allocator, size_t size)
 	{
 		ASSERT(allocator != nullptr, "Cannot allocate from an invalid memory allocator!");
 		switch (allocator->type)
 		{
 			case AllocatorType::Linear:
-				return linear_alloc(static_cast<LinearAllocator *>(allocator), size);
+				return linear_alloc(reinterpret_cast<LinearAllocator *>(allocator), size);
 				break;
 			case AllocatorType::Pool:
-				return pool_alloc(static_cast<PoolAllocator *>(allocator), size);
+				return pool_alloc(reinterpret_cast<PoolAllocator *>(allocator), size);
 				break;
 			case AllocatorType::FreeList:
-				return free_list_alloc(static_cast<FreeListAllocator *>(allocator), size);
+				return free_list_alloc(reinterpret_cast<FreeListAllocator *>(allocator), size);
 				break;
 			case AllocatorType::Stack:
 				NOT_IMPLEMENTED("Stack has not yet been implemented in the engine :(");
@@ -82,7 +83,7 @@ namespace Vultr
 		}
 	}
 
-	void *mrealloc(Allocator *allocator, void *memory, size_t size)
+	void *mem_realloc(Allocator *allocator, void *memory, size_t size)
 	{
 		switch (allocator->type)
 		{
@@ -90,10 +91,10 @@ namespace Vultr
 				THROW("Cannot reallocate in a linear allocator, the entire point of linear is to not do that.");
 				break;
 			case AllocatorType::Pool:
-				return pool_realloc(static_cast<PoolAllocator *>(allocator), memory, size);
+				return pool_realloc(reinterpret_cast<PoolAllocator *>(allocator), memory, size);
 				break;
 			case AllocatorType::FreeList:
-				return free_list_realloc(static_cast<FreeListAllocator *>(allocator), memory, size);
+				return free_list_realloc(reinterpret_cast<FreeListAllocator *>(allocator), memory, size);
 				break;
 			case AllocatorType::Stack:
 				THROW("Cannot reallocate in a stack allocator, this is not what a stack allocator is for.");
@@ -104,7 +105,7 @@ namespace Vultr
 		}
 	}
 
-	void free(Allocator *allocator, void *memory)
+	void mem_free(Allocator *allocator, void *memory)
 	{
 		switch (allocator->type)
 		{
@@ -112,10 +113,10 @@ namespace Vultr
 				THROW("You cannot free individual blocks of memory from a linear allocator.");
 				break;
 			case AllocatorType::Pool:
-				pool_free(static_cast<PoolAllocator *>(allocator), memory);
+				pool_free(reinterpret_cast<PoolAllocator *>(allocator), memory);
 				break;
 			case AllocatorType::FreeList:
-				free_list_free(static_cast<FreeListAllocator *>(allocator), memory);
+				free_list_free(reinterpret_cast<FreeListAllocator *>(allocator), memory);
 				break;
 			case AllocatorType::Stack:
 				NOT_IMPLEMENTED("Stack has not yet been implemented in the engine :(");

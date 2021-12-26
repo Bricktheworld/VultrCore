@@ -1,9 +1,7 @@
 // TODO(Brandon): Replace with custom allocator.
 #pragma once
-#include <assert.h>
-#include <memory>
 #include "types.h"
-#include <core/memory/vultr_memory.h>
+#include <vultr.h>
 
 namespace vtl
 {
@@ -11,25 +9,25 @@ namespace vtl
 	 * Resizable array.
 	 */
 	template <typename T, size_t reserved = 10, u32 growth_numerator = 3, u32 growth_denominator = 2, u32 decay_percent_threshold = 30>
-	struct DynamicArray : Vultr::MemoryStruct
+	struct DynamicArray
 	{
 		// Initialize an empty DynamicArray
 		// Reserved specifies a _size of the DynamicArray that will be reserved initially
 		// which will be empty
-		DynamicArray(Vultr::Allocator *a) : Vultr::MemoryStruct(a)
+		DynamicArray()
 		{
 			_size = reserved;
 			len   = 0;
 			if (reserved > 0)
 			{
-				_array = alloc(_size);
+				_array = v_alloc<T>(_size);
 			}
 		}
 
-		DynamicArray(Vultr::Allocator *a, T *array, size_t count) : Vultr::MemoryStruct(a)
+		DynamicArray(T *array, size_t count)
 		{
-			assert(count != 0 && "Count must be greater than 0!");
-			assert(array != nullptr && "Array must not be null!");
+			ASSERT(count != 0, "Count must be greater than 0!");
+			ASSERT(array != nullptr, "Array must not be null!");
 
 			len   = count;
 			_size = len * growth_factor;
@@ -38,7 +36,7 @@ namespace vtl
 				_size = reserved;
 			}
 
-			_array = alloc(_size);
+			_array = v_alloc<T>(_size);
 
 			for (int i = 0; i < count; i++)
 			{
@@ -54,7 +52,7 @@ namespace vtl
 		~DynamicArray()
 		{
 			if (_array != nullptr)
-				free(_array);
+				v_free(_array);
 		}
 
 		// Push element to back of dynamic_array
@@ -86,7 +84,7 @@ namespace vtl
 		T *insert(s32 index, T element)
 		{
 			// Fail if the index is greater than the dynamic_array._size or negative
-			assert(index <= _size && index >= 0 && "Index out of bounds!");
+			ASSERT(index <= _size && index >= 0, "Index out of bounds!");
 
 			// Increase the len amount
 			len++;
@@ -116,7 +114,7 @@ namespace vtl
 		void remove(size_t index)
 		{
 			// Fail if the index is greater than the dynamic_array._size or negative
-			assert(index <= len && index >= 0 && "Index out of bounds!");
+			ASSERT(index <= len && index >= 0, "Index out of bounds!");
 
 			// Shift elements to the left
 			for (uint i = index + 1; i < _size; i++)
@@ -133,7 +131,7 @@ namespace vtl
 		// Shorthand of removing last element of the array
 		void remove_last()
 		{
-			assert(len > 0 && "Array is empty!");
+			ASSERT(len > 0, "Array is empty!");
 			remove(len - 1);
 		}
 
@@ -147,20 +145,20 @@ namespace vtl
 			{
 				if (_array == nullptr)
 				{
-					_array = alloc(_size);
+					_array = v_alloc<T>(_size);
 				}
 				else
 				{
-					_array = realloc(_array, _size);
+					_array = v_realloc(_array, _size);
 				}
 			}
 		}
 
-		// Ability to index into the array and assign and retreive elements by
+		// Ability to index into the array and assign and retrieve elements by
 		// reference
 		T &operator[](int index) const
 		{
-			assert(index < len && index >= 0 && "Index out of bounds");
+			ASSERT(index < len && index >= 0, "Index out of bounds");
 			return _array[index];
 		}
 
@@ -199,7 +197,7 @@ namespace vtl
 			{
 				if (_array != nullptr)
 				{
-					free(_array);
+					v_free(_array);
 					_array = nullptr;
 				}
 			}
@@ -207,11 +205,11 @@ namespace vtl
 			{
 				if (_array == nullptr)
 				{
-					_array = malloc(_size * sizeof(T));
+					_array = v_alloc<T>(_size * sizeof(T));
 				}
 				else
 				{
-					_array = realloc(_array, _size * sizeof(T));
+					_array = v_realloc(_array, _size * sizeof(T));
 				}
 			}
 		}

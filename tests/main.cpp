@@ -1,10 +1,9 @@
 #include <gtest/gtest.h>
-#include <render/types/material.h>
-#include <filesystem/importers/shader_importer.h>
-#include "gui/basic_rendering_test.h"
+#include "vultr.h"
 
 int main(int argc, char **argv)
 {
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+	Vultr::g_game_memory = Vultr::init_game_memory();
+	testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
 }
