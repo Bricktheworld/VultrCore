@@ -54,41 +54,43 @@ namespace Vultr
 			return buffer[index];
 		}
 
-		void resize(size_t size)
+		void resize(size_t new_size)
 		{
-			if (size == 0)
+			if (new_size == 0)
 			{
 				if (buffer != nullptr)
 				{
 					v_free(allocator, buffer);
 				}
 				buffer = nullptr;
+				size   = new_size;
 			}
-			else if (size != this->size)
+			else if (size != new_size)
 			{
+				size = new_size;
 				if (buffer == nullptr)
 				{
 					buffer = v_alloc<T>(allocator, size);
 				}
 				else
 				{
-
 					buffer = v_realloc(allocator, buffer, size);
 				}
 			}
 		}
 
-		bool safe_resize(size_t size)
+		bool safe_resize(size_t new_size)
 		{
-			if (size == 0)
+			if (new_size == 0)
 			{
 				if (buffer != nullptr)
 				{
 					v_free(allocator, buffer);
 				}
 				buffer = nullptr;
+				size   = new_size;
 			}
-			else if (size == this->size)
+			else if (size == new_size)
 			{
 				return true;
 			}
@@ -96,11 +98,11 @@ namespace Vultr
 			void *res = nullptr;
 			if (buffer == nullptr)
 			{
-				res = mem_alloc(allocator, size);
+				res = mem_alloc(allocator, new_size);
 			}
 			else
 			{
-				res = static_cast<T *>(mem_realloc(allocator, buffer, size));
+				res = static_cast<T *>(mem_realloc(allocator, buffer, new_size));
 			}
 
 			if (res == nullptr)
@@ -109,6 +111,7 @@ namespace Vultr
 			}
 			else
 			{
+				size   = new_size;
 				buffer = res;
 				return true;
 			}

@@ -51,7 +51,7 @@ TEST(FreeListTests, AllocRealloc)
 		void *data = free_list_alloc(allocator, Kilobyte(1));
 		ASSERT_NE(data, nullptr);
 		void *new_data = free_list_realloc(allocator, data, Kilobyte(2));
-		ASSERT_EQ(new_data, data);
+		ASSERT_NE(new_data, data);
 		free_list_free(allocator, new_data);
 	}
 

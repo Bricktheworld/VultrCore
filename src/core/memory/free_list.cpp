@@ -408,7 +408,7 @@ namespace Vultr
 		auto *new_block = reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(b) + updated_size);
 		init_free_mb(new_block, new_size, b, b->next);
 
-		if (new_block->next != nullptr && mb_is_free(new_block->next))
+		if (new_block->next != nullptr)
 		{
 			new_block->next->prev = new_block;
 		}
