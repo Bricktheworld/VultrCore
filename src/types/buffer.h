@@ -8,29 +8,116 @@ namespace Vultr
 	struct BufferT
 	{
 		T *buffer            = nullptr;
+		size_t size          = 0;
 		Allocator *allocator = nullptr;
 
-		BufferT()            = delete;
-		BufferT(size_t size, Allocator *allocator) : size(size), allocator(allocator) { buffer = v_alloc<T>(allocator, size); }
-		BufferT(T *buffer, size_t size, Allocator *allocator = nullptr) : buffer(buffer), size(size), allocator(allocator ? allocator : g_game_memory->general_allocator) {}
-		BufferT &operator=(const BufferT &other) {
-
+		BufferT() : allocator(g_game_memory->general_allocator){};
+		explicit BufferT(size_t size, Allocator *allocator = nullptr)
+		{
+			this->allocator = allocator ? allocator : g_game_memory->general_allocator;
+			this->size      = size;
+			buffer          = v_alloc<T>(this->allocator, size);
+		}
+		BufferT(const T *buffer, size_t size, Allocator *allocator = nullptr) : BufferT(size, allocator) { fill(buffer, size); }
+		BufferT(const BufferT &other)
+		{
+			if (buffer != nullptr)
+			{
+				v_free(allocator, buffer);
+			}
+			size      = other.size;
+			allocator = other.allocator;
+			buffer    = v_alloc<T>(allocator, size);
+			memcpy(buffer, other.buffer, size);
+		}
+		BufferT &operator=(const BufferT &other)
+		{
+			if (&other == this)
+			{
+				return *this;
+			}
+			if (buffer != nullptr)
+			{
+				v_free(allocator, buffer);
+			}
+			size      = other.size;
+			allocator = other.allocator;
+			buffer    = v_alloc<T>(allocator, size);
+			memcpy(buffer, other.buffer, size);
+			return *this;
 		}
 
-		void resize(size_t size) { buffer = v_realloc(allocator, buffer, size); }
+		T &operator[](size_t index)
+		{
+			ASSERT(index < size, "Cannot get invalid index into buffer!");
+			ASSERT(buffer != nullptr, "Cannot get invalid index into buffer!");
+			return buffer[index];
+		}
+
+		void resize(size_t size)
+		{
+			if (size == 0)
+			{
+				if (buffer != nullptr)
+				{
+					v_free(allocator, buffer);
+				}
+				buffer = nullptr;
+			}
+			else if (size != this->size)
+			{
+				if (buffer == nullptr)
+				{
+					buffer = v_alloc<T>(allocator, size);
+				}
+				else
+				{
+
+					buffer = v_realloc(allocator, buffer, size);
+				}
+			}
+		}
 
 		bool safe_resize(size_t size)
 		{
-			auto *res = static_cast<T *>(mem_realloc(allocator, buffer, size));
-			if (res == nullptr)
-				return false;
+			if (size == 0)
+			{
+				if (buffer != nullptr)
+				{
+					v_free(allocator, buffer);
+				}
+				buffer = nullptr;
+			}
+			else if (size == this->size)
+			{
+				return true;
+			}
 
-			buffer = res;
-			return true;
+			void *res = nullptr;
+			if (buffer == nullptr)
+			{
+				res = mem_alloc(allocator, size);
+			}
+			else
+			{
+				res = static_cast<T *>(mem_realloc(allocator, buffer, size));
+			}
+
+			if (res == nullptr)
+			{
+				return false;
+			}
+			else
+			{
+				buffer = res;
+				return true;
+			}
 		}
 
 		void fill(const T *data, size_t len)
 		{
+			ASSERT(len != 0, "Cannot fill buffer with a length of 0.");
+			ASSERT(buffer != nullptr, "Cannot fill buffer with invalid source");
 			ASSERT(len <= size, "Not enough space to fill buffer!");
 			memcpy(buffer, data, len);
 		}
@@ -39,32 +126,10 @@ namespace Vultr
 		{
 			if (buffer != nullptr)
 			{
-				// TODO(Brandon): Replace with custom allocator.
 				v_free(allocator, buffer);
 			}
 		}
-
-	  protected:
-		size_t size = 0;
 	};
 
 	typedef BufferT<byte> Buffer;
-
-	inline size_t str_len(const char *string)
-	{
-		size_t count = 0;
-		if (string != nullptr)
-		{
-			while (*string++)
-			{
-				count++;
-			}
-		}
-		return count;
-	}
-
-	struct String : public BufferT<char>
-	{
-		String(const char *string, Allocator *allocator = nullptr) : BufferT<char>(str_len(string), allocator) { memcpy(buffer, string, size); }
-	};
 } // namespace Vultr

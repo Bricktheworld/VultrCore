@@ -287,6 +287,7 @@ namespace Vultr
 			set_mb_black(allocator->free_root);
 		}
 	}
+	static void rbt_update(FreeListAllocator *allocator, FreeListMemoryBlock *n, size_t new_size);
 
 	static FreeListMemoryBlock *mb_best_match(FreeListMemoryBlock *h, size_t size)
 	{
@@ -374,7 +375,7 @@ namespace Vultr
 
 		// The head block will come after the memory allocator.
 		allocator->block_head = reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(allocator) + sizeof(FreeListAllocator));
-		allocator->free_root = nullptr;
+		allocator->free_root  = nullptr;
 
 		// Memory block head.
 		auto *h = allocator->block_head;
@@ -386,15 +387,13 @@ namespace Vultr
 		return allocator;
 	}
 
-	static FreeListMemoryBlock *split_mb(FreeListMemoryBlock *b, size_t new_size)
+	static FreeListMemoryBlock *split_mb(FreeListAllocator *allocator, FreeListMemoryBlock *b, size_t new_size)
 	{
+		size_t old_size = get_mb_size(b);
+
 		// If the new size is exactly the same size as our memory block, there is no reason to split.
-		if (new_size == get_mb_size(b))
-		{
+		if (new_size == old_size)
 			return nullptr;
-		}
-		u32 lowest_bits = b->size & LOWEST_3_BITS;
-		u32 old_size    = get_mb_size(b);
 
 		// If this block is not big enough to be split into another smaller memory block, don't bother...
 		// TODO(Brandon): Add test case for this.
@@ -403,10 +402,16 @@ namespace Vultr
 			return nullptr;
 		}
 
-		b->size         = new_size | lowest_bits;
+		size_t updated_size = old_size - new_size - HEADER_SIZE;
+		rbt_update(allocator, b, updated_size);
 
-		auto *new_block = reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(b) + new_size + HEADER_SIZE);
-		init_free_mb(new_block, old_size - new_size - HEADER_SIZE, b, b->next);
+		auto *new_block = reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(b) + updated_size);
+		init_free_mb(new_block, new_size, b, b->next);
+
+		if (new_block->next != nullptr && mb_is_free(new_block->next))
+		{
+			new_block->next->prev = new_block;
+		}
 
 		b->next = new_block;
 		return new_block;
@@ -475,21 +480,13 @@ namespace Vultr
 		PRODUCTION_ASSERT(best_match != nullptr, "Not enough memory to allocate!");
 		ASSERT(get_mb_size(best_match) >= size, "");
 
-		// Delete this memory block from the red black tree.
-		remove_free_mb(allocator, best_match);
-
 		// If need be, split the memory block into the size that we need.
-		auto *new_block = split_mb(best_match, size);
-		if (new_block != nullptr)
-		{
-			// Insert this new memory block as free into the memory allocator.
-			insert_free_mb(allocator, new_block);
-		}
+		auto *new_block = split_mb(allocator, best_match, size);
 
 		// Set our memory block to allocated.
-		set_mb_allocated(best_match);
+		set_mb_allocated(new_block);
 		allocator->used += size;
-		return reinterpret_cast<byte *>(best_match) + HEADER_SIZE;
+		return reinterpret_cast<byte *>(new_block) + HEADER_SIZE;
 	}
 
 	static FreeListMemoryBlock *get_block_from_allocated_data(void *data) { return reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(data) - HEADER_SIZE); }
@@ -524,6 +521,7 @@ namespace Vultr
 		auto *next          = block_to_free->next;
 		init_free_mb(block_to_free, size, prev, next);
 		coalesce_mbs(allocator, block_to_free);
+		allocator->used -= size;
 	}
 
 	// Red-black tree rules:
@@ -1068,6 +1066,39 @@ namespace Vultr
 			else
 			{
 				swap_nodes(allocator, n, replacement);
+			}
+		}
+	}
+
+	static void rbt_brute_force_update(FreeListAllocator *allocator, FreeListMemoryBlock *n, size_t new_size)
+	{
+		rbt_delete(allocator, n);
+
+		n->size = new_size | (1UL << INITIALIZED_BIT);
+		set_mb_free(n);
+
+		rbt_insert(allocator, n);
+	}
+
+	void rbt_update(FreeListAllocator *allocator, FreeListMemoryBlock *n, size_t new_size)
+	{
+		auto *l = get_left(n);
+		auto *r = get_right(n);
+
+		if ((r != nullptr && new_size > get_mb_size(r)) || (l != nullptr && new_size < get_mb_size(l)))
+		{
+			rbt_brute_force_update(allocator, n, new_size);
+		}
+		else
+		{
+			n->size = new_size | (1UL << INITIALIZED_BIT);
+			set_mb_free(n);
+
+			auto *c = get_center(n);
+			if (c != nullptr)
+			{
+				remove_center(n);
+				insert_free_mb(allocator, c);
 			}
 		}
 	}
