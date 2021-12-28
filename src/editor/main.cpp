@@ -1,5 +1,6 @@
 #include <platform/platform.h>
 #include <vultr.h>
+#include "project/project.h"
 #include <glad/glad.h>
 
 int Vultr::vultr_main(Platform::EntryArgs *args)
@@ -8,24 +9,16 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 	auto *window  = Platform::open_window(g_game_memory->persistent_storage, Platform::DisplayMode::WINDOWED, nullptr, "Vultr Game Engine");
 
-	auto *dl      = Platform::dl_open("/home/brandon/Dev/VultrSandbox/build/libVultrDemo.so");
-	ASSERT(dl != nullptr, "Failed to load game");
+	auto project  = Vultr::load_game("/home/brandon/Dev/VultrSandbox/build/libVultrDemo.so");
 
-	auto *use_game_memory = (UseGameMemoryApi)(Platform::dl_load_symbol(dl, "use_game_memory"));
-	use_game_memory(g_game_memory);
-
-	auto *init   = (VultrInitApi)Platform::dl_load_symbol(dl, "vultr_init");
-
-	auto *update = (VultrUpdateApi)Platform::dl_load_symbol(dl, "vultr_update");
-
-	init();
+	project.init();
 
 	while (!Platform::window_should_close(window))
 	{
 		glClearColor(1, 1, 1, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		update();
+		project.update();
 		Platform::swap_buffers(window);
 		Platform::poll_events(window);
 	}

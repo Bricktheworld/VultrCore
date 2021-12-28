@@ -1,5 +1,6 @@
 #pragma once
 #include "buffer.h"
+#include "optional.h"
 
 namespace Vultr
 {
@@ -24,10 +25,13 @@ namespace Vultr
 			return *this;
 		}
 
-		String &operator+(str other)
+		String operator+(str other)
 		{
-			concat(other);
-			return *this;
+			size_t len = strlen(other);
+			char buf[size + len];
+			memcpy(buf, buffer, size - 1);
+			memcpy(buf + size - 1, other, len + 1);
+			return {buf, size + len - 1};
 		}
 
 		String &operator+=(const String &other)
@@ -36,10 +40,13 @@ namespace Vultr
 			return *this;
 		}
 
-		String &operator+(const String &other)
+		String operator+(const String &other)
 		{
-			concat(other.buffer);
-			return *this;
+			size_t len = strlen(other.buffer);
+			char buf[size + len];
+			memcpy(buf, buffer, size - 1);
+			memcpy(buf, other.buffer, len + 1);
+			return {buf, size + len - 1};
 		}
 
 		bool operator==(const String &other) const { return *this == other.buffer; }
@@ -60,13 +67,15 @@ namespace Vultr
 
 		operator str() { return buffer; }
 
+		Option<size_t> index_of() const { return None; }
+
 	  private:
 		void concat(str other)
 		{
-			auto len     = strlen(other) + 1;
-			auto old_len = size + 1;
+			auto len     = strlen(other);
+			auto old_len = size - 1;
 			resize(len + size);
-			memcpy(buffer + old_len, other, len);
+			memcpy(buffer + old_len, other, len + 1);
 		}
 	};
 } // namespace Vultr

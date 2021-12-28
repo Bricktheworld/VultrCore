@@ -31,6 +31,10 @@ namespace Vultr
 	typedef void (*VultrInitApi)(void);
 	typedef void (*VultrUpdateApi)(void);
 
+	constexpr const char *USE_GAME_MEMORY_SYMBOL = "vultr_init";
+	constexpr const char *VULTR_INIT_SYMBOL      = "vultr_init";
+	constexpr const char *VULTR_UPDATE_SYMBOL    = "vultr_update";
+
 } // namespace Vultr
 
 VULTR_API void use_game_memory(void *m);

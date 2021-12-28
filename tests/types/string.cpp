@@ -29,12 +29,14 @@ TEST(String, Create)
 TEST(String, Concat)
 {
 	{
-		String string("Something", 2);
+		String string("Something");
 		string += " something else";
 		ASSERT_EQ(string.size, strlen("Something something else") + 1);
 		ASSERT_STRCASEEQ(string.buffer, "Something something else");
 
-		String new_str = string + " chungus";
+		str str1       = " chungus";
+		size_t len     = strlen(str1);
+		String new_str = string + str1;
 		ASSERT_EQ(new_str.size, strlen("Something something else chungus") + 1);
 		ASSERT_STRCASEEQ(new_str.buffer, "Something something else chungus");
 	}

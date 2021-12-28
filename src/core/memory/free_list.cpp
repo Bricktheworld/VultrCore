@@ -32,7 +32,8 @@ namespace Vultr
 		FreeListMemoryBlock *prev = nullptr;
 		FreeListMemoryBlock *next = nullptr;
 
-		union {
+		union
+		{
 			AllocatedMemory allocated;
 			FreeMemory free;
 		};
@@ -301,6 +302,10 @@ namespace Vultr
 			auto *l = get_left(h);
 			// If there is no block that exists of a smaller size, then we should just return the current node, `h` and we will split that later.
 			if (l == nullptr)
+				return h;
+
+			// If the smaller block is too small, then just return the head.
+			if (get_mb_size(l) < size)
 				return h;
 
 			return mb_best_match(l, size);
