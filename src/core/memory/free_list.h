@@ -1,6 +1,7 @@
 #pragma once
 #include <types/types.h>
 #include "vultr_memory_internal.h"
+#include <platform/platform.h>
 
 namespace Vultr
 {
@@ -16,6 +17,7 @@ namespace Vultr
 		FreeListMemoryBlock *free_root  = nullptr;
 		FreeListMemoryBlock *block_head = nullptr;
 		size_t used                     = 0;
+		Platform::Mutex mutex;
 
 		FreeListAllocator() : Allocator(AllocatorType::FreeList) {}
 	};

@@ -5,16 +5,26 @@ namespace Vultr
 {
 	struct String : public BufferT<char>
 	{
-		String(const str string, size_t length, Allocator *allocator = nullptr) : BufferT<char>(string, length + 1, allocator) {}
-		String(const str string, Allocator *allocator = nullptr) : BufferT<char>(string, strlen(string) + 1, allocator) {}
+		String() : BufferT<char>() {}
+		String(str string, size_t length, Allocator *allocator = nullptr) : BufferT<char>(string, length + 1, allocator) {}
+		String(str string, Allocator *allocator = nullptr) : BufferT<char>(string, strlen(string) + 1, allocator) {}
 
-		String &operator+=(const str other)
+		String &operator=(str other)
+		{
+			size_t len = strlen(other) + 1;
+			resize(len);
+			fill(other, len);
+
+			return *this;
+		}
+
+		String &operator+=(str other)
 		{
 			concat(other);
 			return *this;
 		}
 
-		String &operator+(const str other)
+		String &operator+(str other)
 		{
 			concat(other);
 			return *this;
@@ -32,8 +42,26 @@ namespace Vultr
 			return *this;
 		}
 
+		bool operator==(const String &other) const { return *this == other.buffer; }
+
+		bool operator==(str other) const
+		{
+			if (other == nullptr && buffer == nullptr)
+				return true;
+
+			if (buffer == nullptr)
+				return false;
+
+			if (other == nullptr)
+				return false;
+
+			return strcmp(other, buffer) == 0;
+		}
+
+		operator str() { return buffer; }
+
 	  private:
-		void concat(const str other)
+		void concat(str other)
 		{
 			auto len     = strlen(other) + 1;
 			auto old_len = size + 1;

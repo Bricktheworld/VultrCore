@@ -4,7 +4,6 @@
 #include <types/dynamic_array.h>
 #include <vultr.h>
 
-using namespace vtl;
 using namespace Vultr;
 class DynamicArrayTests : public testing::Test
 {

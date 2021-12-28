@@ -1,6 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "../platform.h"
+#include "../platform_impl.h"
 #include <core/vultr_core.h>
 
 namespace Vultr::Platform
@@ -36,7 +36,7 @@ namespace Vultr::Platform
 		ASSERT(glfwInit(), "Failed to initialize glfw");
 		ASSERT(title != nullptr, "Invalid title.");
 
-		auto *window                 = v_alloc<Window>(allocator);
+		auto *window                   = v_alloc<Window>(allocator);
 
 		GLFWmonitor *monitor_param     = nullptr;
 		GLFWwindow *window_param       = nullptr;

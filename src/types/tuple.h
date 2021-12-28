@@ -3,7 +3,7 @@
 #include <string>
 #include "types.h"
 
-namespace vtl
+namespace Vultr
 {
 
 	template <size_t i, typename T>
@@ -72,4 +72,4 @@ namespace vtl
 			return delegate(this->get<S, Ts>()...);
 		}
 	};
-} // namespace vtl
+} // namespace Vultr

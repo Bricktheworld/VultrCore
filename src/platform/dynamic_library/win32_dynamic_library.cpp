@@ -1,5 +1,5 @@
 #include <types/types.h>
-#include "../platform.h"
+#include "../platform_impl.h"
 #include <windows.h>
 
 namespace Vultr

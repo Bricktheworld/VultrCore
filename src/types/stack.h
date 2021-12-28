@@ -2,7 +2,6 @@
 #pragma once
 #include <assert.h>
 #include <memory>
-#include "thread.h"
 #include "types/types.h"
 
 namespace vtl

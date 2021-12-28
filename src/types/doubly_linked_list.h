@@ -1,7 +1,6 @@
 // TODO(Brandon): Replace with custom allocator.
 #pragma once
 #include <memory>
-#include "equals.h"
 #include "types.h"
 
 namespace vtl

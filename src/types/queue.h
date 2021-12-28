@@ -1,6 +1,5 @@
 // TODO(Brandon): Replace with custom allocator.
 #pragma once
-#include "thread.h"
 #include "types.h"
 
 namespace vtl

@@ -1,7 +1,8 @@
 #pragma once
-#include "../platform.h"
+#include "../platform_impl.h"
 #include <types/tuple.h>
 #include <pthread.h>
+#include <semaphore>
 
 namespace Vultr
 {
@@ -12,12 +13,34 @@ namespace Vultr
 			pthread_t pthread;
 		};
 
+		struct Mutex
+		{
+			Mutex();
+			~Mutex();
+
+			Mutex(const Mutex &) = delete;
+			Mutex &operator=(const Mutex &) = delete;
+
+			pthread_mutex_t pthread_mutex;
+		};
+
+		struct Semaphore
+		{
+			Semaphore();
+			~Semaphore();
+
+			Semaphore(const Semaphore &) = delete;
+			Semaphore &operator=(const Semaphore &) = delete;
+
+			sem_t pthread_semaphore;
+		};
+
 		template <typename ReturnT, typename... Args>
 		struct ThreadArgs
 		{
 			ReturnT (*entry_point)(Args...);
 			ReturnT *return_ptr;
-			vtl::Tuple<Args...> args;
+			Vultr::Tuple<Args...> args;
 
 			ThreadArgs(ReturnT (*entry_point)(Args...), ReturnT *return_ptr, Args... args) : entry_point(entry_point), return_ptr(return_ptr), args(args...) {}
 		};

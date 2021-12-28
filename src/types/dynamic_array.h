@@ -3,7 +3,7 @@
 #include "types.h"
 #include <vultr.h>
 
-namespace vtl
+namespace Vultr
 {
 	/**
 	 * Resizable array.
@@ -273,4 +273,4 @@ namespace vtl
 		Iterator end() const { return Iterator(_array + len); }
 	};
 
-} // namespace vtl
+} // namespace Vultr

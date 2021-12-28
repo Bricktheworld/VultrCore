@@ -1,5 +1,5 @@
 #include <types/types.h>
-#include "../platform.h"
+#include "../platform_impl.h"
 #include <sys/mman.h>
 
 namespace Vultr
@@ -43,7 +43,7 @@ namespace Vultr
 
 		void virtual_free(PlatformMemoryBlock *block)
 		{
-			ASSERT(block != nullptr, "Cannot free an invliad memory block.");
+			ASSERT(block != nullptr, "Cannot free an invalid memory block.");
 			auto size = block->size;
 			// TODO(Brandon): Handle some flags
 			munmap(block, size);

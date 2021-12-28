@@ -470,9 +470,7 @@ namespace Vultr
 			insert_free_mb(allocator, b);
 		}
 	}
-
-	// TODO(Brandon): Add lots of error messages to make sure this isn't misused.
-	void *free_list_alloc(FreeListAllocator *allocator, size_t size)
+	static void *free_list_alloc_no_lock(FreeListAllocator *allocator, size_t size)
 	{
 		size = align(size, allocator->alignment);
 		// Find a memory block of suitable size.
@@ -489,10 +487,33 @@ namespace Vultr
 		return reinterpret_cast<byte *>(new_block) + HEADER_SIZE;
 	}
 
-	static FreeListMemoryBlock *get_block_from_allocated_data(void *data) { return reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(data) - HEADER_SIZE); }
-
-	void *free_list_realloc(FreeListAllocator *arena, void *data, size_t size)
+	// TODO(Brandon): Add lots of error messages to make sure this isn't misused.
+	void *free_list_alloc(FreeListAllocator *allocator, size_t size)
 	{
+		Platform::Lock l(&allocator->mutex);
+		return free_list_alloc_no_lock(allocator, size);
+	}
+
+	static FreeListMemoryBlock *get_block_from_allocated_data(void *data) { return reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(data) - HEADER_SIZE); }
+	static void free_list_free_no_lock(FreeListAllocator *allocator, void *data)
+	{
+		auto *block_to_free = get_block_from_allocated_data(data);
+		size_t size         = get_mb_size(block_to_free);
+		auto *prev          = block_to_free->prev;
+		auto *next          = block_to_free->next;
+		init_free_mb(block_to_free, size, prev, next);
+		coalesce_mbs(allocator, block_to_free);
+		allocator->used -= size;
+	}
+	void free_list_free(FreeListAllocator *allocator, void *data)
+	{
+		Platform::Lock l(&allocator->mutex);
+		free_list_free_no_lock(allocator, data);
+	}
+
+	void *free_list_realloc(FreeListAllocator *allocator, void *data, size_t size)
+	{
+		Platform::Lock l(&allocator->mutex);
 		auto *block         = get_block_from_allocated_data(data);
 		size_t current_size = get_mb_size(block);
 
@@ -506,22 +527,11 @@ namespace Vultr
 		}
 		else
 		{
-			void *new_data = free_list_alloc(arena, size);
+			void *new_data = free_list_alloc_no_lock(allocator, size);
 			memcpy(new_data, data, current_size);
-			free_list_free(arena, data);
+			free_list_free_no_lock(allocator, data);
 			return new_data;
 		}
-	}
-
-	void free_list_free(FreeListAllocator *allocator, void *data)
-	{
-		auto *block_to_free = get_block_from_allocated_data(data);
-		size_t size         = get_mb_size(block_to_free);
-		auto *prev          = block_to_free->prev;
-		auto *next          = block_to_free->next;
-		init_free_mb(block_to_free, size, prev, next);
-		coalesce_mbs(allocator, block_to_free);
-		allocator->used -= size;
 	}
 
 	// Red-black tree rules:
