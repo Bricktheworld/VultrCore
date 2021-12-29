@@ -31,19 +31,16 @@ TEST(Buffer, Creation)
 		ASSERT_NE(second_buffer.buffer, buffer.buffer);
 		ASSERT_NE(second_buffer.buffer, nullptr);
 		ASSERT_EQ(second_buffer.size, buffer.size);
-		ASSERT_EQ(second_buffer.allocator, buffer.allocator);
 		ASSERT_EQ(second_buffer[0], 'c');
 		ASSERT_EQ(second_buffer[1], 'a');
 		ASSERT_EQ(second_buffer[2], 't');
 
 		ASSERT_EQ(third_buffer.buffer, nullptr);
 		ASSERT_EQ(third_buffer.size, 0);
-		ASSERT_EQ(third_buffer.allocator, g_game_memory->general_allocator);
 		third_buffer = second_buffer;
 		ASSERT_NE(third_buffer.buffer, second_buffer.buffer);
 		ASSERT_NE(third_buffer.buffer, nullptr);
 		ASSERT_EQ(third_buffer.size, buffer.size);
-		ASSERT_EQ(third_buffer.allocator, buffer.allocator);
 	}
 	ASSERT_EQ(third_buffer[0], 'c');
 	ASSERT_EQ(third_buffer[1], 'a');

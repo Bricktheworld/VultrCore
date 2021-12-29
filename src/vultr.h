@@ -55,7 +55,7 @@ T *v_alloc(Args... args, size_t count = 1)
 {
 	ASSERT(Vultr::g_game_memory != nullptr, "Cannot allocate using `alloc(Args... args, size_t count)` without first calling `init_game_memory()`. \n"
 											"Use `alloc(Allocator *allocator, Args... args, size_t count)` if you would like to use an allocator.");
-	auto *allocator = Vultr::g_game_memory->general_allocator;
+	auto *allocator = (Vultr::Allocator *)Vultr::g_game_memory->general_allocator;
 	return v_alloc<T>(allocator, args..., count * sizeof(T));
 }
 
@@ -75,7 +75,7 @@ T *v_realloc(T *memory, size_t count)
 {
 	ASSERT(Vultr::g_game_memory != nullptr, "Cannot allocate using `realloc(T *memory, size_t count)` without first calling `init_game_memory()`. \n"
 											"Use `realloc(Allocator *allocator, T *memory, size_t count)` if you would like to use an allocator.");
-	auto *allocator = Vultr::g_game_memory->general_allocator;
+	auto *allocator = (Vultr::Allocator *)Vultr::g_game_memory->general_allocator;
 	return v_realloc<T>(allocator, memory, sizeof(T) * count);
 }
 
@@ -89,6 +89,6 @@ void v_free(T *memory)
 {
 	ASSERT(Vultr::g_game_memory != nullptr, "Cannot free using `free(T *memory)` without first calling `init_game_memory()`. \n"
 											"Use `free(Allocator *allocator, T *memory)` if you would like to use an allocator.");
-	auto *allocator = Vultr::g_game_memory->general_allocator;
+	auto *allocator = (Vultr::Allocator *)Vultr::g_game_memory->general_allocator;
 	v_free<T>(allocator, memory);
 }

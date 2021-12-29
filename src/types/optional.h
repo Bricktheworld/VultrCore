@@ -1,6 +1,5 @@
 #pragma once
 #include <types/types.h>
-#include <optional>
 
 namespace Vultr
 {
@@ -10,9 +9,11 @@ namespace Vultr
 	};
 
 	inline constexpr NoneT None = NoneT();
+
 	template <typename T>
 	struct Option
 	{
+	  public:
 		Option() : has_value(false) {}
 		Option(NoneT none) : has_value(false) {}
 		Option(T value)
@@ -46,7 +47,7 @@ namespace Vultr
 			}
 		}
 
-		T free_value()
+		void free_value()
 		{
 			if (has_value)
 			{

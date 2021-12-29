@@ -43,7 +43,6 @@ TEST_F(DynamicArrayTests, Operator)
 	ASSERT_EQ("hello", string_list[0]);
 	string_list[0] = "world";
 	ASSERT_EQ("world", string_list[0]);
-	ASSERT_DEATH(string_list[1] = "ur mother", "Index out of bounds");
 }
 
 TEST_F(DynamicArrayTests, PushBack)
@@ -158,8 +157,6 @@ TEST_F(DynamicArrayTests, Delete)
 	string_list.remove_last();
 	ASSERT_EQ(string_list._size, 0);
 	ASSERT_EQ(string_list.len, 0);
-
-	EXPECT_DEATH(string_list.remove_last(), "Array is empty!");
 }
 
 TEST_F(DynamicArrayTests, Iterator)

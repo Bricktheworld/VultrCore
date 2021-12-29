@@ -7,27 +7,24 @@ namespace Vultr
 	template <typename T>
 	struct BufferT
 	{
-		T *buffer            = nullptr;
-		size_t size          = 0;
-		Allocator *allocator = nullptr;
+		T *buffer   = nullptr;
+		size_t size = 0;
 
-		BufferT() : allocator(g_game_memory->general_allocator){};
-		explicit BufferT(size_t size, Allocator *allocator = nullptr)
+		BufferT()   = default;
+		explicit BufferT(size_t size)
 		{
-			this->allocator = allocator ? allocator : g_game_memory->general_allocator;
-			this->size      = size;
-			buffer          = v_alloc<T>(this->allocator, size);
+			this->size = size;
+			buffer     = v_alloc<T>(size);
 		}
-		BufferT(const T *buffer, size_t size, Allocator *allocator = nullptr) : BufferT(size, allocator) { fill(buffer, size); }
+		BufferT(const T *buffer, size_t size) : BufferT(size) { fill(buffer, size); }
 		BufferT(const BufferT &other)
 		{
 			if (buffer != nullptr)
 			{
-				v_free(allocator, buffer);
+				v_free(buffer);
 			}
-			size      = other.size;
-			allocator = other.allocator;
-			buffer    = v_alloc<T>(allocator, size);
+			size   = other.size;
+			buffer = v_alloc<T>(size);
 			memcpy(buffer, other.buffer, size);
 		}
 		BufferT &operator=(const BufferT &other)
@@ -38,11 +35,10 @@ namespace Vultr
 			}
 			if (buffer != nullptr)
 			{
-				v_free(allocator, buffer);
+				v_free(buffer);
 			}
-			size      = other.size;
-			allocator = other.allocator;
-			buffer    = v_alloc<T>(allocator, size);
+			size   = other.size;
+			buffer = v_alloc<T>(size);
 			memcpy(buffer, other.buffer, size);
 			return *this;
 		}
@@ -60,7 +56,7 @@ namespace Vultr
 			{
 				if (buffer != nullptr)
 				{
-					v_free(allocator, buffer);
+					v_free(buffer);
 				}
 				buffer = nullptr;
 				size   = new_size;
@@ -70,50 +66,12 @@ namespace Vultr
 				size = new_size;
 				if (buffer == nullptr)
 				{
-					buffer = v_alloc<T>(allocator, size);
+					buffer = v_alloc<T>(size);
 				}
 				else
 				{
-					buffer = v_realloc(allocator, buffer, size);
+					buffer = v_realloc(buffer, size);
 				}
-			}
-		}
-
-		bool safe_resize(size_t new_size)
-		{
-			if (new_size == 0)
-			{
-				if (buffer != nullptr)
-				{
-					v_free(allocator, buffer);
-				}
-				buffer = nullptr;
-				size   = new_size;
-			}
-			else if (size == new_size)
-			{
-				return true;
-			}
-
-			void *res = nullptr;
-			if (buffer == nullptr)
-			{
-				res = mem_alloc(allocator, new_size);
-			}
-			else
-			{
-				res = static_cast<T *>(mem_realloc(allocator, buffer, new_size));
-			}
-
-			if (res == nullptr)
-			{
-				return false;
-			}
-			else
-			{
-				size   = new_size;
-				buffer = res;
-				return true;
 			}
 		}
 
@@ -129,7 +87,7 @@ namespace Vultr
 		{
 			if (buffer != nullptr)
 			{
-				v_free(allocator, buffer);
+				v_free(buffer);
 			}
 		}
 	};

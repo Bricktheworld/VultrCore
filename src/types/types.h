@@ -67,7 +67,7 @@ typedef std::atomic<size_t> atomic_size_t;
 #define DEBUG_BREAK() raise(SIGTRAP)
 #else
 #define DEBUG_BREAK()
-#endif // Platform
+#endif
 
 #else
 #define DEBUG_BREAK()

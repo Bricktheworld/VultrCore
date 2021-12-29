@@ -3,17 +3,17 @@
 
 namespace Vultr
 {
-	Project load_game(const char *location)
+	ErrorOr<Project> load_game(const char *location)
 	{
 		Project project{};
-		auto *dl = Platform::dl_open(location);
-		ASSERT(dl != nullptr, "Failed to load game");
+		UNWRAP(project.dll, Platform::dl_open(location));
 
-		auto *use_game_memory = (UseGameMemoryApi)(Platform::dl_load_symbol(dl, USE_GAME_MEMORY_SYMBOL));
+		UNWRAP(auto use_game_memory, Platform::dl_load_symbol<UseGameMemoryApi>(&project.dll, USE_GAME_MEMORY_SYMBOL));
 		use_game_memory(g_game_memory);
 
-		project.init   = (VultrInitApi)Platform::dl_load_symbol(dl, VULTR_INIT_SYMBOL);
-		project.update = (VultrUpdateApi)Platform::dl_load_symbol(dl, VULTR_UPDATE_SYMBOL);
+		UNWRAP(project.init, Platform::dl_load_symbol<VultrInitApi>(&project.dll, VULTR_INIT_SYMBOL));
+		UNWRAP(project.update, Platform::dl_load_symbol<VultrUpdateApi>(&project.dll, VULTR_UPDATE_SYMBOL));
+
 		return project;
 	}
 } // namespace Vultr

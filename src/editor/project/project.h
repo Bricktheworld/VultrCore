@@ -1,12 +1,14 @@
 #pragma once
 #include <vultr.h>
+#include <platform/platform.h>
 
 namespace Vultr
 {
 	struct Project
 	{
+		Platform::DLL dll;
 		VultrInitApi init;
 		VultrUpdateApi update;
 	};
-	Project load_game(const char *location);
+	//	ErrorOr<Project> load_game(const char *location);
 } // namespace Vultr

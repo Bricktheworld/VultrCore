@@ -1,4 +1,3 @@
-// TODO(Brandon): Replace with custom allocator.
 #pragma once
 #include "types.h"
 #include <vultr.h>

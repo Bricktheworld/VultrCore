@@ -1,7 +1,6 @@
 #pragma once
 #include <types/types.h>
 #include "vultr_memory_internal.h"
-#include <platform/platform.h>
 
 namespace Vultr
 {
@@ -10,17 +9,7 @@ namespace Vultr
 	/**
 	 * Memory allocator that can allocate any size with the least fragmentation possible.
 	 */
-	struct FreeListAllocator : public Allocator
-	{
-		// TODO(Brandon): Add support for 32 bit alignment (8 bytes)
-		u8 alignment                    = 16;
-		FreeListMemoryBlock *free_root  = nullptr;
-		FreeListMemoryBlock *block_head = nullptr;
-		size_t used                     = 0;
-		Platform::Mutex mutex;
-
-		FreeListAllocator() : Allocator(AllocatorType::FreeList) {}
-	};
+	struct FreeListAllocator;
 
 	/**
 	 * Initialize a new free list allocator. This allocator is best used for infrequent but large allocations.

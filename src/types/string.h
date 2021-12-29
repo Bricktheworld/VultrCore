@@ -7,8 +7,8 @@ namespace Vultr
 	struct String : public BufferT<char>
 	{
 		String() : BufferT<char>() {}
-		String(str string, size_t length, Allocator *allocator = nullptr) : BufferT<char>(string, length + 1, allocator) {}
-		String(str string, Allocator *allocator = nullptr) : BufferT<char>(string, strlen(string) + 1, allocator) {}
+		String(str string, size_t length) : BufferT<char>(string, length + 1) {}
+		explicit String(str string) : BufferT<char>(string, strlen(string) + 1) {}
 
 		String &operator=(str other)
 		{
@@ -50,7 +50,6 @@ namespace Vultr
 		}
 
 		bool operator==(const String &other) const { return *this == other.buffer; }
-
 		bool operator==(str other) const
 		{
 			if (other == nullptr && buffer == nullptr)

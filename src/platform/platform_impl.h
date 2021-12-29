@@ -1,5 +1,6 @@
 #pragma once
 #include <types/types.h>
+#include <types/error_or.h>
 
 namespace Vultr
 {
@@ -105,28 +106,22 @@ namespace Vultr
 		struct Semaphore;
 
 		/**
+		 * Represents a dynamic library in memory.
+		 */
+		struct DLL;
+
+		/**
 		 * Load a dynamic library into memory.
 		 *
 		 * @param const char *path: The path to the dynamically loaded library. *.so on linux and *.dll on windows.
 		 *
-		 * @return void *: The pointer to the DLL.
+		 * @return ErrorOr<void *>: The pointer to the DLL or an error.
 		 *
-		 * @error Will return nullptr if the library failed to load for whatever reason.
-		 *
-		 * @thread_safe
-		 */
-		void *dl_open(const char *path);
-
-		/**
-		 * Gets the error of the most recent error from a call of a dl function.
-		 *
-		 * @return const char *: The human readable error message.
-		 *
-		 * @error Returns nullptr if there have been no new errors since last called.
+		 * @error Will return an error with a message if it fails to open.
 		 *
 		 * @thread_safe
 		 */
-		const char *dl_error();
+		ErrorOr<DLL> dl_open(const char *path);
 
 		/**
 		 * Closes a dynamic library loaded using dl_open.
@@ -135,7 +130,7 @@ namespace Vultr
 		 *
 		 * @thread_safe
 		 */
-		void dl_close(void *dll);
+		void dl_close(DLL *dll);
 
 		/**
 		 * Loads a symbol in a dynamic library.
@@ -143,13 +138,14 @@ namespace Vultr
 		 * @param void *dll: The dll loaded through dl_open.
 		 * @param const char *symbol: The symbol to load. This should be loaded using an unmangled identifier. Usually this can only be done through extern "C"
 		 *
-		 * @return void *: The newly loaded symbol.
+		 * @return T: The newly loaded symbol.
 		 *
 		 * @error Will return nullptr if unable to load this symbol.
 		 *
 		 * @thread_safe
 		 */
-		void *dl_load_symbol(void *dll, const char *symbol);
+		template <typename T>
+		ErrorOr<T> dl_load_symbol(DLL *dll, const char *symbol);
 
 		enum struct DisplayMode : u8
 		{
