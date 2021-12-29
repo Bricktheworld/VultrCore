@@ -30,7 +30,15 @@ namespace Vultr
 			return strcmp(other, ref) == 0;
 		}
 
+		char operator[](size_t index) const
+		{
+			ASSERT(index <= len, "Index out of bounds!");
+			return ref[index];
+		}
+
 		size_t length() const { return len; }
+
+		const char *c_str() const { return ref; }
 
 	  private:
 		const size_t len = 0;

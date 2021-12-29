@@ -66,7 +66,7 @@ namespace Vultr
 
 		operator str() { return buffer; }
 
-		Option<size_t> index_of() const { return None; }
+		Option<size_t> index_of(str charsequence) const { return None; }
 
 	  private:
 		void concat(str other)
