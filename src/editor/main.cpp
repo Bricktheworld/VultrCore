@@ -9,7 +9,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 	auto *window  = Platform::open_window(g_game_memory->persistent_storage, Platform::DisplayMode::WINDOWED, nullptr, "Vultr Game Engine");
 
-	if check (Vultr::load_game("/home/brandon/Dev/VultrSandbox/build/alibVultrDemo.so"), auto project, auto err)
+	if check (Vultr::load_game("/home/brandon/Dev/VultrSandbox/build/libVultrDemo.so"), auto project, auto err)
 	{
 		project.init();
 
@@ -30,7 +30,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 	}
 	else
 	{
-		fprintf(stderr, "Failed to load project file, %s", (str)err.message);
+		fprintf(stderr, "Failed to load project file: %s", (str)err.message);
 		return 1;
 	}
 }
