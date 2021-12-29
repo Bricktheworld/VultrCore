@@ -411,13 +411,17 @@ namespace Vultr
 
 		// If the new size is exactly the same size as our memory block, there is no reason to split.
 		if (new_size == old_size)
-			return nullptr;
+		{
+			rbt_delete(allocator, b);
+			return b;
+		}
 
 		// If this block is not big enough to be split into another smaller memory block, don't bother...
 		// TODO(Brandon): Add test case for this.
 		if (old_size - new_size < sizeof(FreeListMemoryBlock))
 		{
-			return nullptr;
+			rbt_delete(allocator, b);
+			return b;
 		}
 
 		size_t updated_size = old_size - new_size - HEADER_SIZE;

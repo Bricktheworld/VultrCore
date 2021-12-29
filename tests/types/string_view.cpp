@@ -22,3 +22,19 @@ TEST(StringView, Create)
 		ASSERT_TRUE(some_string == view);
 	}
 }
+
+TEST(StringView, Substr)
+{
+	{
+		str example     = "Test";
+		StringView view = example;
+		auto substr     = view.substr(0);
+		ASSERT_STRCASEEQ(substr.buffer, example);
+		substr = view.substr(1);
+		ASSERT_STRCASEEQ(substr.buffer, "est");
+		substr = view.substr(0, 4);
+		ASSERT_STRCASEEQ(substr.buffer, example);
+		substr = view.substr(0, 1);
+		ASSERT_STRCASEEQ(substr.buffer, "Te");
+	}
+}

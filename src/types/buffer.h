@@ -19,10 +19,7 @@ namespace Vultr
 		BufferT(const T *buffer, size_t size) : BufferT(size) { fill(buffer, size); }
 		BufferT(const BufferT &other)
 		{
-			if (buffer != nullptr)
-			{
-				v_free(buffer);
-			}
+			flush();
 			size   = other.size;
 			buffer = v_alloc<T>(size);
 			memcpy(buffer, other.buffer, size);
@@ -33,10 +30,7 @@ namespace Vultr
 			{
 				return *this;
 			}
-			if (buffer != nullptr)
-			{
-				v_free(buffer);
-			}
+			flush();
 			size   = other.size;
 			buffer = v_alloc<T>(size);
 			memcpy(buffer, other.buffer, size);
@@ -54,12 +48,7 @@ namespace Vultr
 		{
 			if (new_size == 0)
 			{
-				if (buffer != nullptr)
-				{
-					v_free(buffer);
-				}
-				buffer = nullptr;
-				size   = new_size;
+				flush();
 			}
 			else if (size != new_size)
 			{
@@ -83,11 +72,16 @@ namespace Vultr
 			memcpy(buffer, data, len);
 		}
 
-		~BufferT()
+		~BufferT() { flush(); }
+
+	  protected:
+		void flush()
 		{
 			if (buffer != nullptr)
 			{
 				v_free(buffer);
+				buffer = nullptr;
+				size   = 0;
 			}
 		}
 	};

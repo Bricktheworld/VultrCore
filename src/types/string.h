@@ -7,11 +7,17 @@ namespace Vultr
 	struct String : public BufferT<char>
 	{
 		String() : BufferT<char>() {}
-		String(str string, size_t length) : BufferT<char>(string, length + 1) {}
+		String(str string, size_t length) : BufferT<char>(length + 1)
+		{
+			if (length > 0)
+				fill(string, length);
+			buffer[length] = '\0';
+		}
 		explicit String(str string) : BufferT<char>(string, strlen(string) + 1) {}
 
 		String &operator=(str other)
 		{
+			flush();
 			size_t len = strlen(other) + 1;
 			resize(len);
 			fill(other, len);

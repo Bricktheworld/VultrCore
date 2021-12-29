@@ -19,6 +19,16 @@ TEST(String, Create)
 		ASSERT_EQ(string.size, strlen("So") + 1);
 		ASSERT_NE(string.buffer, nullptr);
 	}
+	{
+		String some_string("something");
+		{
+			auto other  = String("new_string");
+			some_string = other;
+			ASSERT_NE(other.buffer, some_string.buffer);
+			ASSERT_STRCASEEQ(some_string, "new_string");
+		}
+		ASSERT_STRCASEEQ(some_string, "new_string");
+	}
 }
 
 TEST(String, Concat)

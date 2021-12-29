@@ -39,6 +39,22 @@ namespace Vultr
 		size_t length() const { return len; }
 
 		const char *c_str() const { return ref; }
+		String substr(size_t start) const
+		{
+			ASSERT(start < len, "Start index is greater than the length of the string.");
+			if (len == 0)
+				return String();
+			return String(ref + start, len - start);
+		}
+		String substr(size_t start, size_t end) const
+		{
+			ASSERT(start < len, "Start index is greater than the length of the string.");
+			ASSERT(end >= start, "End index is before start index of the string.");
+			ASSERT(end <= len, "End index is greater than the length of the string.");
+			if (len == 0)
+				return String();
+			return String(ref + start, end + 1 - start);
+		}
 
 	  private:
 		const size_t len = 0;
