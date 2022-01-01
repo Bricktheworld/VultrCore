@@ -165,4 +165,40 @@ namespace Vultr
 		}
 		return None;
 	}
+
+	Vector<size_t> find_all(StringView haystack, StringView needle)
+	{
+		Vector<size_t> positions{};
+		size_t current_position = 0;
+		while (current_position <= haystack.length())
+		{
+			auto *res = static_cast<char *>(memmem(haystack.c_str() + current_position, haystack.length() - current_position, needle.c_str(), needle.length()));
+			if (res == nullptr)
+				break;
+			positions.push_back(res - haystack.c_str());
+			current_position += res - haystack.c_str() + 1;
+		}
+		return positions;
+	}
+
+	String replace_all(StringView haystack, StringView needle, StringView replacement)
+	{
+		if (haystack.is_empty())
+			return String(haystack);
+
+		Vector<size_t> positions = find_all(haystack, needle);
+		if (positions.empty())
+			return String(haystack);
+
+		String replaced_string;
+		size_t last_position = 0;
+		for (const auto &position : positions)
+		{
+			replaced_string += haystack.substr(last_position, position);
+			replaced_string += replacement;
+			last_position = position + needle.length();
+		}
+		replaced_string += haystack.substr(last_position, haystack.length());
+		return replaced_string;
+	}
 } // namespace Vultr

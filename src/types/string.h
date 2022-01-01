@@ -1,86 +1,109 @@
 #pragma once
 #include "buffer.h"
 #include "optional.h"
+#include "string_view.h"
+#include "iterator.h"
 
 namespace Vultr
 {
 	struct String : public BufferT<char>
 	{
-		String() : BufferT<char>() {}
-		String(str string, size_t length) : BufferT<char>(length + 1)
+		String() : BufferT<char>(1) { storage[0] = '\0'; }
+		explicit String(StringView string) : BufferT<char>(string.length() + 1)
 		{
-			if (length > 0)
-				fill(string, length);
-			buffer[length] = '\0';
+			if (string.length() > 0)
+				fill(string.c_str(), string.length());
+			storage[string.length()] = '\0';
+			ASSERT(size() > 0, "String buffer size should never be less than 1 because of null terminator.");
 		}
-		explicit String(str string) : BufferT<char>(string, strlen(string) + 1) {}
+		String(str string, size_t length) : String(StringView(string, length)) {}
 
-		String &operator=(str other)
+		String &operator=(StringView other)
 		{
 			flush();
-			size_t len = strlen(other) + 1;
-			resize(len);
-			fill(other, len);
+			size_t size = other.length() + 1;
+			resize(size);
+			fill(other, size);
 
 			return *this;
 		}
 
-		String &operator+=(str other)
+		String &operator+=(StringView other)
 		{
 			concat(other);
 			return *this;
 		}
 
-		String operator+(str other)
-		{
-			size_t len = strlen(other);
-			char buf[size + len];
-			memcpy(buf, buffer, size - 1);
-			memcpy(buf + size - 1, other, len + 1);
-			return {buf, size + len - 1};
-		}
-
 		String &operator+=(const String &other)
 		{
-			concat(other.buffer);
+			concat(StringView(other.storage, other.length()));
 			return *this;
 		}
-
-		String operator+(const String &other)
+		operator StringView() const
 		{
-			size_t len = strlen(other.buffer);
-			char buf[size + len];
-			memcpy(buf, buffer, size - 1);
-			memcpy(buf, other.buffer, len + 1);
-			return {buf, size + len - 1};
+			if (is_empty())
+				return {};
+			return {storage, length()};
 		}
 
-		bool operator==(const String &other) const { return *this == other.buffer; }
-		bool operator==(str other) const
+		bool operator==(const String &other) const { return *this == other.storage; }
+		bool operator==(StringView other) const
 		{
-			if (other == nullptr && buffer == nullptr)
+			if (other == nullptr && is_empty())
 				return true;
 
-			if (buffer == nullptr)
+			if (is_empty())
 				return false;
 
 			if (other == nullptr)
 				return false;
 
-			return strcmp(other, buffer) == 0;
+			if (other.length() != length())
+				return false;
+
+			return strncasecmp(other, storage, other.length()) == 0;
 		}
+		bool operator==(str other) const { return *this == StringView(other); }
 
-		operator str() { return buffer; }
+		operator str() { return storage; }
+		size_t length() const { return size() - 1; }
+		size_t is_empty() const { return length() == 0; }
 
-		Option<size_t> index_of(str charsequence) const { return None; }
+		using SIterator = Iterator<String, char>;
+		SIterator begin() { return SIterator::begin(this); }
+		SIterator end() { return SIterator::end(this); }
+
+		using SCIterator = Iterator<const String, const char>;
+		SCIterator begin() const { return SCIterator::begin(this); }
+		SCIterator end() const { return SCIterator::end(this); }
 
 	  private:
-		void concat(str other)
+		void clear()
 		{
-			auto len     = strlen(other);
-			auto old_len = size - 1;
-			resize(len + size);
-			memcpy(buffer + old_len, other, len + 1);
+			flush();
+			m_size     = 1;
+			storage[0] = '\0';
+		}
+
+		void concat(StringView other)
+		{
+			if (other == nullptr)
+				return;
+			auto old_len = size() - 1;
+			resize(other.length() + size());
+			memcpy(storage + old_len, other, other.length());
+			storage[length()] = '\0';
 		}
 	};
+
+	inline String operator+(StringView a, StringView b)
+	{
+		auto new_len = a.length() + b.length();
+		char buf[new_len + 1];
+		memcpy(buf, a.c_str(), a.length());
+		memcpy(buf + a.length(), b.c_str(), b.length());
+		buf[new_len] = '\0';
+
+		return String(StringView(buf, new_len));
+	}
 } // namespace Vultr

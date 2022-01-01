@@ -1,6 +1,7 @@
 #pragma once
 #include <types/types.h>
-#include <types/string_view.h>
+#include <types/string.h>
+#include <types/vector.h>
 
 namespace Vultr
 {
@@ -19,5 +20,7 @@ namespace Vultr
 	Option<size_t> find(StringView haystack, char needle, size_t start = 0);
 	Option<size_t> find(StringView haystack, StringView needle, size_t start = 0);
 	Option<size_t> find_last(StringView haystack, char needle);
+	Vector<size_t> find_all(StringView haystack, StringView needle);
+	String replace_all(StringView haystack, StringView needle, StringView replacement);
 
 } // namespace Vultr

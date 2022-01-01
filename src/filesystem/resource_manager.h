@@ -5,7 +5,7 @@
 #include <render/types/shader.h>
 #include <render/types/mesh.h>
 #include <types/queue.h>
-#include <types/dynamic_array.h>
+#include <types/vector.h>
 
 namespace Vultr
 {

@@ -4,25 +4,36 @@
 
 namespace Vultr
 {
-	template <typename T>
+	template <typename T, size_t inline_capacity = 64>
 	struct BufferT
 	{
-		T *buffer   = nullptr;
-		size_t size = 0;
+		T *storage = m_inline_storage;
 
-		BufferT()   = default;
-		explicit BufferT(size_t size)
-		{
-			this->size = size;
-			buffer     = v_alloc<T>(size);
-		}
+		BufferT()  = default;
+		explicit BufferT(size_t size) { resize(size); }
 		BufferT(const T *buffer, size_t size) : BufferT(size) { fill(buffer, size); }
 		BufferT(const BufferT &other)
 		{
 			flush();
-			size   = other.size;
-			buffer = v_alloc<T>(size);
-			memcpy(buffer, other.buffer, size);
+			resize(other.size());
+			memcpy(storage, other.storage, m_size);
+		}
+		BufferT(BufferT &&other)
+		{
+			flush();
+			m_size   = other.m_size;
+			m_inline = other.m_inline;
+			if (m_inline)
+			{
+				memcpy(storage, other.storage, m_size);
+			}
+			else
+			{
+				storage = other.storage;
+			}
+			other.m_size   = 0;
+			other.storage  = other.m_inline_storage;
+			other.m_inline = true;
 		}
 		BufferT &operator=(const BufferT &other)
 		{
@@ -31,17 +42,50 @@ namespace Vultr
 				return *this;
 			}
 			flush();
-			size   = other.size;
-			buffer = v_alloc<T>(size);
-			memcpy(buffer, other.buffer, size);
+			resize(other.size());
+			memcpy(storage, other.storage, m_size);
+			return *this;
+		}
+		BufferT &operator=(BufferT &&other)
+		{
+			if (&other == this)
+			{
+				return *this;
+			}
+			flush();
+			m_size   = other.m_size;
+			m_inline = other.m_inline;
+			if (m_inline)
+			{
+				memcpy(storage, other.storage, m_size);
+			}
+			else
+			{
+				storage = other.storage;
+			}
+			other.m_size   = 0;
+			other.storage  = other.m_inline_storage;
+			other.m_inline = true;
 			return *this;
 		}
 
 		T &operator[](size_t index)
 		{
-			ASSERT(index < size, "Cannot get invalid index into buffer!");
-			ASSERT(buffer != nullptr, "Cannot get invalid index into buffer!");
-			return buffer[index];
+			ASSERT(index < m_size, "Cannot get invalid index into buffer!");
+			ASSERT(storage != nullptr, "Cannot get invalid index into buffer!");
+			return storage[index];
+		}
+
+		T &first()
+		{
+			ASSERT(m_size > 1, "Cannot get first from empty buffer!");
+			return storage[0];
+		}
+
+		T &last()
+		{
+			ASSERT(m_size > 1, "Cannot get last from empty buffer!");
+			return storage[m_size - 1];
 		}
 
 		void resize(size_t new_size)
@@ -50,16 +94,22 @@ namespace Vultr
 			{
 				flush();
 			}
-			else if (size != new_size)
+			else if (m_size != new_size)
 			{
-				size = new_size;
-				if (buffer == nullptr)
+				if (m_inline)
 				{
-					buffer = v_alloc<T>(size);
+					if (new_size > inline_capacity)
+					{
+						storage = v_alloc<T>(new_size);
+						memcpy(storage, m_inline_storage, m_size);
+						m_inline = false;
+					}
+					m_size = new_size;
 				}
 				else
 				{
-					buffer = v_realloc(buffer, size);
+					m_size  = new_size;
+					storage = v_realloc(storage, m_size);
 				}
 			}
 		}
@@ -67,23 +117,33 @@ namespace Vultr
 		void fill(const T *data, size_t len)
 		{
 			ASSERT(len != 0, "Cannot fill buffer with a length of 0.");
-			ASSERT(buffer != nullptr, "Cannot fill buffer with invalid source");
-			ASSERT(len <= size, "Not enough space to fill buffer!");
-			memcpy(buffer, data, len);
+			ASSERT(storage != nullptr, "Cannot fill buffer with invalid source");
+			ASSERT(len <= m_size, "Not enough space to fill buffer!");
+			memcpy(storage, data, len);
 		}
 
 		~BufferT() { flush(); }
 
+		size_t size() const { return m_size; }
+		bool is_empty() const { return m_size == 0; }
+
 	  protected:
 		void flush()
 		{
-			if (buffer != nullptr)
+			if (!m_inline)
 			{
-				v_free(buffer);
-				buffer = nullptr;
-				size   = 0;
+				v_free(storage);
 			}
+			storage  = m_inline_storage;
+			m_size   = 0;
+			m_inline = true;
 		}
+
+		size_t m_size = 0;
+
+	  private:
+		T m_inline_storage[inline_capacity]{};
+		bool m_inline = true;
 	};
 
 	typedef BufferT<byte> Buffer;

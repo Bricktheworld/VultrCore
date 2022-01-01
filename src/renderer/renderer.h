@@ -16,7 +16,6 @@ namespace Vultr
 
 	struct Renderer
 	{
-		u8 buffer                              = 0;
-		RenderCommandBuffer command_buffers[2] = {RenderCommandBuffer{}, RenderCommandBuffer{}};
+		RenderCommandBuffer buffer;
 	};
 } // namespace Vultr

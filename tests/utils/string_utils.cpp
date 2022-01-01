@@ -67,3 +67,16 @@ TEST(StringUtils, FindLast)
 	ASSERT_FALSE(find_last("big chungus", 'a'));
 	ASSERT_EQ(find_last("big chungus", 'b').value(), 0);
 }
+
+TEST(StringUtils, FindAll)
+{
+	auto indices = find_all("never gonna give you up, never gonna let you down", "never");
+	ASSERT_EQ(indices.size(), 2);
+	ASSERT_EQ(indices[0], 0);
+}
+
+TEST(StringUtils, ReplaceAll)
+{
+	auto res = replace_all("big big chungus, big chungus, big chungus", "big", "small");
+	ASSERT_STRCASEEQ((str)res, "small small chungus, small chungus, small chungus");
+}

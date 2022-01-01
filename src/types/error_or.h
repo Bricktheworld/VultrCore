@@ -9,31 +9,31 @@ namespace Vultr
 	{
 	  public:
 		using ValueType = T;
-		ErrorOr(const Error err) : is_error(true), error(err) {}
+		ErrorOr(const Error err) : m_is_error(true), m_error(err) {}
 		ErrorOr(T value)
 		{
-			is_error = false;
+			m_is_error = false;
 			new (storage) T(value);
 		}
 
 		~ErrorOr()
 		{
-			if (!is_error)
+			if (!m_is_error)
 			{
 				value().~T();
-				is_error = true;
+				m_is_error = true;
 			}
 		}
 
 		T &value()
 		{
-			ASSERT(!is_error, "Cannot return value because error was returned in ErrorOr instead! Use boolean operator on ErrorOr to make sure that it actually has a value first.");
+			ASSERT(!m_is_error, "Cannot return value because error was returned in ErrorOr instead! Use boolean operator on ErrorOr to make sure that it actually has a value first.");
 			return *reinterpret_cast<T *>(&storage);
 		}
 
 		T &value_or(const T &replacement)
 		{
-			if (!is_error)
+			if (!m_is_error)
 			{
 				return value();
 			}
@@ -45,17 +45,17 @@ namespace Vultr
 
 		Error get_error()
 		{
-			ASSERT(is_error, "Cannot return error because ErrorOr doesn't have an error but instead a value!");
-			return error;
+			ASSERT(m_is_error, "Cannot return error because ErrorOr doesn't have an error but instead a value!");
+			return m_error;
 		}
 
-		bool has_value() const { return !is_error; }
+		bool has_value() const { return !m_is_error; }
 		operator bool() const { return has_value(); }
 
 	  private:
 		alignas(T) byte storage[sizeof(T)]{};
-		Error error   = Error("Error has not been properly initialized", -1);
-		bool is_error = true;
+		Error m_error   = Error("Error has not been properly initialized", -1);
+		bool m_is_error = true;
 	};
 
 	// Specialization just for void.
@@ -63,22 +63,22 @@ namespace Vultr
 	struct ErrorOr<void>
 	{
 	  public:
-		ErrorOr() { is_error = false; }
-		ErrorOr(const Error err) : is_error(true), error(err) {}
+		ErrorOr() { m_is_error = false; }
+		ErrorOr(const Error err) : m_is_error(true), m_error(err) {}
 		~ErrorOr() = default;
 
 		Error get_error()
 		{
-			ASSERT(is_error, "Cannot return error because ErrorOr doesn't have an error but instead a value!");
-			return error;
+			ASSERT(m_is_error, "Cannot return error because ErrorOr doesn't have an error but instead a value!");
+			return m_error;
 		}
 
-		bool has_value() const { return !is_error; }
-		operator bool() const { return !is_error; }
+		bool has_value() const { return !m_is_error; }
+		operator bool() const { return !m_is_error; }
 
 	  private:
-		Error error   = Error("Error has not been properly initialized", -1);
-		bool is_error = false;
+		Error m_error   = Error("Error has not been properly initialized", -1);
+		bool m_is_error = false;
 	};
 
 #define _CONCAT(a, b) _CONCAT_INNER(a, b)

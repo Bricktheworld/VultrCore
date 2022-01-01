@@ -75,7 +75,11 @@ namespace Vultr
 	// Bit hack magic to manipulate lowest 3 bits of our size.
 	// This is possible because alignment is 8 bytes minimum so the lowest 3 bits (1, 2, 4) will always be rounded to 0.
 	// These can then be used to hold our initialization flag, allocation flag, and color bit
-	static size_t get_mb_size(FreeListMemoryBlock *block) { return block->size & ~LOWEST_3_BITS; }
+	static size_t get_mb_size(FreeListMemoryBlock *block)
+	{
+		ASSERT(block != nullptr, "Cannot get size of nullptr block.");
+		return block->size & ~LOWEST_3_BITS;
+	}
 	static void *get_mb_memory(FreeListMemoryBlock *block)
 	{
 		ASSERT_MB_ALLOCATED(block);

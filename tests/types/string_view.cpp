@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #define private public
 #define protected public
-#include <types/string_view.h>
+#include <types/string.h>
 
 using namespace Vultr;
 TEST(StringView, Create)
@@ -17,7 +17,7 @@ TEST(StringView, Create)
 	{
 		String some_string("Test");
 		StringView view = some_string;
-		ASSERT_STRCASEEQ(view.ref, some_string.buffer);
+		ASSERT_STRCASEEQ(view.ref, some_string.storage);
 		ASSERT_TRUE(view == some_string);
 		ASSERT_TRUE(some_string == view);
 	}
@@ -29,12 +29,10 @@ TEST(StringView, Substr)
 		str example     = "Test";
 		StringView view = example;
 		auto substr     = view.substr(0);
-		ASSERT_STRCASEEQ(substr.buffer, example);
+		ASSERT_STRCASEEQ(substr.c_str(), example);
 		substr = view.substr(1);
-		ASSERT_STRCASEEQ(substr.buffer, "est");
+		ASSERT_STRCASEEQ(substr.c_str(), "est");
 		substr = view.substr(0, 4);
-		ASSERT_STRCASEEQ(substr.buffer, example);
-		substr = view.substr(0, 1);
-		ASSERT_STRCASEEQ(substr.buffer, "Te");
+		ASSERT_STRCASEEQ(substr.c_str(), example);
 	}
 }

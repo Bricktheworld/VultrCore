@@ -1,5 +1,5 @@
 #pragma once
-#include "string.h"
+#include <types/types.h>
 
 namespace Vultr
 {
@@ -9,13 +9,11 @@ namespace Vultr
 		StringView() = default;
 		StringView(str ref) : StringView(ref, ref != nullptr ? strlen(ref) : 0) {}
 		StringView(str ref, size_t len) : ref(ref), len(len) {}
-		StringView(const String &ref) : ref(ref.buffer), len(ref.size - 1) {}
 
 		bool is_empty() const { return len == 0; }
 		operator str() const { return ref; }
 
 		bool operator==(const StringView &other) const { return *this == other.ref; }
-		bool operator==(const String &other) const { return *this == other.buffer; }
 		bool operator==(str other) const
 		{
 			if (other == nullptr && ref == nullptr)
@@ -39,25 +37,25 @@ namespace Vultr
 		size_t length() const { return len; }
 
 		const char *c_str() const { return ref; }
-		String substr(size_t start) const
+		const StringView substr(size_t start) const
 		{
 			ASSERT(start < len, "Start index is greater than the length of the string.");
 			if (len == 0)
-				return String();
-			return String(ref + start, len - start);
+				return StringView();
+			return StringView(ref + start, len - start);
 		}
-		String substr(size_t start, size_t end) const
+		const StringView substr(size_t start, size_t end) const
 		{
 			ASSERT(start < len, "Start index is greater than the length of the string.");
 			ASSERT(end >= start, "End index is before start index of the string.");
 			ASSERT(end <= len, "End index is greater than the length of the string.");
-			if (len == 0)
-				return String();
-			return String(ref + start, end + 1 - start);
+			if (len == 0 || end == start)
+				return StringView();
+			return StringView(ref + start, end - start);
 		}
 
 	  private:
-		const size_t len = 0;
-		str ref          = nullptr;
+		size_t len = 0;
+		str ref    = nullptr;
 	};
 } // namespace Vultr

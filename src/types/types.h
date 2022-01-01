@@ -42,6 +42,9 @@ typedef std::atomic<intptr_t> atomic_intptr_t;
 typedef std::atomic<uintptr_t> atomic_uintptr_t;
 typedef std::atomic<size_t> atomic_size_t;
 
+using std::forward;
+using std::move;
+
 #define U8Max 255
 #define U16Max 65535
 #define S32Min ((s32)0x80000000)
