@@ -5,28 +5,14 @@
 #include <vultr.h>
 
 using namespace Vultr;
-class DynamicArrayTests : public testing::Test
-{
-  protected:
-	// Per-test-suite set-up.
-	// Called before the first test in this test suite.
-	// Can be omitted if not needed.
-	static void SetUpTestSuite() {}
-
-	// Per-test-suite tear-down.
-	// Called after the last test in this test suite.
-	// Can be omitted if not needed.
-	static void TearDownTestSuite() {}
-};
-
-TEST_F(DynamicArrayTests, EmptyInitialize)
+TEST(VectorTests, EmptyInitialize)
 {
 	Vector<const char *, 15> string_list;
 	ASSERT_EQ(string_list.capacity(), 15);
 	ASSERT_EQ(string_list.size(), 0);
 }
 
-TEST_F(DynamicArrayTests, ArrayInitialize)
+TEST(VectorTests, ArrayInitialize)
 {
 	const char *string_array[] = {"hello", "world"};
 	Vector<const char *, 10> string_list(string_array, 2);
@@ -34,7 +20,7 @@ TEST_F(DynamicArrayTests, ArrayInitialize)
 	ASSERT_EQ(string_list.size(), 2);
 }
 
-TEST_F(DynamicArrayTests, Operator)
+TEST(VectorTests, Operator)
 {
 	const char *string_array[] = {"hello"};
 	Vector<const char *> string_list(string_array, 1);
@@ -43,7 +29,7 @@ TEST_F(DynamicArrayTests, Operator)
 	ASSERT_EQ("world", string_list[0]);
 }
 
-TEST_F(DynamicArrayTests, PushBack)
+TEST(VectorTests, PushBack)
 {
 	const char *string_array[] = {"hello"};
 	Vector<const char *, 10> string_list(string_array, 1);
@@ -54,7 +40,7 @@ TEST_F(DynamicArrayTests, PushBack)
 	ASSERT_EQ(string_list.size(), 2);
 }
 
-TEST_F(DynamicArrayTests, Insert)
+TEST(VectorTests, Insert)
 {
 	const char *string_array[] = {"big", "big", "chungus", "big", "chungus"};
 	Vector<const char *, 10> string_list(string_array, 5);
@@ -113,7 +99,7 @@ TEST_F(DynamicArrayTests, Insert)
 	ASSERT_EQ(string_list.size(), 11);
 }
 
-// TEST_F(DynamicArrayTests, Delete)
+// TEST_F(VectorTests, Delete)
 //{
 //	const char *string_array[] = {"big", "big", "chungus", "big", "chungus"};
 //
@@ -157,7 +143,7 @@ TEST_F(DynamicArrayTests, Insert)
 //	ASSERT_EQ(string_list._length, 0);
 // }
 
-TEST_F(DynamicArrayTests, Iterator)
+TEST(VectorTests, Iterator)
 {
 	const char *string_array[] = {"big", "big", "chungus", "big", "chungus"};
 	Vector<const char *> string_list(string_array, 5);
