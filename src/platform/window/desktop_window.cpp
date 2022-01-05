@@ -36,7 +36,7 @@ namespace Vultr::Platform
 		ASSERT(glfwInit(), "Failed to initialize glfw");
 		ASSERT(title != nullptr, "Invalid title.");
 
-		auto *window                   = v_alloc<Window>(allocator);
+		auto *window                   = v_alloc<LinearAllocator, Window>(allocator);
 
 		GLFWmonitor *monitor_param     = nullptr;
 		GLFWwindow *window_param       = nullptr;

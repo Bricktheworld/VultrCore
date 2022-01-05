@@ -16,6 +16,7 @@ namespace Vultr
 		LinearAllocator *persistent_storage  = nullptr;
 		LinearAllocator *frame_storage       = nullptr;
 		FreeListAllocator *general_allocator = nullptr;
+		SlabAllocator *slab_allocator        = nullptr;
 		PoolAllocator *pool_allocator        = nullptr;
 	};
 
@@ -51,12 +52,20 @@ VULTR_API void vultr_update(void);
  * @error This will crash the program if the memory failed to allocate.
  */
 template <typename T, typename... Args>
-T *v_alloc(Args... args, size_t count = 1)
+requires(!Vultr::is_same<T, void>) T *v_alloc(Args... args, size_t count = 1)
 {
-	ASSERT(Vultr::g_game_memory != nullptr, "Cannot allocate using `alloc(Args... args, size_t count)` without first calling `init_game_memory()`. \n"
-											"Use `alloc(Allocator *allocator, Args... args, size_t count)` if you would like to use an allocator.");
-	auto *allocator = (Vultr::Allocator *)Vultr::g_game_memory->general_allocator;
-	return v_alloc<T>(allocator, args..., count);
+	ASSERT(Vultr::g_game_memory != nullptr, "Cannot allocate using `v_alloc(Args... args, size_t count)` without first calling `init_game_memory()`. \n"
+											"Use `v_alloc(Allocator *allocator, Args... args, size_t count)` if you would like to use an allocator.");
+	auto *slab_allocator      = Vultr::g_game_memory->slab_allocator;
+	auto *free_list_allocator = Vultr::g_game_memory->general_allocator;
+
+	if (sizeof(T) * count <= slab_allocator->max_slab_size)
+	{
+		auto *data = v_alloc_safe<Vultr::SlabAllocator, T>(slab_allocator, args..., count);
+		if (data != nullptr)
+			return data;
+	}
+	return v_alloc<Vultr::FreeListAllocator, T>(free_list_allocator, args..., count);
 }
 
 /**
@@ -69,14 +78,29 @@ T *v_alloc(Args... args, size_t count = 1)
  *
  * @error This will crash the program if it failed to reallocate.
  */
-// TODO(Brandon): Add copy constructor and destructor safety.
 template <typename T>
-T *v_realloc(T *memory, size_t count)
+requires(!Vultr::is_same<T, void>) T *v_realloc(T *memory, size_t count)
 {
 	ASSERT(Vultr::g_game_memory != nullptr, "Cannot allocate using `realloc(T *memory, size_t count)` without first calling `init_game_memory()`. \n"
 											"Use `realloc(Allocator *allocator, T *memory, size_t count)` if you would like to use an allocator.");
-	auto *allocator = (Vultr::Allocator *)Vultr::g_game_memory->general_allocator;
-	return v_realloc<T>(allocator, memory, count);
+	auto *slab_allocator      = Vultr::g_game_memory->slab_allocator;
+	auto *free_list_allocator = Vultr::g_game_memory->general_allocator;
+
+	// If the memory resides in the slab allocator.
+	if (reinterpret_cast<byte *>(memory) > reinterpret_cast<byte *>(slab_allocator))
+	{
+		if (sizeof(T) * count <= slab_allocator->max_slab_size)
+		{
+			auto *data = v_realloc_safe<Vultr::SlabAllocator, T>(slab_allocator, memory, count);
+			if (data != nullptr)
+			{
+				return data;
+			}
+		}
+		v_free<Vultr::SlabAllocator, T>(slab_allocator, memory);
+		return v_alloc<Vultr::FreeListAllocator, T>(free_list_allocator, count);
+	}
+	return v_realloc<Vultr::FreeListAllocator, T>(free_list_allocator, memory, count);
 }
 
 /**
@@ -89,6 +113,16 @@ void v_free(T *memory)
 {
 	ASSERT(Vultr::g_game_memory != nullptr, "Cannot free using `free(T *memory)` without first calling `init_game_memory()`. \n"
 											"Use `free(Allocator *allocator, T *memory)` if you would like to use an allocator.");
-	auto *allocator = (Vultr::Allocator *)Vultr::g_game_memory->general_allocator;
-	v_free<T>(allocator, memory);
+	auto *slab_allocator      = Vultr::g_game_memory->slab_allocator;
+	auto *free_list_allocator = Vultr::g_game_memory->general_allocator;
+
+	// If the memory resides in the slab allocator.
+	if (reinterpret_cast<byte *>(memory) > reinterpret_cast<byte *>(slab_allocator))
+	{
+		v_free<Vultr::SlabAllocator, T>(slab_allocator, memory);
+	}
+	else
+	{
+		v_free<Vultr::FreeListAllocator>(free_list_allocator, memory);
+	}
 }

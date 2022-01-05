@@ -2,6 +2,7 @@
 #include "linear.cpp"
 #include "pool.cpp"
 #include "free_list.cpp"
+#include "slab.cpp"
 #include <platform/platform.h>
 
 namespace Vultr
@@ -66,20 +67,17 @@ namespace Vultr
 		{
 			case AllocatorType::Linear:
 				return linear_alloc(reinterpret_cast<LinearAllocator *>(allocator), size);
-				break;
 			case AllocatorType::Pool:
 				return pool_alloc(reinterpret_cast<PoolAllocator *>(allocator), size);
-				break;
 			case AllocatorType::FreeList:
 				return free_list_alloc(reinterpret_cast<FreeListAllocator *>(allocator), size);
-				break;
+			case AllocatorType::Slab:
+				return slab_alloc(reinterpret_cast<SlabAllocator *>(allocator), size);
 			case AllocatorType::Stack:
 				NOT_IMPLEMENTED("Stack has not yet been implemented in the engine :(");
-				break;
 			case AllocatorType::None:
 			default:
 				THROW("Invalid memory allocator, how the fuck did you even get here.");
-				return nullptr;
 		}
 	}
 
@@ -89,16 +87,14 @@ namespace Vultr
 		{
 			case AllocatorType::Linear:
 				THROW("Cannot reallocate in a linear allocator, the entire point of linear is to not do that.");
-				break;
 			case AllocatorType::Pool:
 				return pool_realloc(reinterpret_cast<PoolAllocator *>(allocator), memory, size);
-				break;
 			case AllocatorType::FreeList:
 				return free_list_realloc(reinterpret_cast<FreeListAllocator *>(allocator), memory, size);
-				break;
+			case AllocatorType::Slab:
+				return slab_realloc(reinterpret_cast<SlabAllocator *>(allocator), memory, size);
 			case AllocatorType::Stack:
 				THROW("Cannot reallocate in a stack allocator, this is not what a stack allocator is for.");
-				break;
 			case AllocatorType::None:
 			default:
 				THROW("Invalid memory allocator, how the fuck did you even get here.");
@@ -111,16 +107,17 @@ namespace Vultr
 		{
 			case AllocatorType::Linear:
 				THROW("You cannot free individual blocks of memory from a linear allocator.");
-				break;
 			case AllocatorType::Pool:
 				pool_free(reinterpret_cast<PoolAllocator *>(allocator), memory);
 				break;
 			case AllocatorType::FreeList:
 				free_list_free(reinterpret_cast<FreeListAllocator *>(allocator), memory);
 				break;
+			case AllocatorType::Slab:
+				slab_free(reinterpret_cast<SlabAllocator *>(allocator), memory);
+				break;
 			case AllocatorType::Stack:
 				NOT_IMPLEMENTED("Stack has not yet been implemented in the engine :(");
-				break;
 			case AllocatorType::None:
 			default:
 				THROW("Invalid memory allocator, how the fuck did you even get here.");
@@ -128,3 +125,66 @@ namespace Vultr
 	}
 
 } // namespace Vultr
+
+namespace Private
+{
+	template <>
+	void *malloc<Vultr::LinearAllocator>(Vultr::LinearAllocator *allocator, size_t size)
+	{
+		return Vultr::linear_alloc(allocator, size);
+	}
+
+	template <>
+	void *malloc(Vultr::PoolAllocator *allocator, size_t size)
+	{
+		return Vultr::pool_alloc(allocator, size);
+	}
+
+	template <>
+	void *malloc(Vultr::FreeListAllocator *allocator, size_t size)
+	{
+		return Vultr::free_list_alloc(allocator, size);
+	}
+
+	template <>
+	void *malloc(Vultr::SlabAllocator *allocator, size_t size)
+	{
+		return Vultr::slab_alloc(allocator, size);
+	}
+
+	template <>
+	void *realloc(Vultr::PoolAllocator *allocator, void *memory, size_t size)
+	{
+		return Vultr::pool_realloc(allocator, memory, size);
+	}
+
+	template <>
+	void *realloc(Vultr::FreeListAllocator *allocator, void *memory, size_t size)
+	{
+		return Vultr::free_list_realloc(allocator, memory, size);
+	}
+
+	template <>
+	void *realloc(Vultr::SlabAllocator *allocator, void *memory, size_t size)
+	{
+		return Vultr::slab_realloc(allocator, memory, size);
+	}
+
+	template <>
+	void free(Vultr::PoolAllocator *allocator, void *memory)
+	{
+		return Vultr::pool_free(allocator, memory);
+	}
+
+	template <>
+	void free(Vultr::FreeListAllocator *allocator, void *memory)
+	{
+		return Vultr::free_list_free(allocator, memory);
+	}
+
+	template <>
+	void free(Vultr::SlabAllocator *allocator, void *memory)
+	{
+		return Vultr::slab_free(allocator, memory);
+	}
+} // namespace Private

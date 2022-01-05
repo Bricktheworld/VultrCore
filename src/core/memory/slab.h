@@ -1,6 +1,30 @@
 #pragma once
+#include "vultr_memory_internal.h"
 
 namespace Vultr
 {
+	struct Slab;
+	struct SlabAllocator : Allocator
+	{
+		size_t max_slab_size = 0;
+		Slab **slabs         = nullptr;
+		u32 num_slabs        = 0;
 
-}
+		SlabAllocator() : Allocator(AllocatorType::Slab) {}
+	};
+
+	struct SlabDeclaration
+	{
+		u32 block_size;
+		u32 count;
+	};
+
+	// NOTE(Brandon): Expects declarations sorted ascending in block size.
+	SlabAllocator *init_slab_allocator(MemoryArena *arena, SlabDeclaration *declarations, u32 region_count);
+
+	void *slab_alloc(SlabAllocator *allocator, size_t size);
+
+	void *slab_realloc(SlabAllocator *allocator, void *data, size_t size);
+
+	void slab_free(SlabAllocator *allocator, void *data);
+} // namespace Vultr

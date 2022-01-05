@@ -5,22 +5,34 @@ namespace Vultr
 
 	GameMemory *init_game_memory()
 	{
-		auto *arena                     = init_mem_arena(Gigabyte(1));
+		auto *arena = init_mem_arena(Gigabyte(1));
 		PRODUCTION_ASSERT(arena != nullptr, "Not enough memory to initialize game memory! At least 1 gigabyte of memory is required.");
 
-		auto *persistent_storage        = init_linear_allocator(arena, Kilobyte(1));
+		auto *persistent_storage = init_linear_allocator(arena, Kilobyte(1));
 		ASSERT(persistent_storage != nullptr, "Failed to allocate persistent storage linear allocator!");
 
-		auto *game_memory               = v_alloc<GameMemory>(persistent_storage);
+		auto *game_memory               = v_alloc<LinearAllocator, GameMemory>(persistent_storage);
 
 		game_memory->arena              = arena;
 		game_memory->persistent_storage = persistent_storage;
 
+		game_memory->frame_storage      = init_linear_allocator(arena, Megabyte(20));
+		ASSERT(game_memory->frame_storage != nullptr, "Failed to allocate frame linear allocator!");
+
 		game_memory->general_allocator = init_free_list_allocator(arena, Megabyte(900), 16);
 		ASSERT(game_memory->general_allocator != nullptr, "Failed to allocate free list allocator!");
 
-		game_memory->frame_storage = init_linear_allocator(arena, Megabyte(20));
-		ASSERT(game_memory->frame_storage != nullptr, "Failed to allocate frame linear allocator!");
+		SlabDeclaration declarations[] = {
+			{.block_size = 64, .count = 1024},          // 64 kilobytes
+			{.block_size = 128, .count = 1024},         // 128 kilobytes
+			{.block_size = 256, .count = 1024},         // 256 kilobytes
+			{.block_size = 512, .count = 1024},         // 512 kilobytes
+			{.block_size = Kilobyte(1), .count = 1024}, // 1 megabyte
+			{.block_size = Kilobyte(2), .count = 1024}, // 2 megabytes
+			{.block_size = Kilobyte(4), .count = 512},  // 2 megabytes
+		};
+		game_memory->slab_allocator = init_slab_allocator(arena, declarations, sizeof(declarations) / sizeof(SlabDeclaration));
+		ASSERT(game_memory->slab_allocator != nullptr, "Failed to allocate slab allocator!");
 
 		return game_memory;
 	}

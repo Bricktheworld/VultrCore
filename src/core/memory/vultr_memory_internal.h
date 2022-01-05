@@ -13,7 +13,8 @@ namespace Vultr
 		Linear   = 0x1,
 		Stack    = 0x2,
 		Pool     = 0x4,
-		FreeList = 0x8,
+		Slab     = 0x8,
+		FreeList = 0x10,
 	};
 
 	/**

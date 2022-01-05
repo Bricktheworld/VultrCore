@@ -3,42 +3,11 @@
 #include "linear.h"
 #include "pool.h"
 #include "free_list.h"
+#include "slab.h"
+#include "types/static_details.h"
 
 namespace Vultr
 {
-	/**
-	 * Allocate some memory using a memory arena.
-	 *
-	 * @param Allocator *allocator: The memory allocator.
-	 * @param size_t size: The size of memory to allocate.
-	 *
-	 * @return void *: The newly allocated memory.
-	 *
-	 * @error This will return nullptr if it failed to allocate.
-	 */
-	void *mem_alloc(Allocator *allocator, size_t size);
-
-	/**
-	 * Reallocate a block of memory using an allocator.
-	 *
-	 * @param Allocator *allocator: The memory allocator.
-	 * @param void *memory: The memory that was allocated.
-	 * @param size_t size: The size of memory to reallocate.
-	 *
-	 * @return void *: The reallocated memory.
-	 *
-	 * @error This will return nullptr if it failed to reallocate.
-	 */
-	void *mem_realloc(Allocator *allocator, void *memory, size_t size);
-
-	/**
-	 * Free a block of memory using an allocator.
-	 *
-	 * @param Allocator *allocator: The memory allocator.
-	 * @param void *memory: The memory that was allocated.
-	 */
-	void mem_free(Allocator *allocator, void *memory);
-
 	/**
 	 * Allocate some memory using game memory.
 	 * This will use the linear allocator and will last the duration of the game memory.
@@ -97,6 +66,39 @@ namespace Vultr
 	void pool_free(void *memory);
 } // namespace Vultr
 
+namespace Private
+{
+	template <typename Allocator>
+	void *malloc(Allocator *allocator, size_t size);
+
+	template <typename Allocator>
+	void *realloc(Allocator *allocator, void *memory, size_t size);
+
+	template <typename Allocator>
+	void free(Allocator *allocator, void *memory);
+} // namespace Private
+
+/**
+ * Allocate some memory using a memory arena and call constructor.
+ * This does not throw an exception if it fails to allocate, handling this is the responsibility of the call-site.
+ *
+ * @param Allocator *allocator: The memory allocator.
+ * @param size_t count: The number of blocks of memory of the requested size to allocate.
+ *
+ * @return T *: The newly allocated memory.
+ *
+ * @error This will return nullptr if it failed to allocate.
+ */
+template <typename Allocator, typename T, typename... Args>
+requires(!Vultr::is_same<T, void>) T *v_alloc_safe(Allocator *allocator, Args... args, size_t count = 1)
+{
+	T *buf = static_cast<T *>(Private::malloc(allocator, count * sizeof(T)));
+	if (buf == nullptr)
+		return nullptr;
+
+	return new (buf) T(args...);
+}
+
 /**
  * Allocate some memory using a memory arena and call constructor.
  *
@@ -107,14 +109,29 @@ namespace Vultr
  *
  * @error This will crash the program if the memory failed to allocate.
  */
-template <typename T, typename... Args>
-T *v_alloc(Vultr::Allocator *allocator, Args... args, size_t count = 1)
+template <typename Allocator, typename T, typename... Args>
+requires(!Vultr::is_same<T, void>) T *v_alloc(Allocator *allocator, Args... args, size_t count = 1)
 {
-	T *buf = static_cast<T *>(Vultr::mem_alloc(allocator, count * sizeof(T)));
+	T *buf = v_alloc_safe<Allocator, T>(allocator, args..., count);
 	PRODUCTION_ASSERT(buf != nullptr, "Failed to allocate memory!");
-
-	return new (buf) T(args...);
+	return buf;
 }
+
+/**
+ * Reallocate a block of memory using an allocator.
+ * This does not throw an exception if it fails to reallocate, handling this is the responsibility of the call-site
+ *
+ * @param Allocator *allocator: The memory allocator.
+ * @param T *memory: The memory that was allocated.
+ * @param size_t count: The number of blocks of memory of the requested size to allocate.
+ *
+ * @return T *: The reallocated memory.
+ *
+ * @error This will return nullptr if it fails to allocate.
+ */
+// TODO(Brandon): Add copy constructor and destructor safety.
+template <typename Allocator, typename T>
+requires(!Vultr::is_same<T, void>) T *v_realloc_safe(Allocator *allocator, T *memory, size_t count) { return static_cast<T *>(Private::realloc(allocator, memory, count * sizeof(T))); }
 
 /**
  * Reallocate a block of memory using an allocator.
@@ -128,30 +145,13 @@ T *v_alloc(Vultr::Allocator *allocator, Args... args, size_t count = 1)
  * @error This will crash the program if it failed to reallocate.
  */
 // TODO(Brandon): Add copy constructor and destructor safety.
-template <typename T>
-T *v_realloc(Vultr::Allocator *allocator, T *memory, size_t count)
+template <typename Allocator, typename T>
+requires(!Vultr::is_same<T, void>) T *v_realloc(Allocator *allocator, T *memory, size_t count)
 {
-	void *new_buf = nullptr;
-	switch (allocator->type)
-	{
-		case Vultr::AllocatorType::Linear:
-			THROW("Cannot reallocate in a linear allocator, the entire point of linear is to not do that.");
-			break;
-		case Vultr::AllocatorType::Pool:
-			new_buf = Vultr::pool_realloc(reinterpret_cast<Vultr::PoolAllocator *>(allocator), memory, sizeof(T) * count);
-			break;
-		case Vultr::AllocatorType::FreeList:
-			new_buf = Vultr::free_list_realloc(reinterpret_cast<Vultr::FreeListAllocator *>(allocator), memory, sizeof(T) * count);
-			break;
-		case Vultr::AllocatorType::Stack:
-			THROW("Cannot reallocate in a stack allocator, this is not what a stack allocator is for.");
-			break;
-		case Vultr::AllocatorType::None:
-		default:
-			THROW("Invalid memory allocator, how the fuck did you even get here.");
-	}
+	T *new_buf = v_realloc_safe<Allocator, T>(allocator, memory, count);
 	PRODUCTION_ASSERT(new_buf != nullptr, "Failed to reallocate memory!");
-	return static_cast<T *>(new_buf);
+
+	return new_buf;
 }
 
 /**
@@ -160,10 +160,11 @@ T *v_realloc(Vultr::Allocator *allocator, T *memory, size_t count)
  * @param Allocator *allocator: The memory allocator.
  * @param T *memory: The memory that was allocated.
  */
-template <typename T>
-void v_free(Vultr::Allocator *allocator, T *memory)
+template <typename Allocator, typename T>
+void v_free(Allocator *allocator, T *memory)
 {
-	// Call destructor.
-	memory->~T();
-	Vultr::mem_free(allocator, memory);
+	if constexpr (!Vultr::is_same<T, void>)
+		// Call destructor.
+		memory->~T();
+	Private::free(allocator, memory);
 }

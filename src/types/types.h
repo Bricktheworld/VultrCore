@@ -95,12 +95,14 @@ using std::move;
 
 #ifdef _WIN32
 // TODO(Brandon): Figure out windows production assertions.
-#define PRODUCTION_ASSERT(condition, message)
+#define PRODUCTION_ASSERT(condition, message, ...)
 #elif __linux__
-#define PRODUCTION_ASSERT(condition, message)                                                                                                                                                                         \
+#define PRODUCTION_ASSERT(condition, message, ...)                                                                                                                                                                    \
 	if (!(condition))                                                                                                                                                                                                 \
 	{                                                                                                                                                                                                                 \
-		fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                         \
+		fprintf(stderr, "Assertion '");                                                                                                                                                                               \
+		fprintf(stderr, message __VA_OPT__(, ) __VA_ARGS__);                                                                                                                                                          \
+		fprintf(stderr, "' failed.\n");                                                                                                                                                                               \
 		fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
 		abort();                                                                                                                                                                                                      \
 	}
