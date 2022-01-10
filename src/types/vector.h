@@ -3,6 +3,7 @@
 #include "iterator.h"
 #include "utils/transfer.h"
 #include <vultr.h>
+#include "optional.h"
 
 namespace Vultr
 {
@@ -16,6 +17,11 @@ namespace Vultr
 	{
 		Vector() = default;
 
+		explicit Vector(size_t count)
+		{
+			ASSERT(count != 0, "Count must be greater than 0!");
+			resize(count);
+		}
 		Vector(const T *array, size_t count)
 		{
 			ASSERT(count != 0, "Count must be greater than 0!");
@@ -108,6 +114,33 @@ namespace Vultr
 			return last();
 		}
 
+		T &push_back(const T &element)
+		{
+			resize(m_size + 1);
+
+			// Increase the len amount and assign the last element of array to the new
+			// element
+			new (&storage()[m_size - 1]) T(element);
+
+			return last();
+		}
+
+		void push_if_not_contains(T &&element)
+		{
+			if (contains(element))
+				return;
+
+			push_back(forward(element));
+		}
+
+		void push_if_not_contains(const T &element)
+		{
+			if (contains(element))
+				return;
+
+			push_back(element);
+		}
+
 		// Inserts element at specific index in dynamic_array
 		// Shifts all elements at and to the right of that index 1 to the right
 		// If the dynamic_array does not have enough space, then a reallocation will
@@ -197,6 +230,16 @@ namespace Vultr
 			return storage()[index];
 		}
 
+		bool contains(const T &other) const
+		{
+			for (const auto &element : *this)
+			{
+				if (other == element)
+					return true;
+			}
+			return false;
+		}
+
 		size_t size() const { return m_size; }
 		size_t capacity() const { return m_capacity; }
 		T &last()
@@ -214,7 +257,6 @@ namespace Vultr
 		VCIterator begin() const { return VCIterator::begin(this); }
 		VCIterator end() const { return VCIterator::end(this); }
 
-	  private:
 		void resize(size_t new_size)
 		{
 			if (new_size == 0)

@@ -14,16 +14,16 @@ namespace Vultr
 	struct Option
 	{
 	  public:
-		Option() : has_value(false) {}
-		Option(NoneT none) : has_value(false) {}
+		Option() : m_has_value(false) {}
+		Option(NoneT none) : m_has_value(false) {}
 		Option(T value)
 		{
-			has_value = true;
-			new (storage) T(value);
+			m_has_value = true;
+			new (m_storage) T(value);
 		}
 		~Option()
 		{
-			if (has_value)
+			if (m_has_value)
 			{
 				free_value();
 			}
@@ -31,13 +31,31 @@ namespace Vultr
 
 		T &value()
 		{
-			ASSERT(has_value, "Cannot return value from optional which is None!");
-			return *reinterpret_cast<T *>(&storage);
+			ASSERT(m_has_value, "Cannot return value from optional which is None!");
+			return *reinterpret_cast<T *>(&m_storage);
+		}
+
+		const T &value() const
+		{
+			ASSERT(m_has_value, "Cannot return value from optional which is None!");
+			return *reinterpret_cast<const T *>(&m_storage);
 		}
 
 		T &value_or(const T &replacement)
 		{
-			if (has_value)
+			if (m_has_value)
+			{
+				return value();
+			}
+			else
+			{
+				return replacement;
+			}
+		}
+
+		const T &value_or(const T &replacement) const
+		{
+			if (m_has_value)
 			{
 				return value();
 			}
@@ -49,18 +67,31 @@ namespace Vultr
 
 		void free_value()
 		{
-			if (has_value)
+			if (m_has_value)
 			{
 				value().~T();
-				has_value = false;
+				m_has_value = false;
 			}
 		}
 
-		operator bool() const { return has_value; }
+		bool has_value() const { return m_has_value; }
+		operator bool() const { return has_value(); }
+		operator T() = delete;
+
+		bool operator==(const Option<T> &other) const
+		{
+			if (!has_value() && !other.has_value())
+				return true;
+			if (!has_value())
+				return false;
+			if (!other.has_value())
+				return false;
+			return value() == other.value();
+		}
 
 	  private:
-		alignas(T) byte storage[sizeof(T)]{};
-		bool has_value = false;
+		alignas(T) byte m_storage[sizeof(T)]{};
+		bool m_has_value = false;
 	};
 
 	// NOTE(Brandon): This is really, really stupid but I kinda like it and I'm stubborn.

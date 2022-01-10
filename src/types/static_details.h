@@ -22,6 +22,9 @@ namespace Vultr
 	template <typename T>
 	inline constexpr bool is_same<T, T> = true;
 
+	template <typename Base, typename Derived>
+	inline constexpr bool is_base_of = __is_base_of(Base, Derived);
+
 	template <class T>
 	using add_const = const T;
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <types/types.h>
+#include <string.h>
 
 namespace Vultr
 {
