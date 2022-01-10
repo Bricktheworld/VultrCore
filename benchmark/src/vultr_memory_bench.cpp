@@ -63,20 +63,18 @@ static void bm_slab_alloc(benchmark::State &state)
 
 	u32 counter                    = 0;
 	void *allocated[9000];
-	size_t sizes[9000];
 
 	srand(1);
 	for (auto _ : state)
 	{
-		sizes[counter]     = rand() % Kilobyte(1);
-		allocated[counter] = slab_alloc(slab_allocator, sizes[counter]);
+		allocated[counter] = slab_alloc(slab_allocator, rand() % Kilobyte(1));
 
 		counter++;
 		if (counter == 9000)
 		{
 			for (u32 i = 0; i < 9000; i++)
 			{
-				slab_free(slab_allocator, allocated[i], sizes[i]);
+				slab_free(slab_allocator, allocated[i]);
 			}
 			counter = 0;
 		}

@@ -76,7 +76,7 @@ namespace Vultr
 
 		bool has_value() const { return m_has_value; }
 		operator bool() const { return has_value(); }
-		operator T() = delete;
+		// operator T() = delete;
 
 		bool operator==(const Option<T> &other) const
 		{

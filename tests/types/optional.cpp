@@ -7,9 +7,9 @@ TEST(Option, Creation)
 	Option<u32> number;
 	ASSERT_FALSE(number);
 
-	number = 20;
+	number = 0;
 	ASSERT_TRUE(number);
-	ASSERT_EQ(number.value(), 20);
+	ASSERT_EQ(number.value(), 0);
 
 	bool worked;
 	if let (auto &value, number)
