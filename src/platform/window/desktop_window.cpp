@@ -27,6 +27,7 @@ namespace Vultr::Platform
 		VkQueue vk_present_queue            = nullptr;
 
 		Vector<VkImage> swap_chain_images;
+		Vector<VkImageView> swap_chain_image_views;
 
 		// TODO(Brandon): Don't hard-code validation.
 		bool debug                                  = true;
@@ -362,6 +363,20 @@ namespace Vultr::Platform
 		vkGetSwapchainImagesKHR(window->vk_logical_device, window->swap_chain, &image_count, nullptr);
 		window->swap_chain_images.resize(image_count);
 		vkGetSwapchainImagesKHR(window->vk_logical_device, window->swap_chain, &image_count, &window->swap_chain_images[0]);
+	}
+
+	static void vk_init_image_views(Window *window)
+	{
+		window->swap_chain_image_views.resize(window->swap_chain_images.size());
+
+		for(size_t i = 0; i < window->swap_chain_image_views.size(); i++)
+		{
+			VkImageViewCreateInfo create_info{
+				.sType =VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				.image = window->swap_chain_images[i],
+
+			};
+		}
 	}
 
 	static void vk_init_logical_device(Window *window)
