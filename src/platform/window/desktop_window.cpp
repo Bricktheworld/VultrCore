@@ -22,9 +22,10 @@ namespace Vultr::Platform
 		VkDevice vk_logical_device          = nullptr;
 		VkSurfaceKHR vk_surface             = nullptr;
 		VkSwapchainKHR swap_chain           = nullptr;
+		VkFormat swap_chain_image_format;
 
-		VkQueue vk_graphics_queue           = nullptr;
-		VkQueue vk_present_queue            = nullptr;
+		VkQueue vk_graphics_queue = nullptr;
+		VkQueue vk_present_queue  = nullptr;
 
 		Vector<VkImage> swap_chain_images;
 		Vector<VkImageView> swap_chain_image_views;
@@ -359,23 +360,44 @@ namespace Vultr::Platform
 		create_info.presentMode    = present_mode;
 		create_info.clipped        = VK_TRUE;
 		create_info.oldSwapchain   = VK_NULL_HANDLE;
+
 		PRODUCTION_ASSERT(vkCreateSwapchainKHR(window->vk_logical_device, &create_info, nullptr, &window->swap_chain) == VK_SUCCESS, "Failed to create Vulkan swap chain!");
 		vkGetSwapchainImagesKHR(window->vk_logical_device, window->swap_chain, &image_count, nullptr);
+
 		window->swap_chain_images.resize(image_count);
 		vkGetSwapchainImagesKHR(window->vk_logical_device, window->swap_chain, &image_count, &window->swap_chain_images[0]);
+
+		window->swap_chain_image_format = surface_format.format;
 	}
 
 	static void vk_init_image_views(Window *window)
 	{
 		window->swap_chain_image_views.resize(window->swap_chain_images.size());
 
-		for(size_t i = 0; i < window->swap_chain_image_views.size(); i++)
+		for (size_t i = 0; i < window->swap_chain_image_views.size(); i++)
 		{
 			VkImageViewCreateInfo create_info{
-				.sType =VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-				.image = window->swap_chain_images[i],
-
+				.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				.image    = window->swap_chain_images[i],
+				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.format   = window->swap_chain_image_format,
+				.components =
+					{
+						.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+						.g = VK_COMPONENT_SWIZZLE_IDENTITY,
+						.b = VK_COMPONENT_SWIZZLE_IDENTITY,
+						.a = VK_COMPONENT_SWIZZLE_IDENTITY,
+					},
+				.subresourceRange =
+					{
+						.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+						.baseMipLevel   = 0,
+						.levelCount     = 1,
+						.baseArrayLayer = 0,
+						.layerCount     = 1,
+					},
 			};
+			PRODUCTION_ASSERT(vkCreateImageView(window->vk_logical_device, &create_info, nullptr, &window->swap_chain_image_views[i]) == VK_SUCCESS, "Failed to create Vulkan image view!");
 		}
 	}
 
@@ -474,10 +496,15 @@ namespace Vultr::Platform
 		vk_pick_physical_device(window);
 		vk_init_logical_device(window);
 		vk_init_swap_chain(window);
+		vk_init_image_views(window);
 	}
 
 	static void destroy_vk(Window *window)
 	{
+		for (auto *view : window->swap_chain_image_views)
+		{
+			vkDestroyImageView(window->vk_logical_device, view, nullptr);
+		}
 		vkDestroySwapchainKHR(window->vk_logical_device, window->swap_chain, nullptr);
 		vkDestroyDevice(window->vk_logical_device, nullptr);
 		vkDestroySurfaceKHR(window->vk_instance, window->vk_surface, nullptr);

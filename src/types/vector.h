@@ -219,12 +219,12 @@ namespace Vultr
 
 		// Ability to index into the array and assign and retrieve elements by
 		// reference
-		T &operator[](int index)
+		T &operator[](size_t index)
 		{
 			ASSERT(index < m_size && index >= 0, "Index out of bounds");
 			return storage()[index];
 		}
-		const T &operator[](int index) const
+		const T &operator[](size_t index) const
 		{
 			ASSERT(index < m_size && index >= 0, "Index out of bounds");
 			return storage()[index];
