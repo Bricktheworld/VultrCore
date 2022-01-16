@@ -18,7 +18,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 		{
 			Platform::poll_events(window);
 			project.update();
-			Platform::draw_frame(c);
+			Platform::draw_frame(window, c);
 		}
 		Platform::close_window(window);
 

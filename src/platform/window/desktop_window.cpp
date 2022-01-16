@@ -34,6 +34,13 @@ namespace Vultr::Platform
 		}
 	}
 
+	static void window_resize_callback(GLFWwindow *glfw, int width, int height)
+	{
+		PRODUCTION_ASSERT(width >= 0 && height >= 0, "Invalid width and height received on resize!");
+		auto *window = reinterpret_cast<Window *>(glfwGetWindowUserPointer(glfw));
+		framebuffer_resize_callback(window, window->render_context, static_cast<u32>(width), static_cast<u32>(height));
+	}
+
 	Window *open_window(DisplayMode mode, Monitor *monitor, const char *title, bool debug, u32 width, u32 height)
 	{
 		ASSERT(glfwInit(), "Failed to initialize glfw");
@@ -90,6 +97,8 @@ namespace Vultr::Platform
 
 		window->glfw = glfwCreateWindow(width, height, title, monitor_param, window_param);
 		PRODUCTION_ASSERT(window->glfw != nullptr, "Failed to create glfw window.");
+		glfwSetWindowUserPointer(window->glfw, window);
+		glfwSetFramebufferSizeCallback(window->glfw, window_resize_callback);
 
 		if (mode == DisplayMode::WINDOWED)
 		{

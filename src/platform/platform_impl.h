@@ -173,7 +173,8 @@ namespace Vultr
 		struct RenderContext;
 		RenderContext *init_render_context(const Window *window, bool debug);
 		RenderContext *get_render_context(const Window *window);
-		void draw_frame(RenderContext *c);
+		void draw_frame(const Window *window, RenderContext *c);
+		void framebuffer_resize_callback(const Window *window, RenderContext *c, u32 width, u32 height);
 		void destroy_render_context(RenderContext *c);
 
 		namespace Filesystem

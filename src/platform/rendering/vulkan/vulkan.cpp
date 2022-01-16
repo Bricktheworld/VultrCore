@@ -41,24 +41,26 @@ namespace Vultr
 			Vector<VkFence> images_in_flight{};
 			u32 current_frame                        = 0;
 
+			bool framebuffer_was_resized             = false;
+
 			bool debug                               = true;
 			VkDebugUtilsMessengerEXT debug_messenger = nullptr;
 		};
 
-		struct VkQueueFamilyIndices
+		struct QueueFamilyIndices
 		{
 			Option<u32> graphics_family = None;
 			Option<u32> present_family  = None;
 		};
 
-		struct VkSwapChainSupportDetails
+		struct SwapChainSupportDetails
 		{
 			VkSurfaceCapabilitiesKHR capabilities;
 			Vector<VkSurfaceFormatKHR> formats;
 			Vector<VkPresentModeKHR> present_modes;
 		};
 
-		static bool vk_has_validation(VkLayerProperties available_layers[], size_t available_layers_count)
+		static bool has_validation(VkLayerProperties available_layers[], size_t available_layers_count)
 		{
 			for (size_t i = 0; i < VALIDATION_LAYERS_COUNT; i++)
 			{
@@ -94,7 +96,7 @@ namespace Vultr
 			return VK_FALSE;
 		}
 
-		static void vk_init_debug_messenger(RenderContext *c)
+		static void init_debug_messenger(RenderContext *c)
 		{
 			VkDebugUtilsMessengerCreateInfoEXT create_info{
 				.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
@@ -109,25 +111,25 @@ namespace Vultr
 			PRODUCTION_ASSERT(vkCreateDebugUtilsMessengerEXT(c->instance, &create_info, nullptr, &c->debug_messenger) == VK_SUCCESS, "Failed to create vulkan debug messenger!");
 		}
 
-		static void vk_destroy_debug_messenger(RenderContext *c)
+		static void destroy_debug_messenger(RenderContext *c)
 		{
 			auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(c->instance, "vkDestroyDebugUtilsMessengerEXT");
 			PRODUCTION_ASSERT(vkDestroyDebugUtilsMessengerEXT != nullptr, "Failed to load vkDestroyDebugUtilsMessengerEXT!");
 			vkDestroyDebugUtilsMessengerEXT(c->instance, c->debug_messenger, nullptr);
 		}
 
-		static bool vk_is_complete(const VkQueueFamilyIndices &indices) { return indices.graphics_family && indices.present_family; }
-		static bool vk_is_complete(const VkSwapChainSupportDetails &details) { return !details.present_modes.empty() && !details.formats.empty(); }
+		static bool is_complete(const QueueFamilyIndices &indices) { return indices.graphics_family && indices.present_family; }
+		static bool is_complete(const SwapChainSupportDetails &details) { return !details.present_modes.empty() && !details.formats.empty(); }
 
-		static VkQueueFamilyIndices vk_find_queue_families(VkPhysicalDevice vk_physical_device, RenderContext *c)
+		static QueueFamilyIndices find_queue_families(VkPhysicalDevice physical_device, RenderContext *c)
 		{
-			VkQueueFamilyIndices indices{};
+			QueueFamilyIndices indices{};
 
 			u32 count = 0;
-			vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &count, nullptr);
+			vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &count, nullptr);
 
 			VkQueueFamilyProperties properties[count];
-			vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &count, properties);
+			vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &count, properties);
 
 			for (u32 i = 0; i < count; i++)
 			{
@@ -137,22 +139,22 @@ namespace Vultr
 				}
 
 				VkBool32 present_support = false;
-				vkGetPhysicalDeviceSurfaceSupportKHR(vk_physical_device, i, c->surface, &present_support);
+				vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, c->surface, &present_support);
 				if (present_support)
 				{
 					indices.present_family = i;
 				}
 
-				if (vk_is_complete(indices))
+				if (is_complete(indices))
 					break;
 			}
 
 			return indices;
 		}
 
-		static VkSwapChainSupportDetails vk_query_swap_chain_support(VkPhysicalDevice device, RenderContext *c)
+		static SwapChainSupportDetails query_swap_chain_support(VkPhysicalDevice device, RenderContext *c)
 		{
-			VkSwapChainSupportDetails details{};
+			SwapChainSupportDetails details{};
 			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, c->surface, &details.capabilities);
 
 			u32 format_count;
@@ -176,7 +178,7 @@ namespace Vultr
 			return details;
 		}
 
-		static bool vk_check_device_extension_support(VkPhysicalDevice device)
+		static bool check_device_extension_support(VkPhysicalDevice device)
 		{
 			u32 count;
 			vkEnumerateDeviceExtensionProperties(device, nullptr, &count, nullptr);
@@ -203,7 +205,7 @@ namespace Vultr
 			return true;
 		}
 
-		static u32 vk_rate_device_suitability(VkPhysicalDevice device, RenderContext *c)
+		static u32 rate_device_suitability(VkPhysicalDevice device, RenderContext *c)
 		{
 			VkPhysicalDeviceProperties properties;
 			VkPhysicalDeviceFeatures features;
@@ -212,15 +214,15 @@ namespace Vultr
 
 			u32 score    = 0;
 
-			auto indices = vk_find_queue_families(device, c);
-			if (!vk_is_complete(indices))
+			auto indices = find_queue_families(device, c);
+			if (!is_complete(indices))
 				return 0;
 
-			if (!vk_check_device_extension_support(device))
+			if (!check_device_extension_support(device))
 				return 0;
 
-			auto details = vk_query_swap_chain_support(device, c);
-			if (!vk_is_complete(details))
+			auto details = query_swap_chain_support(device, c);
+			if (!is_complete(details))
 				return 0;
 
 			if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
@@ -232,7 +234,7 @@ namespace Vultr
 			return score;
 		}
 
-		static void vk_pick_physical_device(RenderContext *c)
+		static void pick_physical_device(RenderContext *c)
 		{
 			u32 device_count = 0;
 			vkEnumeratePhysicalDevices(c->instance, &device_count, nullptr);
@@ -246,7 +248,7 @@ namespace Vultr
 			VkPhysicalDevice best_device = nullptr;
 			for (auto device : devices)
 			{
-				u32 score = vk_rate_device_suitability(device, c);
+				u32 score = rate_device_suitability(device, c);
 				if (score > best_score)
 				{
 					best_score  = score;
@@ -258,7 +260,7 @@ namespace Vultr
 			c->physical_device = best_device;
 		}
 
-		static VkSurfaceFormatKHR vk_pick_swap_chain_surface_format(const Vector<VkSurfaceFormatKHR> &available_formats)
+		static VkSurfaceFormatKHR pick_swap_chain_surface_format(const Vector<VkSurfaceFormatKHR> &available_formats)
 		{
 			for (const auto &format : available_formats)
 			{
@@ -271,7 +273,7 @@ namespace Vultr
 			return available_formats[0];
 		}
 
-		static VkPresentModeKHR vk_pick_present_mode(const Vector<VkPresentModeKHR> &available_modes)
+		static VkPresentModeKHR pick_present_mode(const Vector<VkPresentModeKHR> &available_modes)
 		{
 			for (const auto &mode : available_modes)
 			{
@@ -284,7 +286,7 @@ namespace Vultr
 			return VK_PRESENT_MODE_FIFO_KHR;
 		}
 
-		static VkExtent2D vk_pick_swap_extent(const Window *window, const VkSurfaceCapabilitiesKHR &capabilities)
+		static VkExtent2D pick_swap_extent(const Window *window, const VkSurfaceCapabilitiesKHR &capabilities)
 		{
 			if (capabilities.currentExtent.width != U32Max)
 			{
@@ -304,13 +306,13 @@ namespace Vultr
 			}
 		}
 
-		static void vk_init_swap_chain(const Window *window, RenderContext *c)
+		static void init_swap_chain(const Window *window, RenderContext *c)
 		{
-			auto details        = vk_query_swap_chain_support(c->physical_device, c);
+			auto details        = query_swap_chain_support(c->physical_device, c);
 
-			auto surface_format = vk_pick_swap_chain_surface_format(details.formats);
-			auto present_mode   = vk_pick_present_mode(details.present_modes);
-			auto extent         = vk_pick_swap_extent(window, details.capabilities);
+			auto surface_format = pick_swap_chain_surface_format(details.formats);
+			auto present_mode   = pick_present_mode(details.present_modes);
+			auto extent         = pick_swap_extent(window, details.capabilities);
 
 			u32 image_count     = details.capabilities.minImageCount + 1;
 			if (details.capabilities.maxImageCount > 0 && image_count > details.capabilities.maxImageCount)
@@ -329,7 +331,7 @@ namespace Vultr
 				.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			};
 
-			auto indices               = vk_find_queue_families(c->physical_device, c);
+			auto indices               = find_queue_families(c->physical_device, c);
 			u32 queue_family_indices[] = {indices.graphics_family.value(), indices.present_family.value()};
 
 			if (indices.graphics_family != indices.present_family)
@@ -361,7 +363,7 @@ namespace Vultr
 			c->swap_chain_extent       = extent;
 		}
 
-		static void vk_init_image_views(RenderContext *c)
+		static void init_image_views(RenderContext *c)
 		{
 			c->swap_chain_image_views.resize(c->swap_chain_images.size());
 
@@ -392,9 +394,9 @@ namespace Vultr
 			}
 		}
 
-		static void vk_init_logical_device(RenderContext *c)
+		static void init_logical_device(RenderContext *c)
 		{
-			auto indices       = vk_find_queue_families(c->physical_device, c);
+			auto indices       = find_queue_families(c->physical_device, c);
 
 			f32 queue_priority = 1.0f;
 
@@ -430,12 +432,12 @@ namespace Vultr
 			vkGetDeviceQueue(c->device, indices.present_family.value(), 0, &c->present_queue);
 		}
 
-		static void vk_init_surface(const Window *window, RenderContext *c)
+		static void init_surface(const Window *window, RenderContext *c)
 		{
 			PRODUCTION_ASSERT(glfwCreateWindowSurface(c->instance, window->glfw, nullptr, &c->surface) == VK_SUCCESS, "Failed to create vulkan c surface!");
 		}
 
-		static VkShaderModule vk_init_shader_module(RenderContext *c, const Buffer &src)
+		static VkShaderModule init_shader_module(RenderContext *c, const Buffer &src)
 		{
 			VkShaderModuleCreateInfo create_info{};
 			create_info.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -446,7 +448,7 @@ namespace Vultr
 			return shader_module;
 		}
 
-		static void vk_init_render_pass(RenderContext *c)
+		static void init_render_pass(RenderContext *c)
 		{
 			VkAttachmentDescription color_attachment{
 				.format         = c->swap_chain_image_format,
@@ -493,7 +495,7 @@ namespace Vultr
 		}
 
 		// TODO(Brandon): Definitely don't do this here.
-		static void vk_init_graphics_pipeline(RenderContext *c)
+		static void init_graphics_pipeline(RenderContext *c)
 		{
 			Buffer vert_shader_src;
 			fread_all(Path("./build/shaders/basic_vert.spv"), &vert_shader_src);
@@ -501,8 +503,8 @@ namespace Vultr
 			Buffer frag_shader_src;
 			fread_all(Path("./build/shaders/basic_frag.spv"), &frag_shader_src);
 
-			auto vert_shader_module                  = vk_init_shader_module(c, vert_shader_src);
-			auto frag_shader_module                  = vk_init_shader_module(c, frag_shader_src);
+			auto vert_shader_module                  = init_shader_module(c, vert_shader_src);
+			auto frag_shader_module                  = init_shader_module(c, frag_shader_src);
 
 			VkPipelineShaderStageCreateInfo stages[] = {{
 															.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -640,7 +642,7 @@ namespace Vultr
 			vkDestroyShaderModule(c->device, vert_shader_module, nullptr);
 		}
 
-		static void vk_init_framebuffers(RenderContext *c)
+		static void init_framebuffers(RenderContext *c)
 		{
 			c->swap_chain_framebuffers.resize(c->swap_chain_image_views.size());
 			for (size_t i = 0; i < c->swap_chain_image_views.size(); i++)
@@ -661,9 +663,9 @@ namespace Vultr
 			}
 		}
 
-		static void vk_init_command_pools(RenderContext *c)
+		static void init_command_pools(RenderContext *c)
 		{
-			auto indices = vk_find_queue_families(c->physical_device, c);
+			auto indices = find_queue_families(c->physical_device, c);
 
 			VkCommandPoolCreateInfo pool_info{
 				.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -675,7 +677,7 @@ namespace Vultr
 		}
 
 		// TODO(Brandon): Don't do this here.
-		static void vk_init_command_buffers(RenderContext *c)
+		static void init_command_buffers(RenderContext *c)
 		{
 			c->command_buffers.resize(c->swap_chain_framebuffers.size());
 
@@ -724,7 +726,7 @@ namespace Vultr
 			}
 		}
 
-		static void vk_init_concurrency(RenderContext *c)
+		static void init_concurrency(RenderContext *c)
 		{
 			c->images_in_flight.resize(c->swap_chain_images.size());
 			memset(&c->images_in_flight[0], 0, c->swap_chain_images.size() * sizeof(VkFence));
@@ -744,65 +746,49 @@ namespace Vultr
 			}
 		}
 
-		static void vk_init(const Window *window, RenderContext *c)
+		static void destroy_swapchain(RenderContext *c)
 		{
-			VkApplicationInfo vk_application_info{
-				.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-				.pApplicationName   = get_window_title(window).c_str(),
-				.applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-				.pEngineName        = "No Engine",
-				.engineVersion      = VK_MAKE_VERSION(1, 0, 0),
-				.apiVersion         = VK_API_VERSION_1_0,
-			};
-
-			VkInstanceCreateInfo vk_instance_create_info{
-				.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-				.pApplicationInfo = &vk_application_info,
-			};
-
-			u32 glfw_vk_extension_count     = 0;
-			const char **glfw_vk_extensions = glfwGetRequiredInstanceExtensions(&glfw_vk_extension_count);
-			Vector vk_extensions(glfw_vk_extensions, glfw_vk_extension_count);
-
-			if (c->debug)
+			for (auto *framebuffer : c->swap_chain_framebuffers)
 			{
-				vk_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+				vkDestroyFramebuffer(c->device, framebuffer, nullptr);
 			}
 
-			vk_instance_create_info.enabledExtensionCount   = vk_extensions.size();
-			vk_instance_create_info.ppEnabledExtensionNames = &vk_extensions[0];
+			vkFreeCommandBuffers(c->device, c->command_pool, static_cast<u32>(c->command_buffers.size()), &c->command_buffers[0]);
 
-			if (c->debug)
+			vkDestroyPipeline(c->device, c->graphics_pipeline, nullptr);
+			vkDestroyPipelineLayout(c->device, c->pipeline_layout, nullptr);
+			vkDestroyRenderPass(c->device, c->render_pass, nullptr);
+
+			for (auto *view : c->swap_chain_image_views)
 			{
-				u32 layer_count;
-				vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
-
-				VkLayerProperties available_validation_layers[layer_count];
-				vkEnumerateInstanceLayerProperties(&layer_count, available_validation_layers);
-
-				PRODUCTION_ASSERT(vk_has_validation(available_validation_layers, layer_count), "Vulkan failed to find validation layers!");
-
-				vk_instance_create_info.enabledLayerCount   = 1;
-				vk_instance_create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
-			}
-			else
-			{
-				vk_instance_create_info.enabledLayerCount = 0;
+				vkDestroyImageView(c->device, view, nullptr);
 			}
 
-			PRODUCTION_ASSERT(vkCreateInstance(&vk_instance_create_info, nullptr, &c->instance) == VK_SUCCESS, "Failed to init vulkan.");
-			vk_init_debug_messenger(c);
-			vk_init_surface(window, c);
-			vk_pick_physical_device(c);
-			vk_init_logical_device(c);
-			vk_init_swap_chain(window, c);
-			vk_init_image_views(c);
-			vk_init_render_pass(c);
-			vk_init_graphics_pipeline(c);
-			vk_init_framebuffers(c);
-			vk_init_command_pools(c);
-			vk_init_command_buffers(c);
-			vk_init_concurrency(c);
+			vkDestroySwapchainKHR(c->device, c->swap_chain, nullptr);
+		}
+
+		static void recreate_swapchain(const Window *window, RenderContext *c)
+		{
+			// Minimization
+			int width = 0, height = 0;
+
+			glfwGetFramebufferSize(window->glfw, &width, &height);
+			while (width == 0 || height == 0)
+			{
+				glfwGetFramebufferSize(window->glfw, &width, &height);
+				glfwWaitEvents();
+			}
+
+			vkDeviceWaitIdle(c->device);
+
+			destroy_swapchain(c);
+
+			init_swap_chain(window, c);
+			init_image_views(c);
+			init_render_pass(c);
+			init_graphics_pipeline(c);
+			init_framebuffers(c);
+			init_command_buffers(c);
 		}
 
 		RenderContext *init_render_context(const Window *window, bool debug)
@@ -812,16 +798,82 @@ namespace Vultr
 			new (c) RenderContext();
 			c->debug = debug;
 
-			vk_init(window, c);
+			VkApplicationInfo application_info{
+				.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+				.pApplicationName   = get_window_title(window).c_str(),
+				.applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+				.pEngineName        = "No Engine",
+				.engineVersion      = VK_MAKE_VERSION(1, 0, 0),
+				.apiVersion         = VK_API_VERSION_1_0,
+			};
+
+			VkInstanceCreateInfo instance_create_info{
+				.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+				.pApplicationInfo = &application_info,
+			};
+
+			u32 glfw_extension_count     = 0;
+			const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+			Vector extensions(glfw_extensions, glfw_extension_count);
+
+			if (c->debug)
+			{
+				extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+			}
+
+			instance_create_info.enabledExtensionCount   = extensions.size();
+			instance_create_info.ppEnabledExtensionNames = &extensions[0];
+
+			if (c->debug)
+			{
+				u32 layer_count;
+				vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+
+				VkLayerProperties available_validation_layers[layer_count];
+				vkEnumerateInstanceLayerProperties(&layer_count, available_validation_layers);
+
+				PRODUCTION_ASSERT(has_validation(available_validation_layers, layer_count), "Vulkan failed to find validation layers!");
+
+				instance_create_info.enabledLayerCount   = 1;
+				instance_create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
+			}
+			else
+			{
+				instance_create_info.enabledLayerCount = 0;
+			}
+
+			PRODUCTION_ASSERT(vkCreateInstance(&instance_create_info, nullptr, &c->instance) == VK_SUCCESS, "Failed to init vulkan.");
+			init_debug_messenger(c);
+			init_surface(window, c);
+			pick_physical_device(c);
+			init_logical_device(c);
+			init_swap_chain(window, c);
+			init_image_views(c);
+			init_render_pass(c);
+			init_graphics_pipeline(c);
+			init_framebuffers(c);
+			init_command_pools(c);
+			init_command_buffers(c);
+			init_concurrency(c);
 			return c;
 		}
 
-		void draw_frame(RenderContext *c)
+		void draw_frame(const Window *window, RenderContext *c)
 		{
 			vkWaitForFences(c->device, 1, &c->in_flight_fences[c->current_frame], VK_TRUE, UINT64_MAX);
 
 			u32 image_index;
-			vkAcquireNextImageKHR(c->device, c->swap_chain, U64Max, c->image_available_semaphores[c->current_frame], VK_NULL_HANDLE, &image_index);
+			auto res = vkAcquireNextImageKHR(c->device, c->swap_chain, U64Max, c->image_available_semaphores[c->current_frame], VK_NULL_HANDLE, &image_index);
+			if (res == VK_ERROR_OUT_OF_DATE_KHR)
+			{
+				// If this occurs, then try again next draw frame call.
+				recreate_swapchain(window, c);
+				return;
+			}
+			else if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR)
+			{
+				THROW("Failed to acquire swap chain images!");
+			}
 
 			if (c->images_in_flight[image_index] != VK_NULL_HANDLE)
 			{
@@ -858,15 +910,28 @@ namespace Vultr
 				.pImageIndices      = &image_index,
 				.pResults           = nullptr,
 			};
-			vkQueuePresentKHR(c->present_queue, &present_info);
+			res = vkQueuePresentKHR(c->present_queue, &present_info);
+			if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR || c->framebuffer_was_resized)
+			{
+				c->framebuffer_was_resized = false;
+				recreate_swapchain(window, c);
+			}
+			else if (res != VK_SUCCESS)
+			{
+				THROW("Failed to present swap chain images!");
+			}
 
 			c->current_frame = (c->current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 		}
+
+		void framebuffer_resize_callback(const Window *window, RenderContext *c, u32 width, u32 height) { c->framebuffer_was_resized = true; }
 
 		void destroy_render_context(RenderContext *c)
 		{
 			// Make sure don't destroy anything that is in use.
 			vkDeviceWaitIdle(c->device);
+
+			destroy_swapchain(c);
 
 			for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			{
@@ -874,22 +939,13 @@ namespace Vultr
 				vkDestroySemaphore(c->device, c->image_available_semaphores[i], nullptr);
 				vkDestroyFence(c->device, c->in_flight_fences[i], nullptr);
 			}
+
 			vkDestroyCommandPool(c->device, c->command_pool, nullptr);
-			for (auto *framebuffer : c->swap_chain_framebuffers)
-			{
-				vkDestroyFramebuffer(c->device, framebuffer, nullptr);
-			}
-			vkDestroyPipeline(c->device, c->graphics_pipeline, nullptr);
-			vkDestroyPipelineLayout(c->device, c->pipeline_layout, nullptr);
-			vkDestroyRenderPass(c->device, c->render_pass, nullptr);
-			for (auto *view : c->swap_chain_image_views)
-			{
-				vkDestroyImageView(c->device, view, nullptr);
-			}
-			vkDestroySwapchainKHR(c->device, c->swap_chain, nullptr);
+
 			vkDestroyDevice(c->device, nullptr);
+
 			vkDestroySurfaceKHR(c->instance, c->surface, nullptr);
-			vk_destroy_debug_messenger(c);
+			destroy_debug_messenger(c);
 			vkDestroyInstance(c->instance, nullptr);
 		}
 	} // namespace Platform
