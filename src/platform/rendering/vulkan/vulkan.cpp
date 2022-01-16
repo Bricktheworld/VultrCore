@@ -1,5 +1,6 @@
 #include "../../platform.h"
-#include "types/optional.h"
+#include <types/optional.h>
+#include <types/array.h>
 
 namespace Vultr
 {
@@ -10,6 +11,12 @@ namespace Vultr
 		static constexpr const char *DEVICE_EXTENSIONS[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 		static constexpr u32 DEVICE_EXTENSION_COUNT      = sizeof(DEVICE_EXTENSIONS) / sizeof(const char *);
 		static constexpr u32 MAX_FRAMES_IN_FLIGHT        = 2;
+
+		struct Vertex
+		{
+			Vec2 position;
+			Vec3 color;
+		};
 
 		struct RenderContext
 		{
@@ -45,6 +52,10 @@ namespace Vultr
 
 			bool debug                               = true;
 			VkDebugUtilsMessengerEXT debug_messenger = nullptr;
+
+			const Vector<Vertex> vertices            = Vector<Vertex>({{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}});
+			VkBuffer vertex_buffer                   = nullptr;
+			VkDeviceMemory vertex_buffer_memory      = nullptr;
 		};
 
 		struct QueueFamilyIndices
@@ -59,6 +70,34 @@ namespace Vultr
 			Vector<VkSurfaceFormatKHR> formats;
 			Vector<VkPresentModeKHR> present_modes;
 		};
+
+		static VkVertexInputBindingDescription get_binding_description()
+		{
+			return {
+				.binding   = 0,
+				.stride    = sizeof(Vertex),
+				.inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+			};
+		}
+
+		static Array<VkVertexInputAttributeDescription, 2> get_attribute_descriptions()
+		{
+			Array<VkVertexInputAttributeDescription, 2> attribute_descriptions{};
+			attribute_descriptions[0] = {
+				.location = 0,
+				.binding  = 0,
+				.format   = VK_FORMAT_R32G32_SFLOAT,
+				.offset   = offsetof(Vertex, position),
+			};
+			attribute_descriptions[1] = {
+				.location = 1,
+				.binding  = 0,
+				.format   = VK_FORMAT_R32G32B32_SFLOAT,
+				.offset   = offsetof(Vertex, color),
+			};
+
+			return attribute_descriptions;
+		}
 
 		static bool has_validation(VkLayerProperties available_layers[], size_t available_layers_count)
 		{
@@ -519,12 +558,14 @@ namespace Vultr
 															.pName  = "main",
 														}};
 
+			auto binding_description                 = get_binding_description();
+			auto attribute_descriptions              = get_attribute_descriptions();
 			VkPipelineVertexInputStateCreateInfo vertex_input_info{
 				.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-				.vertexBindingDescriptionCount   = 0,
-				.pVertexBindingDescriptions      = nullptr,
-				.vertexAttributeDescriptionCount = 0,
-				.pVertexAttributeDescriptions    = nullptr,
+				.vertexBindingDescriptionCount   = 1,
+				.pVertexBindingDescriptions      = &binding_description,
+				.vertexAttributeDescriptionCount = static_cast<u32>(attribute_descriptions.size()),
+				.pVertexAttributeDescriptions    = &attribute_descriptions[0],
 			};
 
 			VkPipelineInputAssemblyStateCreateInfo input_assembly{
@@ -663,6 +704,48 @@ namespace Vultr
 			}
 		}
 
+		static u32 find_memory_type(RenderContext *c, u32 type_filter, VkMemoryPropertyFlags properties)
+		{
+			VkPhysicalDeviceMemoryProperties mem_properties;
+			vkGetPhysicalDeviceMemoryProperties(c->physical_device, &mem_properties);
+
+			for (u32 i = 0; i < mem_properties.memoryTypeCount; i++)
+			{
+				if ((type_filter & (1 << i)) && ((mem_properties.memoryTypes[i].propertyFlags & properties) == properties))
+				{
+					return i;
+				}
+			}
+		}
+
+		static void init_vertex_buffer(RenderContext *c)
+		{
+			VkBufferCreateInfo buffer_info{
+				.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+				.size        = sizeof(c->vertices[0]) * c->vertices.size(),
+				.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+			};
+			PRODUCTION_ASSERT(vkCreateBuffer(c->device, &buffer_info, nullptr, &c->vertex_buffer) == VK_SUCCESS, "Failed to create vertex buffer!");
+
+			VkMemoryRequirements mem_requirements;
+			vkGetBufferMemoryRequirements(c->device, c->vertex_buffer, &mem_requirements);
+
+			VkMemoryAllocateInfo alloc_info{
+				.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+				.allocationSize  = mem_requirements.size,
+				.memoryTypeIndex = find_memory_type(c, mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
+			};
+
+			PRODUCTION_ASSERT(vkAllocateMemory(c->device, &alloc_info, nullptr, &c->vertex_buffer_memory) == VK_SUCCESS, "Failed to allocate memory for vertex buffer!");
+			vkBindBufferMemory(c->device, c->vertex_buffer, c->vertex_buffer_memory, 0);
+
+			void *data;
+			vkMapMemory(c->device, c->vertex_buffer_memory, 0, buffer_info.size, 0, &data);
+			memcpy(data, &c->vertices[0], reinterpret_cast<size_t>(buffer_info.size));
+			vkUnmapMemory(c->device, c->vertex_buffer_memory);
+		}
+
 		static void init_command_pools(RenderContext *c)
 		{
 			auto indices = find_queue_families(c->physical_device, c);
@@ -718,7 +801,12 @@ namespace Vultr
 				vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
 				vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, c->graphics_pipeline);
-				vkCmdDraw(command_buffer, 3, 1, 0, 0);
+
+				VkBuffer vertex_buffers[] = {c->vertex_buffer};
+				VkDeviceSize offsets[]    = {0};
+				vkCmdBindVertexBuffers(c->command_buffers[i], 0, 1, vertex_buffers, offsets);
+
+				vkCmdDraw(command_buffer, static_cast<u32>(c->vertices.size()), 1, 0, 0);
 
 				vkCmdEndRenderPass(command_buffer);
 
@@ -853,6 +941,7 @@ namespace Vultr
 			init_graphics_pipeline(c);
 			init_framebuffers(c);
 			init_command_pools(c);
+			init_vertex_buffer(c);
 			init_command_buffers(c);
 			init_concurrency(c);
 			return c;
@@ -932,6 +1021,9 @@ namespace Vultr
 			vkDeviceWaitIdle(c->device);
 
 			destroy_swapchain(c);
+
+			vkDestroyBuffer(c->device, c->vertex_buffer, nullptr);
+			vkFreeMemory(c->device, c->vertex_buffer_memory, nullptr);
 
 			for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			{

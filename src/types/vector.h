@@ -22,6 +22,12 @@ namespace Vultr
 			ASSERT(count != 0, "Count must be greater than 0!");
 			resize(count);
 		}
+
+		template <size_t size>
+		Vector(const T (&array)[size]) : Vector(array, size)
+		{
+		}
+
 		Vector(const T *array, size_t count)
 		{
 			ASSERT(count != 0, "Count must be greater than 0!");
