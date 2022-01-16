@@ -13,14 +13,12 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 	{
 		project.init();
 
+		auto *c = Platform::get_render_context(window);
 		while (!Platform::window_should_close(window))
 		{
-			//			glClearColor(1, 1, 1, 1);
-			//			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			//
-			project.update();
-			Platform::swap_buffers(window);
 			Platform::poll_events(window);
+			project.update();
+			Platform::draw_frame(c);
 		}
 		Platform::close_window(window);
 

@@ -8,7 +8,7 @@ namespace Vultr
 		auto *arena = init_mem_arena(Gigabyte(1));
 		PRODUCTION_ASSERT(arena != nullptr, "Not enough memory to initialize game memory! At least 1 gigabyte of memory is required.");
 
-		auto *persistent_storage = init_linear_allocator(arena, Kilobyte(1));
+		auto *persistent_storage = init_linear_allocator(arena, Kilobyte(10));
 		ASSERT(persistent_storage != nullptr, "Failed to allocate persistent storage linear allocator!");
 
 		auto *game_memory               = v_alloc<LinearAllocator, GameMemory>(persistent_storage);

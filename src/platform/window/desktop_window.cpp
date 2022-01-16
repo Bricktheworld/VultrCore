@@ -110,6 +110,7 @@ namespace Vultr::Platform
 	StringView get_window_title(const Window *window) { return window->title; }
 	u32 get_window_width(const Window *window) { return window->width; }
 	u32 get_window_height(const Window *window) { return window->height; }
+	RenderContext *get_render_context(const Window *window) { return window->render_context; }
 
 	void close_window(Window *window)
 	{

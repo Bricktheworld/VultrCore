@@ -172,6 +172,8 @@ namespace Vultr
 
 		struct RenderContext;
 		RenderContext *init_render_context(const Window *window, bool debug);
+		RenderContext *get_render_context(const Window *window);
+		void draw_frame(RenderContext *c);
 		void destroy_render_context(RenderContext *c);
 
 		namespace Filesystem
