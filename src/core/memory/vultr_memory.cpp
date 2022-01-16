@@ -124,6 +124,8 @@ namespace Vultr
 		}
 	}
 
+	void *persist_alloc(size_t size) { return linear_alloc(g_game_memory->persistent_storage, size); }
+
 } // namespace Vultr
 
 namespace Private

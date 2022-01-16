@@ -534,6 +534,7 @@ namespace Vultr
 	void free_list_free(FreeListAllocator *allocator, void *data)
 	{
 		Platform::Lock l(&allocator->mutex);
+		PRODUCTION_ASSERT(data != nullptr, "Cannot free nullptr memory!");
 		free_list_free_no_lock(allocator, data);
 	}
 

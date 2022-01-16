@@ -157,7 +157,10 @@ namespace Vultr
 		struct Window;
 		struct Monitor;
 
-		Window *open_window(LinearAllocator *allocator, DisplayMode mode, Monitor *monitor, const char *title, u32 width = 0, u32 height = 0);
+		Window *open_window(DisplayMode mode, Monitor *monitor, str title, bool debug, u32 width = 0, u32 height = 0);
+		StringView get_window_title(const Window *window);
+		u32 get_window_width(const Window *window);
+		u32 get_window_height(const Window *window);
 		void change_window_mode(Window *window, DisplayMode mode);
 		void change_window_monitor(Window *window, Monitor *monitor);
 		void change_window_title(Window *window, const char *title);
@@ -166,6 +169,17 @@ namespace Vultr
 		bool window_should_close(Window *window);
 		void swap_buffers(Window *window);
 		void poll_events(Window *window);
+
+		struct RenderContext;
+		RenderContext *init_render_context(const Window *window, bool debug);
+		void destroy_render_context(RenderContext *c);
+
+		namespace Filesystem
+		{
+			ErrorOr<size_t> fsize(str path);
+			ErrorOr<bool> is_file(str path);
+			ErrorOr<bool> is_directory(str path);
+		} // namespace Filesystem
 
 	} // namespace Platform
 

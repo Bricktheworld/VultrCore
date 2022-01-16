@@ -65,6 +65,7 @@ namespace Vultr
 		}
 		bool operator==(str other) const { return *this == StringView(other); }
 
+		str c_str() const { return storage; }
 		operator str() { return storage; }
 		size_t length() const { return size() - 1; }
 		size_t is_empty() const { return length() == 0; }

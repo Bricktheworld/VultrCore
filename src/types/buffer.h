@@ -130,7 +130,7 @@ namespace Vultr
 	  protected:
 		void flush()
 		{
-			if (!m_inline)
+			if (!m_inline && storage != nullptr)
 			{
 				v_free(storage);
 			}

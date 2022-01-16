@@ -7,7 +7,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 {
 	g_game_memory = init_game_memory();
 
-	auto *window  = Platform::open_window(g_game_memory->persistent_storage, Platform::DisplayMode::WINDOWED, nullptr, "Vultr Game Engine");
+	auto *window  = Platform::open_window(Platform::DisplayMode::WINDOWED, nullptr, "Vultr Game Engine", true);
 
 	if check (Vultr::load_game("/home/brandon/Dev/VultrSandbox/build/libVultrDemo.so"), auto project, auto err)
 	{

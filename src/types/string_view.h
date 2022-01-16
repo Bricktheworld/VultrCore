@@ -32,12 +32,16 @@ namespace Vultr
 		char operator[](size_t index) const
 		{
 			ASSERT(index <= len, "Index out of bounds!");
+
+			// Convenient null terminator.
+			if (index == len)
+				return '\0';
 			return ref[index];
 		}
 
 		size_t length() const { return len; }
 
-		const char *c_str() const { return ref; }
+		str c_str() const { return ref; }
 		const StringView substr(size_t start) const
 		{
 			ASSERT(start < len, "Start index is greater than the length of the string.");
