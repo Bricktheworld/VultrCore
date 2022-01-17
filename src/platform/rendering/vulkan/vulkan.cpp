@@ -718,32 +718,82 @@ namespace Vultr
 			}
 		}
 
-		static void init_vertex_buffer(RenderContext *c)
+		static void init_buffer(RenderContext *c, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkSharingMode sharing_mode, VkBuffer *buffer, VkDeviceMemory *buffer_memory)
 		{
 			VkBufferCreateInfo buffer_info{
 				.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-				.size        = sizeof(c->vertices[0]) * c->vertices.size(),
-				.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+				.size        = size,
+				.usage       = usage,
+				.sharingMode = sharing_mode,
 			};
-			PRODUCTION_ASSERT(vkCreateBuffer(c->device, &buffer_info, nullptr, &c->vertex_buffer) == VK_SUCCESS, "Failed to create vertex buffer!");
+
+			PRODUCTION_ASSERT(vkCreateBuffer(c->device, &buffer_info, nullptr, buffer) == VK_SUCCESS, "Failed to create vulkan buffer!");
 
 			VkMemoryRequirements mem_requirements;
-			vkGetBufferMemoryRequirements(c->device, c->vertex_buffer, &mem_requirements);
+			vkGetBufferMemoryRequirements(c->device, *buffer, &mem_requirements);
 
 			VkMemoryAllocateInfo alloc_info{
 				.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 				.allocationSize  = mem_requirements.size,
-				.memoryTypeIndex = find_memory_type(c, mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
+				.memoryTypeIndex = find_memory_type(c, mem_requirements.memoryTypeBits, properties),
 			};
 
-			PRODUCTION_ASSERT(vkAllocateMemory(c->device, &alloc_info, nullptr, &c->vertex_buffer_memory) == VK_SUCCESS, "Failed to allocate memory for vertex buffer!");
-			vkBindBufferMemory(c->device, c->vertex_buffer, c->vertex_buffer_memory, 0);
+			PRODUCTION_ASSERT(vkAllocateMemory(c->device, &alloc_info, nullptr, buffer_memory) == VK_SUCCESS, "Failed to allocate memory for vertex buffer!");
+			vkBindBufferMemory(c->device, *buffer, *buffer_memory, 0);
+		}
+
+		static void copy_buffer(RenderContext *c, VkBuffer dst_buffer, VkBuffer src_buffer, VkDeviceSize size)
+		{
+			VkCommandBufferAllocateInfo alloc_info{
+				.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+				.commandPool        = c->command_pool,
+				.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+				.commandBufferCount = 1,
+			};
+
+			VkCommandBuffer command_buffer;
+			vkAllocateCommandBuffers(c->device, &alloc_info, &command_buffer);
+
+			VkCommandBufferBeginInfo begin_info{
+				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+				.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+			};
+			vkBeginCommandBuffer(command_buffer, &begin_info);
+
+			VkBufferCopy copy_region{.size = size};
+			vkCmdCopyBuffer(command_buffer, src_buffer, dst_buffer, 1, &copy_region);
+			vkEndCommandBuffer(command_buffer);
+
+			VkSubmitInfo submitInfo{};
+			submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers    = &command_buffer;
+
+			vkQueueSubmit(c->graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
+			vkQueueWaitIdle(c->graphics_queue);
+			vkFreeCommandBuffers(c->device, c->command_pool, 1, &command_buffer);
+		}
+
+		static void init_vertex_buffer(RenderContext *c)
+		{
+			auto buffer_size = sizeof(c->vertices[0]) * c->vertices.size();
+
+			VkBuffer staging_buffer{};
+			VkDeviceMemory staging_buffer_memory{};
+			init_buffer(c, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE, &staging_buffer,
+						&staging_buffer_memory);
 
 			void *data;
-			vkMapMemory(c->device, c->vertex_buffer_memory, 0, buffer_info.size, 0, &data);
-			memcpy(data, &c->vertices[0], reinterpret_cast<size_t>(buffer_info.size));
-			vkUnmapMemory(c->device, c->vertex_buffer_memory);
+			vkMapMemory(c->device, staging_buffer_memory, 0, buffer_size, 0, &data);
+			memcpy(data, &c->vertices[0], reinterpret_cast<size_t>(buffer_size));
+			vkUnmapMemory(c->device, staging_buffer_memory);
+
+			init_buffer(c, buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SHARING_MODE_EXCLUSIVE, &c->vertex_buffer,
+						&c->vertex_buffer_memory);
+			copy_buffer(c, c->vertex_buffer, staging_buffer, buffer_size);
+
+			vkDestroyBuffer(c->device, staging_buffer, nullptr);
+			vkFreeMemory(c->device, staging_buffer_memory, nullptr);
 		}
 
 		static void init_command_pools(RenderContext *c)
