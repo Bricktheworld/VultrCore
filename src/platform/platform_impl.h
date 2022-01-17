@@ -171,6 +171,9 @@ namespace Vultr
 		void poll_events(Window *window);
 
 		struct RenderContext;
+		struct Renderer {
+
+		};
 		RenderContext *init_render_context(const Window *window, bool debug);
 		RenderContext *get_render_context(const Window *window);
 		void draw_frame(const Window *window, RenderContext *c);

@@ -53,9 +53,12 @@ namespace Vultr
 			bool debug                               = true;
 			VkDebugUtilsMessengerEXT debug_messenger = nullptr;
 
-			const Vector<Vertex> vertices            = Vector<Vertex>({{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}});
-			VkBuffer vertex_buffer                   = nullptr;
-			VkDeviceMemory vertex_buffer_memory      = nullptr;
+			const Vector<Vertex> vertices       = Vector<Vertex>({{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}}, {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}, {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}});
+			const Vector<u16> indices           = Vector<u16>({0, 1, 2, 2, 3, 0});
+			VkBuffer vertex_buffer              = nullptr;
+			VkDeviceMemory vertex_buffer_memory = nullptr;
+			VkBuffer index_buffer               = nullptr;
+			VkDeviceMemory index_buffer_memory  = nullptr;
 		};
 
 		struct QueueFamilyIndices
@@ -796,6 +799,29 @@ namespace Vultr
 			vkFreeMemory(c->device, staging_buffer_memory, nullptr);
 		}
 
+		static void init_index_buffer(RenderContext *c)
+		{
+			VkDeviceSize buffer_size = sizeof(c->indices[0]) * c->indices.size();
+
+			VkBuffer staging_buffer;
+			VkDeviceMemory staging_buffer_memory;
+			init_buffer(c, buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE, &staging_buffer,
+						&staging_buffer_memory);
+
+			void *data;
+			vkMapMemory(c->device, staging_buffer_memory, 0, buffer_size, 0, &data);
+			memcpy(data, &c->indices[0], reinterpret_cast<size_t>(buffer_size));
+			vkUnmapMemory(c->device, staging_buffer_memory);
+
+			init_buffer(c, buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_SHARING_MODE_EXCLUSIVE, &c->index_buffer,
+						&c->index_buffer_memory);
+
+			copy_buffer(c, c->index_buffer, staging_buffer, buffer_size);
+
+			vkDestroyBuffer(c->device, staging_buffer, nullptr);
+			vkFreeMemory(c->device, staging_buffer_memory, nullptr);
+		}
+
 		static void init_command_pools(RenderContext *c)
 		{
 			auto indices = find_queue_families(c->physical_device, c);
@@ -854,9 +880,10 @@ namespace Vultr
 
 				VkBuffer vertex_buffers[] = {c->vertex_buffer};
 				VkDeviceSize offsets[]    = {0};
-				vkCmdBindVertexBuffers(c->command_buffers[i], 0, 1, vertex_buffers, offsets);
+				vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+				vkCmdBindIndexBuffer(command_buffer, c->index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
-				vkCmdDraw(command_buffer, static_cast<u32>(c->vertices.size()), 1, 0, 0);
+				vkCmdDrawIndexed(command_buffer, static_cast<u32>(c->indices.size()), 1, 0, 0, 0);
 
 				vkCmdEndRenderPass(command_buffer);
 
@@ -992,6 +1019,7 @@ namespace Vultr
 			init_framebuffers(c);
 			init_command_pools(c);
 			init_vertex_buffer(c);
+			init_index_buffer(c);
 			init_command_buffers(c);
 			init_concurrency(c);
 			return c;
@@ -1067,24 +1095,28 @@ namespace Vultr
 
 		void destroy_render_context(RenderContext *c)
 		{
+			auto *device = c->device;
 			// Make sure don't destroy anything that is in use.
-			vkDeviceWaitIdle(c->device);
+			vkDeviceWaitIdle(device);
 
 			destroy_swapchain(c);
 
-			vkDestroyBuffer(c->device, c->vertex_buffer, nullptr);
-			vkFreeMemory(c->device, c->vertex_buffer_memory, nullptr);
+			vkDestroyBuffer(device, c->index_buffer, nullptr);
+			vkFreeMemory(device, c->index_buffer_memory, nullptr);
+
+			vkDestroyBuffer(device, c->vertex_buffer, nullptr);
+			vkFreeMemory(device, c->vertex_buffer_memory, nullptr);
 
 			for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			{
-				vkDestroySemaphore(c->device, c->render_finished_semaphores[i], nullptr);
-				vkDestroySemaphore(c->device, c->image_available_semaphores[i], nullptr);
-				vkDestroyFence(c->device, c->in_flight_fences[i], nullptr);
+				vkDestroySemaphore(device, c->render_finished_semaphores[i], nullptr);
+				vkDestroySemaphore(device, c->image_available_semaphores[i], nullptr);
+				vkDestroyFence(device, c->in_flight_fences[i], nullptr);
 			}
 
-			vkDestroyCommandPool(c->device, c->command_pool, nullptr);
+			vkDestroyCommandPool(device, c->command_pool, nullptr);
 
-			vkDestroyDevice(c->device, nullptr);
+			vkDestroyDevice(device, nullptr);
 
 			vkDestroySurfaceKHR(c->instance, c->surface, nullptr);
 			destroy_debug_messenger(c);
