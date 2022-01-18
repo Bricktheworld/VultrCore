@@ -5,6 +5,7 @@
 namespace Vultr
 {
 	struct LinearAllocator;
+	struct Pipeline;
 	namespace Platform
 	{
 		struct EntryArgs;
@@ -161,6 +162,7 @@ namespace Vultr
 		StringView get_window_title(const Window *window);
 		u32 get_window_width(const Window *window);
 		u32 get_window_height(const Window *window);
+		void *get_window_implementation(const Window *window);
 		void change_window_mode(Window *window, DisplayMode mode);
 		void change_window_monitor(Window *window, Monitor *monitor);
 		void change_window_title(Window *window, const char *title);
@@ -171,11 +173,10 @@ namespace Vultr
 		void poll_events(Window *window);
 
 		struct RenderContext;
-		struct Renderer {
-
-		};
+		struct RenderPipeline;
 		RenderContext *init_render_context(const Window *window, bool debug);
 		RenderContext *get_render_context(const Window *window);
+		RenderPipeline *init_render_pipeline(const Pipeline *pipeline);
 		void draw_frame(const Window *window, RenderContext *c);
 		void framebuffer_resize_callback(const Window *window, RenderContext *c, u32 width, u32 height);
 		void destroy_render_context(RenderContext *c);

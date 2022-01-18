@@ -39,7 +39,7 @@ namespace Vultr
 		}
 
 		template <typename T>
-		size_t copy(T *dest, const T *src, size_t count)
+		constexpr size_t copy(T *dest, const T *src, size_t count)
 		{
 			size_t copied_bytes = count * sizeof(T);
 			if constexpr (is_trivial<T>)
