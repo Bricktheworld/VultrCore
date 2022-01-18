@@ -11,27 +11,36 @@ namespace Vultr
 	{
 		struct Device
 		{
-			VkInstance instance              = nullptr;
-			VkPhysicalDevice physical_device = nullptr;
+			VkInstance instance                      = nullptr;
+			VkPhysicalDevice physical_device         = nullptr;
 
-			VkDevice device                  = nullptr;
-			VkSurfaceKHR surface             = nullptr;
-			VkSwapchainKHR swap_chain        = nullptr;
-			VkFormat swap_chain_image_format{};
-			VkExtent2D swap_chain_extent{};
-			Vector<VkImage> swap_chain_images{};
-			Vector<VkImageView> swap_chain_image_views{};
+			VkDevice device                          = nullptr;
+			VkSurfaceKHR surface                     = nullptr;
 
 			VkQueue graphics_queue                   = nullptr;
-			VkCommandPool graphics_command_pool      = nullptr;
 			VkQueue present_queue                    = nullptr;
 
 			VkDebugUtilsMessengerEXT debug_messenger = nullptr;
 		};
 
 		Device init_device(const Platform::Window *window, bool debug, PFN_vkDebugUtilsMessengerCallbackEXT debug_cb);
-		void recreate_swapchain(Device *d, const Platform::Window *window);
 		void destroy_device(Device *d);
+
+		struct QueueFamilyIndices
+		{
+			Option<u32> graphics_family = None;
+			Option<u32> present_family  = None;
+		};
+
+		struct SwapChainSupportDetails
+		{
+			VkSurfaceCapabilitiesKHR capabilities;
+			Vector<VkSurfaceFormatKHR> formats;
+			Vector<VkPresentModeKHR> present_modes;
+		};
+
+		QueueFamilyIndices find_queue_families(Device *d);
+		SwapChainSupportDetails query_swap_chain_support(Device *d);
 
 		void wait_idle(Device *d);
 

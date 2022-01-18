@@ -1,6 +1,7 @@
 #pragma once
 #include <types/types.h>
 #include "error.h"
+#include "optional.h"
 
 namespace Vultr
 {
@@ -9,6 +10,7 @@ namespace Vultr
 	{
 	  public:
 		using ValueType = T;
+		ErrorOr(const NoneT none) : m_is_error(false) {}
 		ErrorOr(const Error err) : m_is_error(true), m_error(err) {}
 		ErrorOr(T value)
 		{
@@ -64,6 +66,7 @@ namespace Vultr
 	{
 	  public:
 		ErrorOr() { m_is_error = false; }
+		ErrorOr(const NoneT none) : m_is_error(false) {}
 		ErrorOr(const Error err) : m_is_error(true), m_error(err) {}
 		~ErrorOr() = default;
 
@@ -106,7 +109,7 @@ namespace Vultr
 
 // NOTE(Brandon): This is really, really stupid but I kinda like it and I'm stubborn.
 #define check(err_or, var, err)                                                                                                                                                                                       \
-	(auto __res = (err_or); err = !__res ? __res.get_error() : Error()) if (var = (__res).value(); false) {}                                                                                                          \
+	(auto __res = (err_or); err = !__res.has_value() ? __res.get_error() : Error()) if (var = (__res).value(); false) {}                                                                                              \
 	else
 
 } // namespace Vultr

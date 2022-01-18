@@ -16,9 +16,10 @@ namespace Vultr
 					return i;
 				}
 			}
+			THROW("Something went wrong trying to find a memory type!");
 		}
 
-		VulkanBuffer init_buffer(Device *d, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkSharingMode sharing_mode)
+		VulkanBuffer alloc_buffer(Device *d, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkSharingMode sharing_mode)
 		{
 			VulkanBuffer buffer_instance{};
 			VkBufferCreateInfo buffer_info{
@@ -44,11 +45,12 @@ namespace Vultr
 			return buffer_instance;
 		}
 
-		void copy_buffer(Device *d, VkBuffer dst_buffer, VkBuffer src_buffer, VkDeviceSize size)
+		void copy_buffer(SwapChain *sc, VulkanBuffer dst_buffer, VulkanBuffer src_buffer, VkDeviceSize size)
 		{
+			auto *d = &sc->device;
 			VkCommandBufferAllocateInfo alloc_info{
 				.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-				.commandPool        = d->graphics_command_pool,
+				.commandPool        = sc->graphics_command_pool,
 				.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 				.commandBufferCount = 1,
 			};
@@ -63,7 +65,7 @@ namespace Vultr
 			vkBeginCommandBuffer(command_buffer, &begin_info);
 
 			VkBufferCopy copy_region{.size = size};
-			vkCmdCopyBuffer(command_buffer, src_buffer, dst_buffer, 1, &copy_region);
+			vkCmdCopyBuffer(command_buffer, src_buffer.buffer, dst_buffer.buffer, 1, &copy_region);
 			vkEndCommandBuffer(command_buffer);
 
 			VkSubmitInfo submit_info{
@@ -74,10 +76,10 @@ namespace Vultr
 
 			vkQueueSubmit(d->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
 			vkQueueWaitIdle(d->graphics_queue);
-			vkFreeCommandBuffers(d->device, d->graphics_command_pool, 1, &command_buffer);
+			vkFreeCommandBuffers(d->device, sc->graphics_command_pool, 1, &command_buffer);
 		}
 
-		void destroy_buffer(Device *d, VulkanBuffer *buffer)
+		void free_buffer(Device *d, VulkanBuffer *buffer)
 		{
 			vkDestroyBuffer(d->device, buffer->buffer, nullptr);
 			vkFreeMemory(d->device, buffer->memory, nullptr);

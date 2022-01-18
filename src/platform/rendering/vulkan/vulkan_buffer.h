@@ -1,5 +1,5 @@
 #pragma once
-#include "device.h"
+#include "swap_chain.h"
 
 namespace Vultr
 {
@@ -11,8 +11,8 @@ namespace Vultr
 			VkDeviceMemory memory = nullptr;
 		};
 
-		VulkanBuffer init_buffer(Device *d, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkSharingMode sharing_mode);
-		void copy_buffer(Device *d, VkBuffer dst_buffer, VkBuffer src_buffer, VkDeviceSize size);
-		void destroy_buffer(Device *d, VulkanBuffer *buffer);
+		VulkanBuffer alloc_buffer(Device *d, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkSharingMode sharing_mode);
+		void copy_buffer(SwapChain *sc, VulkanBuffer dst_buffer, VulkanBuffer src_buffer, VkDeviceSize size);
+		void free_buffer(Device *d, VulkanBuffer *buffer);
 	} // namespace Vulkan
 } // namespace Vultr

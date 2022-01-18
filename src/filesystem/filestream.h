@@ -54,9 +54,10 @@ namespace Vultr
 			{
 				return Error("Failed to read!");
 			}
+			return None;
 		}
 
-	  private : str get_mode()
+		str get_mode()
 		{
 			switch (m_format)
 			{
@@ -65,6 +66,7 @@ namespace Vultr
 				case StreamFormat::BINARY:
 					return "rb";
 			}
+			THROW("Something went wrong!");
 		}
 
 		Path m_path;
