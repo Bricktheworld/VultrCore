@@ -291,6 +291,8 @@ namespace Vultr
 
 			vkDestroyCommandPool(d->device, sc->graphics_command_pool, nullptr);
 
+			internal_destroy_swapchain(sc);
+
 			destroy_device(d);
 		}
 
