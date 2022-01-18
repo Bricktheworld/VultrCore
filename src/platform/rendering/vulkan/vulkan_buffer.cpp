@@ -1,4 +1,5 @@
 #include "vulkan_buffer.h"
+#include "swap_chain.h"
 
 namespace Vultr
 {

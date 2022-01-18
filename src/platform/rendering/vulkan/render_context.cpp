@@ -5,6 +5,13 @@ namespace Vultr
 {
 	namespace Vulkan
 	{
+		struct UniformBufferObject
+		{
+			Mat4 model;
+			Mat4 view;
+			Mat4 proj;
+		};
+
 		// TODO(Brandon): Don't do this here.
 		static VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type,
 													   const VkDebugUtilsMessengerCallbackDataEXT *callback_data, void *user_data)
@@ -59,6 +66,24 @@ namespace Vultr
 			VkShaderModule shader_module;
 			ASSERT(vkCreateShaderModule(d->device, &create_info, nullptr, &shader_module) == VK_SUCCESS, "Failed to init vulkan shader!");
 			return shader_module;
+		}
+
+		static void init_descriptor_set_layout(Platform::RenderContext *c)
+		{
+			auto *d = &c->swap_chain.device;
+			VkDescriptorSetLayoutBinding ubo_layout_binding{
+				.binding            = 0,
+				.descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorCount    = 1,
+				.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT,
+				.pImmutableSamplers = nullptr,
+			};
+			VkDescriptorSetLayoutCreateInfo layout_info{
+				.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+				.bindingCount = 1,
+				.pBindings    = &ubo_layout_binding,
+			};
+			PRODUCTION_ASSERT(vkCreateDescriptorSetLayout(d->device, &layout_info, nullptr, &c->descriptor_set_layout) == VK_SUCCESS, "");
 		}
 
 		// TODO(Brandon): Definitely don't do this here.
@@ -181,8 +206,8 @@ namespace Vultr
 
 			VkPipelineLayoutCreateInfo pipeline_layout_info{
 				.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-				.setLayoutCount         = 0,
-				.pSetLayouts            = nullptr,
+				.setLayoutCount         = 1,
+				.pSetLayouts            = &c->descriptor_set_layout,
 				.pushConstantRangeCount = 0,
 				.pPushConstantRanges    = nullptr,
 			};
@@ -319,6 +344,7 @@ namespace Vultr
 
 			auto device   = Vulkan::init_device(window, debug, Vulkan::debug_cb);
 			c->swap_chain = Vulkan::init_swapchain(device, window);
+			Vulkan::init_descriptor_set_layout(c);
 			Vulkan::init_graphics_pipeline(c);
 			Vulkan::init_vertex_buffer(c);
 			Vulkan::init_index_buffer(c);
@@ -359,6 +385,8 @@ namespace Vultr
 			Vulkan::free_buffer(d, &c->index_buffer);
 
 			vkFreeCommandBuffers(d->device, c->swap_chain.graphics_command_pool, static_cast<u32>(c->command_buffers.size()), &c->command_buffers[0]);
+
+			vkDestroyDescriptorSetLayout(d->device, c->descriptor_set_layout, nullptr);
 
 			vkDestroyPipeline(d->device, c->graphics_pipeline, nullptr);
 			vkDestroyPipelineLayout(d->device, c->pipeline_layout, nullptr);

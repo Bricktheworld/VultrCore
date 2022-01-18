@@ -1,5 +1,6 @@
 #pragma once
 #include "device.h"
+#include "vulkan_buffer.h"
 
 namespace Vultr
 {
@@ -19,6 +20,8 @@ namespace Vultr
 			VkSemaphore render_finished_semaphores[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
 			VkFence in_flight_fences[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
 			Vector<VkFence> images_in_flight{};
+
+			VulkanBuffer uniform_buffers[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
 
 			u32 current_frame = 0;
 

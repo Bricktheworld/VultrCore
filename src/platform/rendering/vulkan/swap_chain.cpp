@@ -246,6 +246,17 @@ namespace Vultr
 			}
 		}
 
+		static void init_uniform_buffers(SwapChain *sc)
+		{
+			auto *d           = &sc->device;
+
+			VkDeviceSize size = sizeof(UniformBufferObject);
+			for (auto &uniform_buffer : sc->uniform_buffers)
+			{
+				uniform_buffer = alloc_buffer(d, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE);
+			}
+		}
+
 		SwapChain init_swapchain(const Device &device, const Platform::Window *window)
 		{
 			SwapChain sc{};
@@ -256,12 +267,18 @@ namespace Vultr
 			init_framebuffers(&sc);
 			init_command_pools(&sc);
 			init_concurrency(&sc);
+			init_uniform_buffers(&sc);
 			return sc;
 		}
 
 		static void internal_destroy_swapchain(SwapChain *sc)
 		{
 			auto *d = &sc->device;
+
+			for (auto &uniform_buffer : sc->uniform_buffers)
+			{
+				free_buffer(d, &uniform_buffer);
+			}
 
 			for (auto *framebuffer : sc->framebuffers)
 			{
@@ -318,6 +335,7 @@ namespace Vultr
 			init_image_views(sc);
 			init_render_pass(sc);
 			init_framebuffers(sc);
+			init_uniform_buffers(sc);
 		}
 
 		ErrorOr<u32> acquire_swapchain(SwapChain *sc)
