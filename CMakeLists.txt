@@ -25,7 +25,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories(src vendor)
 
-add_library(${This} STATIC ${Sources})
+add_library(${This} STATIC ${Sources} src/platform/rendering/vulkan/pipeline.h src/platform/rendering/vulkan/pipeline.cpp)
 
 set(TargetIncludeDirs src vendor)
 

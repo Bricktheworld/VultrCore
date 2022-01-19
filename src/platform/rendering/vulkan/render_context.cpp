@@ -68,23 +68,23 @@ namespace Vultr
 			return shader_module;
 		}
 
-		static void init_descriptor_set_layout(Platform::RenderContext *c)
-		{
-			auto *d = &c->swap_chain.device;
-			VkDescriptorSetLayoutBinding ubo_layout_binding{
-				.binding            = 0,
-				.descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				.descriptorCount    = 1,
-				.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT,
-				.pImmutableSamplers = nullptr,
-			};
-			VkDescriptorSetLayoutCreateInfo layout_info{
-				.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-				.bindingCount = 1,
-				.pBindings    = &ubo_layout_binding,
-			};
-			PRODUCTION_ASSERT(vkCreateDescriptorSetLayout(d->device, &layout_info, nullptr, &c->descriptor_set_layout) == VK_SUCCESS, "");
-		}
+		//		static void init_descriptor_set_layout(Platform::RenderContext *c)
+		//		{
+		//			auto *d = &c->swap_chain.device;
+		//			VkDescriptorSetLayoutBinding ubo_layout_binding{
+		//				.binding            = 0,
+		//				.descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		//				.descriptorCount    = 1,
+		//				.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT,
+		//				.pImmutableSamplers = nullptr,
+		//			};
+		//			VkDescriptorSetLayoutCreateInfo layout_info{
+		//				.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		//				.bindingCount = 1,
+		//				.pBindings    = &ubo_layout_binding,
+		//			};
+		//			VK_CHECK(vkCreateDescriptorSetLayout(d->device, &layout_info, nullptr, &c->descriptor_set_layout));
+		//		}
 
 		// TODO(Brandon): Definitely don't do this here.
 		static void init_graphics_pipeline(Platform::RenderContext *c)
@@ -206,13 +206,13 @@ namespace Vultr
 
 			VkPipelineLayoutCreateInfo pipeline_layout_info{
 				.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-				.setLayoutCount         = 1,
-				.pSetLayouts            = &c->descriptor_set_layout,
+				.setLayoutCount         = 0,
+				.pSetLayouts            = nullptr,
 				.pushConstantRangeCount = 0,
 				.pPushConstantRanges    = nullptr,
 			};
 
-			PRODUCTION_ASSERT(vkCreatePipelineLayout(d->device, &pipeline_layout_info, nullptr, &c->pipeline_layout) == VK_SUCCESS, "");
+			VK_CHECK(vkCreatePipelineLayout(d->device, &pipeline_layout_info, nullptr, &c->pipeline_layout));
 
 			VkGraphicsPipelineCreateInfo pipeline_info{
 				.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -233,7 +233,7 @@ namespace Vultr
 				.basePipelineIndex   = -1,
 			};
 
-			PRODUCTION_ASSERT(vkCreateGraphicsPipelines(d->device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &c->graphics_pipeline) == VK_SUCCESS, "Failed to create graphics pipeline!");
+			VK_CHECK(vkCreateGraphicsPipelines(d->device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &c->graphics_pipeline));
 
 			vkDestroyShaderModule(d->device, frag_shader_module, nullptr);
 			vkDestroyShaderModule(d->device, vert_shader_module, nullptr);
@@ -289,7 +289,7 @@ namespace Vultr
 				.commandBufferCount = static_cast<u32>(c->command_buffers.size()),
 			};
 
-			PRODUCTION_ASSERT(vkAllocateCommandBuffers(d->device, &alloc_info, &c->command_buffers[0]) == VK_SUCCESS, "Failed to allocate command buffers!");
+			VK_CHECK(vkAllocateCommandBuffers(d->device, &alloc_info, &c->command_buffers[0]));
 
 			for (size_t i = 0; i < c->command_buffers.size(); i++)
 			{
@@ -300,7 +300,7 @@ namespace Vultr
 					.pInheritanceInfo = nullptr,
 				};
 
-				PRODUCTION_ASSERT(vkBeginCommandBuffer(command_buffer, &begin_info) == VK_SUCCESS, "Failed to begin recording command buffer!");
+				VK_CHECK(vkBeginCommandBuffer(command_buffer, &begin_info));
 
 				VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 				VkRenderPassBeginInfo render_pass_info{
@@ -329,29 +329,29 @@ namespace Vultr
 
 				vkCmdEndRenderPass(command_buffer);
 
-				VK_CHECK(vkEndCommandBuffer(command_buffer));
+				VK_CHECK(vkEndCommandBuffer(command_buffer))
 			}
 		}
-		static void update_uniform_buffer(Platform::RenderContext *c, u32 image_index, f64 dt)
-		{
-			auto *sc = &c->swap_chain;
-			auto *d  = &sc->device;
-			c->rotation += 1 * dt;
-
-			auto extent = sc->extent;
-
-			UniformBufferObject ubo{
-				.model = glm::rotate(glm::mat4(1.0f), glm::radians((f32)c->rotation), glm::vec3(0.0f, 0.0f, 1.0f)),
-				.view  = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-				.proj  = glm::perspective(glm::radians(45.0f), (f32)extent.width / (f32)extent.height, 0.1f, 10.0f),
-			};
-			ubo.proj[1][1] *= -1;
-
-			void *data;
-			vkMapMemory(d->device, sc->uniform_buffers[image_index].memory, 0, sizeof(ubo), 0, &data);
-			memcpy(data, &ubo, sizeof(ubo));
-			vkUnmapMemory(d->device, sc->uniform_buffers[image_index].memory);
-		}
+		//		static void update_uniform_buffer(Platform::RenderContext *c, u32 image_index, f64 dt)
+		//		{
+		//			auto *sc = &c->swap_chain;
+		//			auto *d  = &sc->device;
+		//			c->rotation += 1 * dt;
+		//
+		//			auto extent = sc->extent;
+		//
+		//			UniformBufferObject ubo{
+		//				.model = glm::rotate(glm::mat4(1.0f), glm::radians((f32)c->rotation), glm::vec3(0.0f, 0.0f, 1.0f)),
+		//				.view  = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+		//				.proj  = glm::perspective(glm::radians(45.0f), (f32)extent.width / (f32)extent.height, 0.1f, 10.0f),
+		//			};
+		//			ubo.proj[1][1] *= -1;
+		//
+		//			void *data;
+		//			vkMapMemory(d->device, sc->uniform_buffers[image_index].memory, 0, sizeof(ubo), 0, &data);
+		//			memcpy(data, &ubo, sizeof(ubo));
+		//			vkUnmapMemory(d->device, sc->uniform_buffers[image_index].memory);
+		//		}
 
 	} // namespace Vulkan
 	namespace Platform
@@ -364,11 +364,11 @@ namespace Vultr
 
 			auto device   = Vulkan::init_device(window, debug, Vulkan::debug_cb);
 			c->swap_chain = Vulkan::init_swapchain(device, window);
-			Vulkan::init_descriptor_set_layout(c);
+			//			Vulkan::init_descriptor_set_layout(c);
 			Vulkan::init_graphics_pipeline(c);
 			Vulkan::init_vertex_buffer(c);
 			Vulkan::init_index_buffer(c);
-			Vulkan::init_command_buffers(c);
+			//			Vulkan::init_command_buffers(c);
 			return c;
 		}
 
@@ -376,7 +376,7 @@ namespace Vultr
 		{
 			if check (Vulkan::acquire_swapchain(&c->swap_chain), u32 image_index, auto _)
 			{
-				Vulkan::update_uniform_buffer(c, image_index, dt);
+				//				Vulkan::update_uniform_buffer(c, image_index, dt);
 				Vulkan::submit_swapchain(&c->swap_chain, image_index, c->command_buffers.size(), &c->command_buffers[0]);
 			}
 			else
@@ -384,15 +384,11 @@ namespace Vultr
 				auto *d = &c->swap_chain.device;
 				Vulkan::recreate_swapchain(&c->swap_chain, window);
 
-				Vulkan::free_buffer(d, &c->vertex_buffer);
-				Vulkan::free_buffer(d, &c->index_buffer);
 				vkDestroyPipeline(d->device, c->graphics_pipeline, nullptr);
 				vkDestroyPipelineLayout(d->device, c->pipeline_layout, nullptr);
 
 				Vulkan::init_graphics_pipeline(c);
-				Vulkan::init_vertex_buffer(c);
-				Vulkan::init_index_buffer(c);
-				Vulkan::init_command_buffers(c);
+				//				Vulkan::init_command_buffers(c);
 			}
 		}
 
@@ -405,9 +401,7 @@ namespace Vultr
 			Vulkan::free_buffer(d, &c->vertex_buffer);
 			Vulkan::free_buffer(d, &c->index_buffer);
 
-			vkFreeCommandBuffers(d->device, c->swap_chain.graphics_command_pool, static_cast<u32>(c->command_buffers.size()), &c->command_buffers[0]);
-
-			vkDestroyDescriptorSetLayout(d->device, c->descriptor_set_layout, nullptr);
+			//			vkDestroyDescriptorSetLayout(d->device, c->descriptor_set_layout, nullptr);
 
 			vkDestroyPipeline(d->device, c->graphics_pipeline, nullptr);
 			vkDestroyPipelineLayout(d->device, c->pipeline_layout, nullptr);

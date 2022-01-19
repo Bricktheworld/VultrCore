@@ -115,11 +115,13 @@ using std::move;
 #define THROW(message)
 #elif __linux__
 #define THROW(message, ...)                                                                                                                                                                                           \
-	fprintf(stderr, "Error was thrown '", message);                                                                                                                                                                   \
-	fprintf(stderr, message __VA_OPT__(, ) __VA_ARGS__);                                                                                                                                                              \
-	fprintf(stderr, "' failed.\n");                                                                                                                                                                                   \
-	fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                          \
-	abort();
+	{                                                                                                                                                                                                                 \
+		fprintf(stderr, "Error was thrown '");                                                                                                                                                                        \
+		fprintf(stderr, message __VA_OPT__(, ) __VA_ARGS__);                                                                                                                                                          \
+		fprintf(stderr, "' failed.\n");                                                                                                                                                                               \
+		fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
+		abort();                                                                                                                                                                                                      \
+	}
 #else
 #define PRODUCTION_ASSERT(condition, message)
 #endif

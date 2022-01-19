@@ -49,7 +49,10 @@ namespace Vultr
 			}
 		}
 #define VK_CHECK(statement)                                                                                                                                                                                           \
-	if ((statement) != VK_SUCCESS)                                                                                                                                                                                    \
-	THROW("Vulkan check went wrong %s", vk_err_string(statement))
+	{                                                                                                                                                                                                                 \
+		auto result = (statement);                                                                                                                                                                                    \
+		if (result != VK_SUCCESS)                                                                                                                                                                                     \
+			THROW("Vulkan check went wrong %s", vk_err_string(result));                                                                                                                                               \
+	}
 	} // namespace Vulkan
 } // namespace Vultr

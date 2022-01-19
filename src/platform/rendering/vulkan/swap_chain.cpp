@@ -100,7 +100,7 @@ namespace Vultr
 			create_info.clipped        = VK_TRUE;
 			create_info.oldSwapchain   = VK_NULL_HANDLE;
 
-			PRODUCTION_ASSERT(vkCreateSwapchainKHR(d->device, &create_info, nullptr, &sc->swap_chain) == VK_SUCCESS, "Failed to create Vulkan swap chain!");
+			VK_CHECK(vkCreateSwapchainKHR(d->device, &create_info, nullptr, &sc->swap_chain));
 			vkGetSwapchainImagesKHR(d->device, sc->swap_chain, &image_count, nullptr);
 
 			sc->images.resize(image_count);
@@ -138,7 +138,7 @@ namespace Vultr
 							.layerCount     = 1,
 						},
 				};
-				PRODUCTION_ASSERT(vkCreateImageView(d->device, &create_info, nullptr, &sc->image_views[i]) == VK_SUCCESS, "Failed to create Vulkan image view!");
+				VK_CHECK(vkCreateImageView(d->device, &create_info, nullptr, &sc->image_views[i]));
 			}
 		}
 
@@ -186,7 +186,7 @@ namespace Vultr
 				.pDependencies   = &dependency,
 			};
 
-			PRODUCTION_ASSERT(vkCreateRenderPass(d->device, &render_pass_info, nullptr, &sc->render_pass) == VK_SUCCESS, "Failed to create render pass!");
+			VK_CHECK(vkCreateRenderPass(d->device, &render_pass_info, nullptr, &sc->render_pass));
 		}
 
 		static void init_framebuffers(SwapChain *sc)
@@ -207,22 +207,26 @@ namespace Vultr
 					.layers          = 1,
 				};
 
-				PRODUCTION_ASSERT(vkCreateFramebuffer(d->device, &framebuffer_info, nullptr, &sc->framebuffers[i]) == VK_SUCCESS, "Failed to create framebuffer!");
+				VK_CHECK(vkCreateFramebuffer(d->device, &framebuffer_info, nullptr, &sc->framebuffers[i]));
 			}
 		}
 
 		static void init_command_pools(SwapChain *sc)
 		{
-			auto *d      = &sc->device;
-			auto indices = find_queue_families(d);
+			sc->graphics_command_pools.resize(sc->images.size());
+			auto *d = &sc->device;
+			for (u32 i = 0; i < sc->images.size(); i++)
+			{
+				auto indices = find_queue_families(d);
 
-			VkCommandPoolCreateInfo pool_info{
-				.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-				.flags            = 0,
-				.queueFamilyIndex = indices.graphics_family.value(),
-			};
+				VkCommandPoolCreateInfo pool_info{
+					.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+					.flags            = 0,
+					.queueFamilyIndex = indices.graphics_family.value(),
+				};
 
-			PRODUCTION_ASSERT(vkCreateCommandPool(d->device, &pool_info, nullptr, &sc->graphics_command_pool) == VK_SUCCESS, "Failed to create command pool!");
+				VK_CHECK(vkCreateCommandPool(d->device, &pool_info, nullptr, &sc->graphics_command_pool));
+			}
 		}
 
 		static void init_concurrency(SwapChain *sc)
@@ -240,40 +244,40 @@ namespace Vultr
 
 			for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			{
-				PRODUCTION_ASSERT(vkCreateSemaphore(d->device, &semaphore_info, nullptr, &sc->image_available_semaphores[i]) == VK_SUCCESS, "Failed to create image available semaphore!");
-				PRODUCTION_ASSERT(vkCreateSemaphore(d->device, &semaphore_info, nullptr, &sc->render_finished_semaphores[i]) == VK_SUCCESS, "Failed to create render finished semaphore!");
-				PRODUCTION_ASSERT(vkCreateFence(d->device, &fence_info, nullptr, &sc->in_flight_fences[i]) == VK_SUCCESS, "Failed to create in flight fence!");
+				VK_CHECK(vkCreateSemaphore(d->device, &semaphore_info, nullptr, &sc->image_available_semaphores[i]));
+				VK_CHECK(vkCreateSemaphore(d->device, &semaphore_info, nullptr, &sc->render_finished_semaphores[i]));
+				VK_CHECK(vkCreateFence(d->device, &fence_info, nullptr, &sc->in_flight_fences[i]));
 			}
 		}
 
-		static void init_uniform_buffers(SwapChain *sc)
-		{
-			auto *d = &sc->device;
-			sc->uniform_buffers.resize(sc->images.size());
-
-			VkDeviceSize size = sizeof(UniformBufferObject);
-			for (size_t i = 0; i < sc->images.size(); i++)
-			{
-				sc->uniform_buffers[i] = alloc_buffer(d, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE);
-			}
-		}
-
-		static void init_descriptor_pool(SwapChain *sc)
-		{
-			auto *d = &sc->device;
-			VkDescriptorPoolSize pool_size{
-				.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				.descriptorCount = static_cast<u32>(sc->images.size()),
-			};
-
-			VkDescriptorPoolCreateInfo pool_info{
-				.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-				.poolSizeCount = 1,
-				.pPoolSizes    = &pool_size,
-				.maxSets       = static_cast<u32>(sc->images.size()),
-			};
-			PRODUCTION_ASSERT(vkCreateDescriptorPool(d->device, &pool_info, nullptr, &sc->descriptor_pool) == VK_SUCCESS, "Failed to create descriptor pool!");
-		}
+		//		static void init_uniform_buffers(SwapChain *sc)
+		//		{
+		//			auto *d = &sc->device;
+		//			sc->uniform_buffers.resize(sc->images.size());
+		//
+		//			VkDeviceSize size = sizeof(UniformBufferObject);
+		//			for (size_t i = 0; i < sc->images.size(); i++)
+		//			{
+		//				sc->uniform_buffers[i] = alloc_buffer(d, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE);
+		//			}
+		//		}
+		//
+		//		static void init_descriptor_pool(SwapChain *sc)
+		//		{
+		//			auto *d = &sc->device;
+		//			VkDescriptorPoolSize pool_size{
+		//				.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		//				.descriptorCount = static_cast<u32>(sc->images.size()),
+		//			};
+		//
+		//			VkDescriptorPoolCreateInfo pool_info{
+		//				.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		//				.maxSets       = static_cast<u32>(sc->images.size()),
+		//				.poolSizeCount = 1,
+		//				.pPoolSizes    = &pool_size,
+		//			};
+		//			VK_CHECK(vkCreateDescriptorPool(d->device, &pool_info, nullptr, &sc->descriptor_pool));
+		//		}
 
 		SwapChain init_swapchain(const Device &device, const Platform::Window *window)
 		{
@@ -283,10 +287,9 @@ namespace Vultr
 			init_image_views(&sc);
 			init_render_pass(&sc);
 			init_framebuffers(&sc);
-			init_command_pools(&sc);
 			init_concurrency(&sc);
-			init_uniform_buffers(&sc);
-			init_descriptor_pool(&sc);
+			//			init_uniform_buffers(&sc);
+			//			init_descriptor_pool(&sc);
 			return sc;
 		}
 
@@ -294,11 +297,11 @@ namespace Vultr
 		{
 			auto *d = &sc->device;
 
-			for (auto &uniform_buffer : sc->uniform_buffers)
-			{
-				free_buffer(d, &uniform_buffer);
-			}
-			vkDestroyDescriptorPool(d->device, sc->descriptor_pool, nullptr);
+			//			for (auto &uniform_buffer : sc->uniform_buffers)
+			//			{
+			//				free_buffer(d, &uniform_buffer);
+			//			}
+			//			vkDestroyDescriptorPool(d->device, sc->descriptor_pool, nullptr);
 
 			for (auto *framebuffer : sc->framebuffers)
 			{
@@ -326,7 +329,10 @@ namespace Vultr
 				vkDestroyFence(d->device, sc->in_flight_fences[i], nullptr);
 			}
 
-			vkDestroyCommandPool(d->device, sc->graphics_command_pool, nullptr);
+			for (u32 i = 0; i < sc->images.size(); i++)
+			{
+				vkDestroyCommandPool(d->device, sc->graphics_command_pools[i], nullptr);
+			}
 
 			internal_destroy_swapchain(sc);
 
@@ -355,8 +361,8 @@ namespace Vultr
 			init_image_views(sc);
 			init_render_pass(sc);
 			init_framebuffers(sc);
-			init_uniform_buffers(sc);
-			init_descriptor_pool(sc);
+			//			init_uniform_buffers(sc);
+			//			init_descriptor_pool(sc);
 		}
 
 		ErrorOr<u32> acquire_swapchain(SwapChain *sc)
@@ -404,7 +410,7 @@ namespace Vultr
 				.pSignalSemaphores    = signal_semaphores,
 			};
 			vkResetFences(d->device, 1, &sc->in_flight_fences[sc->current_frame]);
-			PRODUCTION_ASSERT(vkQueueSubmit(d->graphics_queue, 1, &submit_info, sc->in_flight_fences[sc->current_frame]) == VK_SUCCESS, "Failed to submit queue!");
+			VK_CHECK(vkQueueSubmit(d->graphics_queue, 1, &submit_info, sc->in_flight_fences[sc->current_frame]));
 
 			VkPresentInfoKHR present_info{
 				.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,

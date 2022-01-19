@@ -20,16 +20,15 @@ namespace Vultr
 			VkSemaphore render_finished_semaphores[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
 			VkFence in_flight_fences[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
 			Vector<VkFence> images_in_flight{};
-
-			Vector<VulkanBuffer> uniform_buffers{};
-			VkDescriptorPool descriptor_pool = nullptr;
-
-			u32 current_frame                = 0;
+			//
+			//			Vector<VulkanBuffer> uniform_buffers{};
+			//			VkDescriptorPool descriptor_pool = nullptr;
+			u32 current_frame = 0;
 
 			Device device;
-			VkCommandPool graphics_command_pool = nullptr;
+			Vector<VkCommandPool> graphics_command_pools{};
 
-			bool framebuffer_was_resized        = false;
+			bool framebuffer_was_resized = false;
 		};
 
 		SwapChain init_swapchain(const Device &device, const Platform::Window *window);
