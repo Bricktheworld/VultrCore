@@ -248,13 +248,31 @@ namespace Vultr
 
 		static void init_uniform_buffers(SwapChain *sc)
 		{
-			auto *d           = &sc->device;
+			auto *d = &sc->device;
+			sc->uniform_buffers.resize(sc->images.size());
 
 			VkDeviceSize size = sizeof(UniformBufferObject);
-			for (auto &uniform_buffer : sc->uniform_buffers)
+			for (size_t i = 0; i < sc->images.size(); i++)
 			{
-				uniform_buffer = alloc_buffer(d, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE);
+				sc->uniform_buffers[i] = alloc_buffer(d, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE);
 			}
+		}
+
+		static void init_descriptor_pool(SwapChain *sc)
+		{
+			auto *d = &sc->device;
+			VkDescriptorPoolSize pool_size{
+				.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorCount = static_cast<u32>(sc->images.size()),
+			};
+
+			VkDescriptorPoolCreateInfo pool_info{
+				.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+				.poolSizeCount = 1,
+				.pPoolSizes    = &pool_size,
+				.maxSets       = static_cast<u32>(sc->images.size()),
+			};
+			PRODUCTION_ASSERT(vkCreateDescriptorPool(d->device, &pool_info, nullptr, &sc->descriptor_pool) == VK_SUCCESS, "Failed to create descriptor pool!");
 		}
 
 		SwapChain init_swapchain(const Device &device, const Platform::Window *window)
@@ -268,6 +286,7 @@ namespace Vultr
 			init_command_pools(&sc);
 			init_concurrency(&sc);
 			init_uniform_buffers(&sc);
+			init_descriptor_pool(&sc);
 			return sc;
 		}
 
@@ -279,6 +298,7 @@ namespace Vultr
 			{
 				free_buffer(d, &uniform_buffer);
 			}
+			vkDestroyDescriptorPool(d->device, sc->descriptor_pool, nullptr);
 
 			for (auto *framebuffer : sc->framebuffers)
 			{
@@ -336,6 +356,7 @@ namespace Vultr
 			init_render_pass(sc);
 			init_framebuffers(sc);
 			init_uniform_buffers(sc);
+			init_descriptor_pool(sc);
 		}
 
 		ErrorOr<u32> acquire_swapchain(SwapChain *sc)

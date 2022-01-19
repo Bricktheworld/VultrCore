@@ -114,8 +114,10 @@ using std::move;
 // TODO(Brandon): Figure out windows assertions.
 #define THROW(message)
 #elif __linux__
-#define THROW(message)                                                                                                                                                                                                \
-	fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                             \
+#define THROW(message, ...)                                                                                                                                                                                           \
+	fprintf(stderr, "Error was thrown '", message);                                                                                                                                                                   \
+	fprintf(stderr, message __VA_OPT__(, ) __VA_ARGS__);                                                                                                                                                              \
+	fprintf(stderr, "' failed.\n");                                                                                                                                                                                   \
 	fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                          \
 	abort();
 #else

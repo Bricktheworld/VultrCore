@@ -11,8 +11,9 @@ namespace Vultr::Platform
 		GLFWwindow *glfw              = nullptr;
 		RenderContext *render_context = nullptr;
 		String title{};
-		u32 width  = 0;
-		u32 height = 0;
+		u32 width     = 0;
+		u32 height    = 0;
+		f64 last_time = 0;
 	};
 	struct Monitor
 	{
@@ -121,6 +122,14 @@ namespace Vultr::Platform
 	u32 get_window_height(const Window *window) { return window->height; }
 	RenderContext *get_render_context(const Window *window) { return window->render_context; }
 	void *get_window_implementation(const Window *window) { return window->glfw; }
+
+	void update_window(Window *window)
+	{
+		f64 t             = glfwGetTime();
+		f64 dt            = t - window->last_time;
+		window->last_time = t;
+		draw_frame(window, window->render_context, dt);
+	}
 
 	void close_window(Window *window)
 	{

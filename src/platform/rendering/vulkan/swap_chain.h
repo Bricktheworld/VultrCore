@@ -21,9 +21,10 @@ namespace Vultr
 			VkFence in_flight_fences[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
 			Vector<VkFence> images_in_flight{};
 
-			VulkanBuffer uniform_buffers[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
+			Vector<VulkanBuffer> uniform_buffers{};
+			VkDescriptorPool descriptor_pool = nullptr;
 
-			u32 current_frame = 0;
+			u32 current_frame                = 0;
 
 			Device device;
 			VkCommandPool graphics_command_pool = nullptr;

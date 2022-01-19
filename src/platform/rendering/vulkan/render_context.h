@@ -35,9 +35,7 @@ namespace Vultr
 			const Vector<u16> indices = Vector<u16>({0, 1, 2, 2, 3, 0});
 			Vulkan::VulkanBuffer vertex_buffer{};
 			Vulkan::VulkanBuffer index_buffer{};
-			//			const Vector<Vertex> vertices       = Vector<Vertex>({{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}}, {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}, {{-0.5f, 0.5f},
-			//{1.0f, 1.0f, 1.0f}}}); 			const Vector<u16> indices           = Vector<u16>({0, 1, 2, 2, 3, 0}); 			VkBuffer vertex_buffer              = nullptr; 			VkDeviceMemory
-			// vertex_buffer_memory = nullptr; 			VkBuffer index_buffer               = nullptr; 			VkDeviceMemory index_buffer_memory  = nullptr;
+			f64 rotation = 0;
 		};
 	} // namespace Platform
 } // namespace Vultr

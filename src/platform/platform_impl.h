@@ -166,6 +166,7 @@ namespace Vultr
 		void change_window_mode(Window *window, DisplayMode mode);
 		void change_window_monitor(Window *window, Monitor *monitor);
 		void change_window_title(Window *window, const char *title);
+		void update_window(Window *window);
 		void close_window(Window *window);
 
 		bool window_should_close(Window *window);
@@ -177,7 +178,7 @@ namespace Vultr
 		RenderContext *init_render_context(const Window *window, bool debug);
 		RenderContext *get_render_context(const Window *window);
 		RenderPipeline *init_render_pipeline(const Pipeline *pipeline);
-		void draw_frame(const Window *window, RenderContext *c);
+		void draw_frame(const Window *window, RenderContext *c, f64 delta_time);
 		void framebuffer_resize_callback(const Window *window, RenderContext *c, u32 width, u32 height);
 		void destroy_render_context(RenderContext *c);
 

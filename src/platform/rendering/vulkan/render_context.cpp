@@ -286,7 +286,7 @@ namespace Vultr
 				.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 				.commandPool        = c->swap_chain.graphics_command_pool,
 				.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-				.commandBufferCount = (u32)c->command_buffers.size(),
+				.commandBufferCount = static_cast<u32>(c->command_buffers.size()),
 			};
 
 			PRODUCTION_ASSERT(vkAllocateCommandBuffers(d->device, &alloc_info, &c->command_buffers[0]) == VK_SUCCESS, "Failed to allocate command buffers!");
@@ -329,8 +329,28 @@ namespace Vultr
 
 				vkCmdEndRenderPass(command_buffer);
 
-				PRODUCTION_ASSERT(vkEndCommandBuffer(command_buffer) == VK_SUCCESS, "Failed to record command buffer!");
+				VK_CHECK(vkEndCommandBuffer(command_buffer));
 			}
+		}
+		static void update_uniform_buffer(Platform::RenderContext *c, u32 image_index, f64 dt)
+		{
+			auto *sc = &c->swap_chain;
+			auto *d  = &sc->device;
+			c->rotation += 1 * dt;
+
+			auto extent = sc->extent;
+
+			UniformBufferObject ubo{
+				.model = glm::rotate(glm::mat4(1.0f), glm::radians((f32)c->rotation), glm::vec3(0.0f, 0.0f, 1.0f)),
+				.view  = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+				.proj  = glm::perspective(glm::radians(45.0f), (f32)extent.width / (f32)extent.height, 0.1f, 10.0f),
+			};
+			ubo.proj[1][1] *= -1;
+
+			void *data;
+			vkMapMemory(d->device, sc->uniform_buffers[image_index].memory, 0, sizeof(ubo), 0, &data);
+			memcpy(data, &ubo, sizeof(ubo));
+			vkUnmapMemory(d->device, sc->uniform_buffers[image_index].memory);
 		}
 
 	} // namespace Vulkan
@@ -352,10 +372,11 @@ namespace Vultr
 			return c;
 		}
 
-		void draw_frame(const Platform::Window *window, RenderContext *c)
+		void draw_frame(const Platform::Window *window, RenderContext *c, f64 dt)
 		{
 			if check (Vulkan::acquire_swapchain(&c->swap_chain), u32 image_index, auto _)
 			{
+				Vulkan::update_uniform_buffer(c, image_index, dt);
 				Vulkan::submit_swapchain(&c->swap_chain, image_index, c->command_buffers.size(), &c->command_buffers[0]);
 			}
 			else

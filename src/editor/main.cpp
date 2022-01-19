@@ -13,12 +13,11 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 	{
 		project.init();
 
-		auto *c = Platform::get_render_context(window);
 		while (!Platform::window_should_close(window))
 		{
 			Platform::poll_events(window);
 			project.update();
-			Platform::draw_frame(window, c);
+			Platform::update_window(window);
 		}
 		Platform::close_window(window);
 
