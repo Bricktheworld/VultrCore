@@ -23,6 +23,8 @@ namespace Vultr
 		{
 			Vulkan::SwapChain swap_chain{};
 
+			VkPipelineLayout pipeline_layout = nullptr;
+			VkPipeline graphics_pipeline     = nullptr;
 			//			VkDescriptorSetLayout descriptor_set_layout;
 
 			Vector<VkCommandBuffer> command_buffers{};

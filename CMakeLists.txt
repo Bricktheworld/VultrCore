@@ -25,7 +25,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories(src vendor)
 
-add_library(${This} STATIC ${Sources} src/platform/rendering/vulkan/pipeline.h src/platform/rendering/vulkan/pipeline.cpp)
+add_library(${This} STATIC ${Sources})
 
 set(TargetIncludeDirs src vendor)
 
@@ -56,6 +56,10 @@ target_link_libraries(${Executable} PUBLIC ${Libs} ${This})
 target_include_directories(${Executable} PUBLIC ${TargetIncludeDirs})
 
 target_precompile_headers(${This} PUBLIC pch.h)
+
+add_executable(ShaderGenerator "src/tools/shader_generator/sources.cpp")
+target_link_libraries(ShaderGenerator PUBLIC ${Libs} ${This})
+target_include_directories(ShaderGenerator PUBLIC ${TargetIncludeDirs})
 
 add_subdirectory(tests)
 

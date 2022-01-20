@@ -51,7 +51,7 @@ namespace Vultr
 			auto *d = &sc->device;
 			VkCommandBufferAllocateInfo alloc_info{
 				.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-				.commandPool        = sc->graphics_command_pool,
+				.commandPool        = sc->graphics_command_pools[0],
 				.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 				.commandBufferCount = 1,
 			};
@@ -77,7 +77,7 @@ namespace Vultr
 
 			vkQueueSubmit(d->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
 			vkQueueWaitIdle(d->graphics_queue);
-			vkFreeCommandBuffers(d->device, sc->graphics_command_pool, 1, &command_buffer);
+			vkFreeCommandBuffers(d->device, sc->graphics_command_pools[0], 1, &command_buffer);
 		}
 
 		void free_buffer(Device *d, VulkanBuffer *buffer)

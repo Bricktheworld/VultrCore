@@ -2,7 +2,5 @@
 
 namespace Vultr
 {
-	struct Shader
-	{
-	};
+	struct Shader;
 } // namespace Vultr

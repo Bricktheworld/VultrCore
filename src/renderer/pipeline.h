@@ -1,8 +1,10 @@
 #pragma once
+#include "shader.h"
 
 namespace Vultr
 {
-	struct Pipeline
+	struct PipelineInfo
 	{
+		Shader *shader;
 	};
 } // namespace Vultr

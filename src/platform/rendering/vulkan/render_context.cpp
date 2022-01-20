@@ -284,7 +284,7 @@ namespace Vultr
 
 			VkCommandBufferAllocateInfo alloc_info{
 				.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-				.commandPool        = c->swap_chain.graphics_command_pool,
+				.commandPool        = c->swap_chain.graphics_command_pools[0],
 				.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 				.commandBufferCount = static_cast<u32>(c->command_buffers.size()),
 			};
@@ -368,7 +368,7 @@ namespace Vultr
 			Vulkan::init_graphics_pipeline(c);
 			Vulkan::init_vertex_buffer(c);
 			Vulkan::init_index_buffer(c);
-			//			Vulkan::init_command_buffers(c);
+			Vulkan::init_command_buffers(c);
 			return c;
 		}
 
@@ -388,7 +388,7 @@ namespace Vultr
 				vkDestroyPipelineLayout(d->device, c->pipeline_layout, nullptr);
 
 				Vulkan::init_graphics_pipeline(c);
-				//				Vulkan::init_command_buffers(c);
+				Vulkan::init_command_buffers(c);
 			}
 		}
 

@@ -225,7 +225,7 @@ namespace Vultr
 					.queueFamilyIndex = indices.graphics_family.value(),
 				};
 
-				VK_CHECK(vkCreateCommandPool(d->device, &pool_info, nullptr, &sc->graphics_command_pool));
+				VK_CHECK(vkCreateCommandPool(d->device, &pool_info, nullptr, &sc->graphics_command_pools[i]));
 			}
 		}
 
@@ -287,6 +287,7 @@ namespace Vultr
 			init_image_views(&sc);
 			init_render_pass(&sc);
 			init_framebuffers(&sc);
+			init_command_pools(&sc);
 			init_concurrency(&sc);
 			//			init_uniform_buffers(&sc);
 			//			init_descriptor_pool(&sc);
