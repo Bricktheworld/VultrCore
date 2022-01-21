@@ -174,10 +174,8 @@ namespace Vultr
 		void poll_events(Window *window);
 
 		struct RenderContext;
-		struct RenderPipeline;
 		RenderContext *init_render_context(const Window *window, bool debug);
 		RenderContext *get_render_context(const Window *window);
-		RenderPipeline *init_render_pipeline(const Pipeline *pipeline);
 		void draw_frame(const Window *window, RenderContext *c, f64 delta_time);
 		void framebuffer_resize_callback(const Window *window, RenderContext *c, u32 width, u32 height);
 		void destroy_render_context(RenderContext *c);

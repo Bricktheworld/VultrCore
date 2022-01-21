@@ -2,30 +2,12 @@
 #include <tuple>
 #include <string>
 #include "types.h"
+#include "static_details.h"
 
 namespace Vultr
 {
-
-	template <size_t i, typename T>
-	struct TupleLeaf
-	{
-		T val;
-		TupleLeaf(const T &val) : val(val) {}
-	};
-
-	template <size_t i, typename... Ts>
-	struct TupleImpl;
-
-	template <size_t i>
-	struct TupleImpl<i>
-	{
-	};
-
-	template <size_t i, typename CurrT, typename... TailTs>
-	struct TupleImpl<i, CurrT, TailTs...> : public TupleLeaf<i, CurrT>, public TupleImpl<i + 1, TailTs...>
-	{
-		TupleImpl(const CurrT &curr, const TailTs &...rest) : TupleLeaf<i, CurrT>(curr), TupleImpl<i + 1, TailTs...>(rest...) {}
-	};
+	template <typename... Ts>
+	struct TypeList;
 
 	template <size_t...>
 	struct Sequence
@@ -43,33 +25,79 @@ namespace Vultr
 		typedef Sequence<S...> type;
 	};
 
-	/**
-	 * THIS IS PRONOUNCED TWO-PLE!!!!!!!!!!!
-	 * NO TUHPLE's ALLOWED
-	 */
 	template <typename... Ts>
-	struct Tuple : TupleImpl<0, Ts...>
+	struct TupleImpl
 	{
-		Tuple() = default;
-		Tuple(const Ts &...args) : TupleImpl<0, Ts...>(args...) {}
+	};
 
-		template <size_t i, typename T>
-		T &get()
+	template <typename T>
+	struct TupleImpl<T>
+	{
+		T m_value;
+		TupleImpl(const T &value) : m_value(value) {}
+
+		template <typename U>
+		U &get()
 		{
-			return TupleLeaf<i, T>::val;
+			static_assert(is_same<U, T>(), "Invalid tuple access");
+			return m_value;
 		}
 
-		template <typename ReturnT>
-		ReturnT apply(ReturnT (*delegate)(Ts...))
+		template <typename U, size_t i>
+		U &get_with_index()
 		{
-			return apply_impl(delegate, typename SequenceImpl<sizeof...(Ts)>::type());
-		}
-
-	  private:
-		template <size_t... S, typename ReturnT>
-		ReturnT apply_impl(ReturnT (*delegate)(Ts...), Sequence<S...>)
-		{
-			return delegate(this->get<S, Ts>()...);
+			static_assert(is_same<U, T>() && i == 0, "Invalid tuple access");
+			return m_value;
 		}
 	};
+
+	template <typename T, typename... TRest>
+	struct TupleImpl<T, TRest...> : TupleImpl<TRest...>
+	{
+		T m_value;
+		TupleImpl(const T &first, const TRest &...rest) : m_value(first), TupleImpl<TRest...>(rest...) {}
+
+		template <typename U>
+		U &get()
+		{
+			if constexpr (is_same<T, U>())
+			{
+				return m_value;
+			}
+			else
+			{
+				return TupleImpl<TRest...>::template get<U>();
+			}
+		}
+
+		template <typename U, size_t i>
+		U &get_with_index()
+		{
+			if constexpr (is_same<T, U> && i == 0)
+			{
+				return m_value;
+			}
+			else
+			{
+				return TupleImpl<TRest...>::template get_with_index<U, i - 1>();
+			}
+		}
+	};
+
+	template <typename... Ts>
+	struct Tuple : TupleImpl<Ts...>
+	{
+		template <typename T>
+		auto &get()
+		{
+			return TupleImpl<Ts...>::template get<T>();
+		}
+
+		template <size_t i>
+		auto &get()
+		{
+			return TupleImpl<Ts...>::template get_with_index <
+		}
+	};
+
 } // namespace Vultr
