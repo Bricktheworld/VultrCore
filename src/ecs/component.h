@@ -5,6 +5,6 @@
 namespace Vultr
 {
 #define MAX_COMPONENTS 128
-	typedef Bitfield<128> ComponentType;
+	typedef Bitfield<MAX_COMPONENTS> ComponentType;
 
 } // namespace Vultr

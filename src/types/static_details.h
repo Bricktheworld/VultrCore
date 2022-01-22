@@ -58,4 +58,40 @@ namespace Vultr
 
 	template <class T>
 	using remove_cv = remove_volatile<remove_const<T>>;
+
+	template <typename... Ts>
+	struct IndexOf;
+
+	template <typename T, typename... R>
+	struct IndexOf<T, T, R...>
+	{
+		static constexpr size_t index = 0;
+	};
+
+	template <typename T, typename F, typename... R>
+	struct IndexOf<T, F, R...>
+	{
+		static constexpr size_t index = 1 + IndexOf<T, R...>::index;
+	};
+
+	template <typename... Ts>
+	struct Contains;
+
+	template <typename T, typename... R>
+	struct Contains<T, T, R...>
+	{
+		static constexpr bool contains = true;
+	};
+
+	template <typename T, typename F, typename... R>
+	struct Contains<T, F, R...>
+	{
+		static constexpr bool contains = Contains<T, R...>::contains;
+	};
+
+	template <typename T, typename F>
+	struct Contains<T, F>
+	{
+		static constexpr bool contains = false;
+	};
 } // namespace Vultr

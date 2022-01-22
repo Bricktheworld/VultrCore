@@ -103,7 +103,7 @@ namespace Vultr
 #define VERIFY(err)                                                                                                                                                                                                   \
 	{                                                                                                                                                                                                                 \
 		auto __error_result = err;                                                                                                                                                                                    \
-		if (!_error_result)                                                                                                                                                                                           \
+		if (!__error_result)                                                                                                                                                                                          \
 			return __error_result;                                                                                                                                                                                    \
 	}
 

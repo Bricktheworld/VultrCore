@@ -10,4 +10,11 @@ TEST(Tuple, Constructor)
 		ASSERT_EQ(integer, 0);
 		ASSERT_DOUBLE_EQ(floating, 1.0);
 	});
+	ASSERT_EQ(some_tuple.get<0>(), 0);
+	ASSERT_EQ(some_tuple.get<1>(), 1.0);
+	ASSERT_STRCASEEQ(some_tuple.get<2>(), "Some string");
+
+	ASSERT_EQ(some_tuple.get<u32>(), 0);
+	ASSERT_EQ(some_tuple.get<f64>(), 1.0);
+	ASSERT_STRCASEEQ(some_tuple.get<const char *>(), "Some string");
 }
