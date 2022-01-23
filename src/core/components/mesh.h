@@ -5,6 +5,6 @@ namespace Vultr
 {
 	struct Mesh
 	{
-		Path source;
+		Option<Path> source = None;
 	};
 } // namespace Vultr

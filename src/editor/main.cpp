@@ -1,8 +1,8 @@
 #include <platform/platform.h>
 #include <vultr.h>
 #include "project/project.h"
-#include "renderer/mesh.h"
-#include "core/components/transform.h"
+#include <core/components/transform.h>
+#include <core/components/mesh.h>
 #include "renderer/material.h"
 #include <ecs/world.h>
 
@@ -17,6 +17,17 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 	if check (Vultr::load_game("/home/brandon/Dev/VultrSandbox/build/libVultrDemo.so"), auto project, auto err)
 	{
 		project.init();
+		{
+			auto &mesh         = component_manager.get_component<Mesh>(0);
+			mesh.source        = Path("Some path");
+			auto &transform    = component_manager.get_component<Transform>(0);
+			transform.position = Vec3(20, 20, 30);
+		}
+		{
+			auto [mesh, transform] = component_manager.get_components<Mesh, Transform>(0);
+			ASSERT(transform.position == Vec3(20, 20, 30), "Transform not correct!");
+			ASSERT(mesh.source.has_value() && mesh.source.value().m_path == "Some path", "Mesh not correct!");
+		}
 
 		while (!Platform::window_should_close(window))
 		{

@@ -2,7 +2,4 @@
 
 namespace Vultr
 {
-	struct Mesh
-	{
-	};
 } // namespace Vultr

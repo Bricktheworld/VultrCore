@@ -18,20 +18,35 @@ namespace Vultr
 		}
 
 		Entity create_entity() { return queue.pop(); }
-		void destroy_entity(Entity entity) {}
+		void destroy_entity(Entity entity)
+		{
+			ASSERT(!queue.contains(entity), "Entity has already been destroyed!");
+			queue.push(entity);
+		}
 	};
 
 	struct ComponentArray
 	{
 		typedef ErrorOr<void> (*AddEntity)(ComponentArray *array, Entity entity);
-		typedef Option<void *> (*GetComponent)(ComponentArray *array, Entity entity);
+		typedef void *(*GetComponent)(ComponentArray *array, Entity entity);
 		typedef ErrorOr<void> (*RemoveEntity)(ComponentArray *array, Entity entity);
 
 		void *m_array = nullptr;
+
+		ErrorOr<void> add_entity(Entity entity) { return m_add_entity(this, entity); }
+		void *get_component(Entity entity) { return m_get_component(this, entity); }
+		ErrorOr<void> remove_entity(Entity entity) { return m_remove_entity(this, entity); }
+
 		AddEntity m_add_entity{};
 		GetComponent m_get_component{};
 		RemoveEntity m_remove_entity{};
 	};
+
+	template <typename T>
+	T *component_array_get_array(ComponentArray *array)
+	{
+		return reinterpret_cast<T *>(array->m_array);
+	}
 
 	template <typename T>
 	ErrorOr<void> component_array_add_entity(ComponentArray *array, Entity entity)
@@ -40,9 +55,9 @@ namespace Vultr
 	}
 
 	template <typename T>
-	Option<void *> component_array_get_component(ComponentArray *array, Entity entity)
+	void *component_array_get_component(ComponentArray *array, Entity entity)
 	{
-		return None;
+		return &component_array_get_array<T>(array)[entity];
 	}
 
 	template <typename T>
@@ -72,6 +87,32 @@ namespace Vultr
 		{
 			static_assert(Types::template contains<T>(), "Component is not a part of the component manager!");
 			return Types::template index_of<T>();
+		}
+
+		template <typename T>
+		ComponentArray *get_component_array()
+		{
+			return &component_arrays[get_component_index<T>()];
+		}
+
+		template <typename T>
+		T *try_get_component(Entity entity)
+		{
+			return static_cast<T *>(get_component_array<T>()->get_component(entity));
+		}
+
+		template <typename T>
+		T &get_component(Entity entity)
+		{
+			auto res = try_get_component<T>(entity);
+			ASSERT(res != nullptr, "Component does not exist!");
+			return *res;
+		}
+
+		template <typename... Ts>
+		Tuple<Ts &...> get_components(Entity entity)
+		{
+			return Tuple<Ts &...>(get_component<Ts>(entity)...);
 		}
 
 	  private:

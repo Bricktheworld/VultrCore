@@ -16,7 +16,7 @@ namespace Vultr
 	  public:
 		Option() : m_has_value(false) {}
 		Option(NoneT none) : m_has_value(false) {}
-		Option(T value)
+		Option(const T &value)
 		{
 			m_has_value = true;
 			new (m_storage) T(value);

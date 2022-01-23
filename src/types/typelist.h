@@ -30,14 +30,14 @@ namespace Vultr
 		using Type = typename TypeListElement<i, TypeList<Types...>>::Type;
 
 		template <typename T>
-		constexpr size_t index_of()
+		static constexpr size_t index_of()
 		{
 			static_assert(Contains<T, Types...>::contains, "Type list does not contain type T!");
 			return IndexOf<T, Types...>::index;
 		}
 
 		template <typename T>
-		constexpr bool contains()
+		static constexpr bool contains()
 		{
 			return Contains<T, Types...>::contains;
 		}

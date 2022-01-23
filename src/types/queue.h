@@ -10,7 +10,7 @@ namespace Vultr
 		Queue()  = default;
 		~Queue() = default;
 
-		bool full() const { return (m_front == 0 && rear == capacity - 1) || (rear == (m_front - 1) % (capacity - 1)); }
+		bool full() const { return (m_front == 0 && m_rear == capacity - 1) || (m_rear == (m_front - 1) % (capacity - 1)); }
 		bool empty() const { return m_front == -1; }
 
 		ErrorOr<void> try_push(T &&element)
@@ -56,10 +56,10 @@ namespace Vultr
 			auto data = storage()[m_front];
 			storage()[m_front].~T();
 
-			if (m_front == rear)
+			if (m_front == m_rear)
 			{
 				m_front = -1;
-				rear    = -1;
+				m_rear  = -1;
 			}
 			else if (m_front == capacity - 1)
 			{
@@ -89,11 +89,33 @@ namespace Vultr
 		}
 
 		T *storage() { return reinterpret_cast<T *>(m_storage); }
+		const T *storage() const { return reinterpret_cast<const T *>(m_storage); }
+
+		bool contains(const T &needle) const
+		{
+			ssize_t front = m_front;
+			while (front != -1 && front != m_rear)
+			{
+				if (storage()[front] == needle)
+				{
+					return true;
+				}
+				if (front == capacity - 1)
+				{
+					front = 0;
+				}
+				else
+				{
+					front++;
+				}
+			}
+			return false;
+		}
 
 	  private:
 		alignas(T) byte m_storage[capacity * sizeof(T)]{};
 		ssize_t m_front = -1;
-		ssize_t rear    = -1;
+		ssize_t m_rear  = -1;
 
 		ErrorOr<T *> try_push_impl()
 		{
@@ -103,17 +125,17 @@ namespace Vultr
 			if (m_front == -1)
 			{
 				m_front = 0;
-				rear    = 0;
+				m_rear  = 0;
 			}
-			else if (rear == capacity - 1 && m_front != 0)
+			else if (m_rear == capacity - 1 && m_front != 0)
 			{
-				rear = 0;
+				m_rear = 0;
 			}
 			else
 			{
-				rear++;
+				m_rear++;
 			}
-			return &storage()[rear];
+			return &storage()[m_rear];
 		}
 	};
 } // namespace Vultr

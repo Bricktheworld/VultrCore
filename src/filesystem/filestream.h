@@ -49,7 +49,7 @@ namespace Vultr
 				position = ftello(m_handle);
 			}
 
-			ASSERT(position <= buf->size(), "Buffer with size %s does not have enough room for index %lu!", buf->size(), pos);
+			ASSERT(position <= buf->size(), "Buffer with size %lu does not have enough room for index %lu!", buf->size(), pos.value());
 			if (fread(&buf->storage[position], buf->size(), 1, m_handle) != 1)
 			{
 				return Error("Failed to read!");

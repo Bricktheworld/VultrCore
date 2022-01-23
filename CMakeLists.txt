@@ -22,6 +22,7 @@ if (WIN32)
 endif (WIN32)
 
 set(CMAKE_CXX_STANDARD 20)
+add_compile_options("-ftime-trace" "-Wno-reorder" "-Wno-volatile" "-Wno-deprecated-enum-enum-conversion")
 
 include_directories(src vendor)
 
@@ -68,6 +69,4 @@ add_subdirectory(benchmark)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
-if (UNIX)
-    set(CMAKE_CXX_FLAGS "-Wno-reorder -Wno-volatile -Wno-deprecated-enum-enum-conversion")
-endif (UNIX)
+#    set(CMAKE_CXX_FLAGS "")

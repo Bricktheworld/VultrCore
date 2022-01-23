@@ -1,8 +1,8 @@
 #pragma once
-#include <tuple>
 #include <string>
 #include "types.h"
 #include "typelist.h"
+#include <utility>
 
 namespace Vultr
 {
@@ -132,3 +132,18 @@ namespace Vultr
 	};
 
 } // namespace Vultr
+
+namespace std
+{
+	template <typename... Ts>
+	struct tuple_size<Vultr::Tuple<Ts...>>
+	{
+		static constexpr size_t value = sizeof...(Ts);
+	};
+
+	template <size_t i, typename... Ts>
+	struct tuple_element<i, Vultr::Tuple<Ts...>>
+	{
+		using type = typename Vultr::Tuple<Ts...>::Types::template Type<i>;
+	};
+} // namespace std

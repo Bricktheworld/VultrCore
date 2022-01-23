@@ -4,7 +4,7 @@
 
 namespace Vultr
 {
-#define MAX_COMPONENTS 128
+	static constexpr size_t MAX_COMPONENTS = 128;
 	typedef Bitfield<MAX_COMPONENTS> ComponentType;
 
 } // namespace Vultr
