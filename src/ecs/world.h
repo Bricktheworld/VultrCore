@@ -3,6 +3,7 @@
 #include <types/queue.h>
 #include "entity.h"
 #include "component.h"
+#include "system.h"
 
 namespace Vultr
 {
@@ -125,6 +126,9 @@ namespace Vultr
 
 	struct SystemManager
 	{
+		Vector<System> systems{};
+
+		void register_system(const System &system) { systems.push_back(system); }
 	};
 
 	template <typename... Component>

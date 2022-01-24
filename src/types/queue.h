@@ -37,7 +37,7 @@ namespace Vultr
 		void push(const T &element)
 		{
 			auto res = try_push_impl();
-			ASSERT(res.has_value(), res.get_error().message);
+			ASSERT(res.has_value(), "%s", res.get_error().message.c_str());
 			new (res.value()) T(element);
 		}
 
@@ -76,7 +76,7 @@ namespace Vultr
 		T pop()
 		{
 			auto res = try_pop();
-			ASSERT(res.has_value(), res.get_error().message);
+			ASSERT(res.has_value(), "%s", res.get_error().message.c_str());
 			return res.value();
 		}
 

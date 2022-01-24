@@ -19,7 +19,6 @@ namespace Vultr
 			if constexpr (is_trivial<T>)
 			{
 				memmove(dest, src, count * sizeof(T));
-				return count;
 			}
 			else
 			{
@@ -36,6 +35,7 @@ namespace Vultr
 					}
 				}
 			}
+			return count;
 		}
 
 		template <typename T>
