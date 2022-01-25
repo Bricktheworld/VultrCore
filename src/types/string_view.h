@@ -1,6 +1,7 @@
 #pragma once
 #include <types/types.h>
 #include <string.h>
+#include <utils/traits.h>
 
 namespace Vultr
 {
@@ -39,6 +40,13 @@ namespace Vultr
 			return ref[index];
 		}
 
+		constexpr u32 hash() const
+		{
+			if (is_empty())
+				return 0;
+			return string_hash(c_str(), length());
+		}
+
 		size_t length() const { return len; }
 
 		str c_str() const { return ref; }
@@ -62,5 +70,13 @@ namespace Vultr
 	  private:
 		size_t len = 0;
 		str ref    = nullptr;
+	};
+
+	template <>
+	struct Traits<StringView> : public GenericTraits<StringView>
+	{
+		static u32 hash(const StringView &s) { return s.hash(); }
+		static u32 equals(const StringView &a, const StringView &b) { return a == b; }
+		static u32 equals(const StringView &a, str b) { return a == b; }
 	};
 } // namespace Vultr

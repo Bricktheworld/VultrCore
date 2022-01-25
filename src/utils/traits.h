@@ -1,6 +1,7 @@
 #pragma once
 #include <types/types.h>
 #include <types/static_details.h>
+#include <utils/hash.h>
 
 namespace Vultr
 {
@@ -43,8 +44,8 @@ namespace Vultr
 	template <typename T>
 	requires(is_pointer_of_type<char, T>) struct Traits<T> : public GenericTraits<T>
 	{
-		static unsigned hash(T const value) { return string_hash(value, strlen(value)); }
-		static constexpr bool equals(T const a, T const b) { return strcmp(a, b) == 0; }
+		static constexpr u32 hash(const T value) { return string_hash(value, strlen(value)); }
+		static constexpr bool equals(const T a, const T b) { return strcmp(a, b) == 0; }
 		static constexpr bool is_trivial() { return true; }
 	};
 

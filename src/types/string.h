@@ -3,6 +3,7 @@
 #include "optional.h"
 #include "string_view.h"
 #include "iterator.h"
+#include <utils/traits.h>
 
 namespace Vultr
 {
@@ -65,6 +66,13 @@ namespace Vultr
 		}
 		bool operator==(str other) const { return *this == StringView(other); }
 
+		constexpr u32 hash() const
+		{
+			if (is_empty())
+				return 0;
+			return string_hash(c_str(), length());
+		}
+
 		str c_str() const { return storage; }
 		operator str() { return storage; }
 		size_t length() const { return size() - 1; }
@@ -107,4 +115,12 @@ namespace Vultr
 
 		return String(StringView(buf, new_len));
 	}
+
+	template <>
+	struct Traits<String> : public GenericTraits<String>
+	{
+		static u32 hash(const String &s) { return s.hash(); }
+		static u32 equals(const String &a, const String &b) { return a == b; }
+		static u32 equals(const String &a, str b) { return a == b; }
+	};
 } // namespace Vultr

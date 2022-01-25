@@ -26,6 +26,4 @@ TEST(Filesystem, FileInputStream)
 
 	String buf;
 	ASSERT_TRUE(fread_all(p, &buf).has_value());
-
-	printf("Read shader file: %s", buf.c_str());
 }
