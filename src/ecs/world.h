@@ -1,6 +1,7 @@
 #pragma once
 #include <types/tuple.h>
 #include <types/queue.h>
+#include <types/hashmap.h>
 #include "entity.h"
 #include "component.h"
 #include "system.h"
@@ -41,6 +42,8 @@ namespace Vultr
 		AddEntity m_add_entity{};
 		GetComponent m_get_component{};
 		RemoveEntity m_remove_entity{};
+		Hashmap<Entity, size_t> entity_to_index{};
+		Hashmap<size_t, Entity> index_to_entity{};
 	};
 
 	template <typename T>
