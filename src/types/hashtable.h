@@ -61,7 +61,10 @@ namespace Vultr
 			Bucket *m_bucket = nullptr;
 		};
 
-		HashTable() = default;
+		template <typename U>
+		using default_traits = conditional<is_same<U, T>, TraitsForT, Traits<U>>;
+
+		HashTable()          = default;
 		explicit HashTable(size_t capacity) : m_capacity(capacity) {}
 		~HashTable() { clear(); }
 
@@ -82,10 +85,10 @@ namespace Vultr
 		bool empty() const { return m_size == 0; }
 		size_t size() const { return m_size; }
 		size_t capacity() const { return m_capacity; }
-		template <typename U = T>
+		template <typename U = T, typename TraitsForU = default_traits<U>>
 		bool contains(const U &value)
 		{
-			return find<U, Traits<U>>(value) != end();
+			return find<U, TraitsForU>(value) != end();
 		}
 
 		template <typename Predicate>
@@ -94,10 +97,24 @@ namespace Vultr
 			return HashTableIterator(lookup_with_hash(hash, predicate));
 		}
 
-		template <typename U = T, typename TraitsForU = Traits<U>>
+		template <typename U, typename TraitsForU>
+		static bool equals(const T &a, const U &b)
+		{
+			if constexpr (Equalable<TraitsForU, U, T>)
+				return TraitsForU::equals(b, a);
+			else if constexpr (Equalable<TraitsForU, T, U>)
+				return TraitsForU::equals(a, b);
+			else if constexpr (Equalable<TraitsForT, T, U>)
+				return TraitsForT::equals(a, b);
+			else if constexpr (Equalable<TraitsForT, U, T>)
+				return TraitsForT::equals(b, a);
+			return false;
+		}
+
+		template <typename U = T, typename TraitsForU = default_traits<U>>
 		HashTableIterator find(const U &value)
 		{
-			return find(TraitsForU::hash(value), [&](auto &other) { return TraitsForT::equals(other, value); });
+			return find(TraitsForU::hash(value), [&](T &other) { return equals<U, TraitsForU>(other, value); });
 		}
 
 		void clear()
@@ -118,10 +135,18 @@ namespace Vultr
 			m_deleted_count = 0;
 		}
 
-		void set(T &&value)
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		void set(U &&value)
 		{
-			auto *bucket = lookup_for_writing(value);
-			new (bucket->storage()) T(move(value));
+			auto *bucket = lookup_for_writing<U, TraitsForU>(value);
+			if constexpr (is_same<U, T>)
+			{
+				new (bucket->storage()) T(move(static_cast<T>(value)));
+			}
+			else
+			{
+				new (bucket->storage()) T(value);
+			}
 			bucket->used = true;
 			if (bucket->deleted)
 			{
@@ -131,10 +156,18 @@ namespace Vultr
 			m_size++;
 		}
 
-		void set(const T &value)
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		void set(const U &value)
 		{
-			auto *bucket = look_up_for_writing(value);
-			new (bucket->storage()) T(value);
+			auto *bucket = lookup_for_writing<U, TraitsForU>(value);
+			if constexpr (is_same<U, T>)
+			{
+				new (bucket->storage()) T(move(static_cast<T>(value)));
+			}
+			else
+			{
+				new (bucket->storage()) T(value);
+			}
 			bucket->used = true;
 			if (bucket->deleted)
 			{
@@ -144,10 +177,10 @@ namespace Vultr
 			m_size++;
 		}
 
-		template <typename U = T, typename TraitsForU = Traits<U>>
+		template <typename U = T, typename TraitsForU = default_traits<U>>
 		bool remove(const U &value)
 		{
-			auto it = find(value);
+			auto it = find<U, TraitsForU>(value);
 			if (it != end())
 			{
 				remove(it);
@@ -193,13 +226,17 @@ namespace Vultr
 
 		void rehash(size_t new_capacity)
 		{
-			new_capacity              = max<size_t>(new_capacity, 4);
+			new_capacity      = max<size_t>(new_capacity, 4);
 
-			auto *old_buckets         = m_buckets;
-			auto old_capacity         = m_capacity;
+			auto *old_buckets = m_buckets;
+			auto old_capacity = m_capacity;
 
-			m_buckets                 = v_alloc<Bucket>(new_capacity + 1);
-			m_capacity                = new_capacity;
+			m_buckets         = v_alloc<Bucket>(new_capacity + 1);
+			m_capacity        = new_capacity;
+			for (size_t i = 0; i < new_capacity + 1; i++)
+			{
+				new (&m_buckets[i]) Bucket();
+			}
 
 			m_buckets[m_capacity].end = true;
 
@@ -222,21 +259,22 @@ namespace Vultr
 			v_free(old_buckets);
 		}
 
-		Bucket *lookup_for_writing(const T &value)
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		Bucket *lookup_for_writing(const U &value)
 		{
 			if ((used_bucket_count() + 1) >= m_capacity)
 			{
 				rehash((size() + 1) * 2);
 			}
 
-			auto hash                  = TraitsForT::hash(value);
+			auto hash                  = TraitsForU::hash(value);
 			Bucket *first_empty_bucket = nullptr;
 
 			while (true)
 			{
 				auto *bucket = &m_buckets[hash % m_capacity];
 
-				if (bucket->used && TraitsForT::equals(*bucket->storage(), value))
+				if (bucket->used && equals<U, TraitsForU>(*bucket->storage(), value))
 					return bucket;
 
 				if (!bucket->used)

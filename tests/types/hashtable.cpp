@@ -9,13 +9,12 @@ using namespace Vultr;
 
 TEST(HashTable, Iterator)
 {
-	//	const char *string_keys[] = {"urmom", "chungus", "poop", "awoooga"};
 	const char *string_vals[] = {"joe", "big", "shit", "eyes pop out"};
 	HashTable<String> table{};
 
 	for (int i = 0; i < 4; i++)
 	{
-		table.set(String(string_vals[i]));
+		table.set(string_vals[i]);
 	}
 
 	ASSERT_TRUE(table.contains("joe"));

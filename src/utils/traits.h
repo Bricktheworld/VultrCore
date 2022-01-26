@@ -49,4 +49,10 @@ namespace Vultr
 		static constexpr bool is_trivial() { return true; }
 	};
 
+	template <typename Trait, typename Type1, typename Type2>
+	concept Equalable = requires(const Type1 &a, const Type2 &b)
+	{
+		Trait::equals(a, b);
+	};
+
 } // namespace Vultr

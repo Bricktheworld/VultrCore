@@ -284,4 +284,19 @@ namespace Vultr
 
 	template <typename T, typename U>
 	inline constexpr bool is_pointer_of_type = is_pointer<decay<U>> &&is_same<T, remove_cv<remove_pointer<decay<U>>>>;
+
+	template <bool condition, class TrueType, class FalseType>
+	struct __Conditional
+	{
+		using Type = TrueType;
+	};
+
+	template <class TrueType, class FalseType>
+	struct __Conditional<false, TrueType, FalseType>
+	{
+		using Type = FalseType;
+	};
+
+	template <bool condition, class TrueType, class FalseType>
+	using conditional = typename __Conditional<condition, TrueType, FalseType>::Type;
 } // namespace Vultr
