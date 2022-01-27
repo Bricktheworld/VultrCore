@@ -124,7 +124,7 @@ namespace Vultr
 		template <typename U = K, typename TraitsForU = default_traits<U>>
 		V &get(const U &key)
 		{
-			if let (auto value, try_get(key))
+			if let (auto &value, try_get(key))
 				return value;
 			else
 				THROW("Not found!");

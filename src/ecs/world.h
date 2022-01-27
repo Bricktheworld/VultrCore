@@ -118,6 +118,14 @@ namespace Vultr
 			return Types::template index_of<T>();
 		}
 
+		template <typename... Ts>
+		constexpr Signature signature_from_components()
+		{
+			Signature signature{};
+			(signature.set(get_component_index<Ts>(), true), ...);
+			return signature;
+		}
+
 		template <typename T>
 		ComponentArray<T> *get_component_array()
 		{
@@ -133,8 +141,8 @@ namespace Vultr
 		template <typename T>
 		void add_component(Entity entity, const T &component)
 		{
-			auto res = try_add_component<T>(entity);
-			ASSERT(res, res.get_error().message.c_str());
+			auto res = try_add_component<T>(entity, component);
+			ASSERT(res, "%s", res.get_error().message.c_str());
 		}
 
 		template <typename T>
@@ -155,6 +163,19 @@ namespace Vultr
 		Tuple<Ts &...> get_components(Entity entity)
 		{
 			return Tuple<Ts &...>(get_component<Ts>(entity)...);
+		}
+
+		template <typename T>
+		ErrorOr<void> try_remove_component(Entity entity)
+		{
+			return get_component_array<T>()->remove_entity(entity);
+		}
+
+		template <typename T>
+		void remove_component(Entity entity)
+		{
+			auto res = try_remove_component<T>(entity);
+			ASSERT(res, "%s", res.get_error().message.c_str());
 		}
 
 	  private:
@@ -182,12 +203,18 @@ namespace Vultr
 		template <typename... Ts>
 		struct IteratorContainer
 		{
+			explicit IteratorContainer(World *world) : m_world(world) {}
 			struct EntityIterator
 			{
-				EntityIterator(World *world, Entity entity) : m_world(world), m_entity(entity) {}
+				EntityIterator(World *world, const Hashmap<Entity, Signature>::HIterator &iterator)
+					: m_world(world), m_iterator(iterator), m_signature(world->component_manager.template signature_from_components<Ts...>())
+				{
+					if (!matches_signature())
+						skip_to_next();
+				}
 
-				Tuple<Ts &...> operator*() { return m_world->component_manager.template get_components<Ts...>(m_entity); }
-				bool operator==(const EntityIterator &other) const { return m_entity == other.m_entity; }
+				Tuple<Entity, Ts &...> operator*() { return Tuple<Entity, Ts &...>(m_iterator->key, m_world->component_manager.template get_component<Ts>(m_iterator->key)...); }
+				bool operator==(const EntityIterator &other) const { return m_iterator == other.m_iterator; }
 
 				EntityIterator &operator++()
 				{
@@ -202,17 +229,37 @@ namespace Vultr
 					return cpy;
 				}
 
-				void skip_to_next() {}
+				void skip_to_next()
+				{
+					if (is_end())
+						return;
+					while (true)
+					{
+						m_iterator++;
+						if (is_end() || matches_signature())
+							return;
+					}
+				}
 
-				Entity m_entity;
-				World *m_world;
+				bool matches_signature() { return !is_end() && (m_iterator->value & m_signature) == m_signature; }
+				bool is_end() { return m_iterator == m_world->entity_manager.m_living_entities.end(); }
+
+				Hashmap<Entity, Signature>::HIterator m_iterator;
+				Signature m_signature{};
+				World *m_world = nullptr;
 			};
 
-			static EntityIterator begin() {}
-			static EntityIterator end() {}
+			EntityIterator begin() { return EntityIterator(m_world, m_world->entity_manager.m_living_entities.begin()); }
+			EntityIterator end() { return EntityIterator(m_world, m_world->entity_manager.m_living_entities.end()); }
+
+			World *m_world = nullptr;
 		};
 
 		template <typename... Ts>
+		IteratorContainer<Ts...> iterate()
+		{
+			return IteratorContainer<Ts...>(this);
+		}
 	};
 
 } // namespace Vultr

@@ -12,22 +12,39 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 	auto *window  = Platform::open_window(Platform::DisplayMode::WINDOWED, nullptr, "Vultr Game Engine", true);
 
-	ComponentManager<Mesh, Transform, Material> component_manager{};
+	World<Mesh, Transform, Material> world{};
 
 	if check (Vultr::load_game("/home/brandon/Dev/VultrSandbox/build/libVultrDemo.so"), auto project, auto err)
 	{
 		project.init();
 		{
-			auto &mesh         = component_manager.get_component<Mesh>(0);
-			mesh.source        = Path("Some path");
-			auto &transform    = component_manager.get_component<Transform>(0);
-			transform.position = Vec3(20, 20, 30);
+			auto ent = world.entity_manager.create_entity();
+			{
+				world.component_manager.add_component<Mesh>(ent, {});
+				world.component_manager.add_component<Transform>(ent, {});
+
+				auto ent2 = world.entity_manager.create_entity();
+				world.component_manager.add_component<Mesh>(ent2, {});
+
+				auto ent3 = world.entity_manager.create_entity();
+				world.component_manager.add_component<Transform>(ent3, {});
+			}
+			{
+				for (auto [entity, mesh, transform] : world.iterate<Mesh, Transform>())
+				{
+					printf("%u Has a mesh component and transform", entity);
+				}
+			}
+			//			auto &mesh         = world.component_manager.get_component<Mesh>(ent);
+			//			mesh.source        = Path("Some path");
+			//			auto &transform    = component_manager.get_component<Transform>(0);
+			//			transform.position = Vec3(20, 20, 30);
 		}
-		{
-			auto [mesh, transform] = component_manager.get_components<Mesh, Transform>(0);
-			ASSERT(transform.position == Vec3(20, 20, 30), "Transform not correct!");
-			ASSERT(mesh.source.has_value() && mesh.source.value().m_path == "Some path", "Mesh not correct!");
-		}
+		//		{
+		//			auto [mesh, transform] = component_manager.get_components<Mesh, Transform>(0);
+		//			ASSERT(transform.position == Vec3(20, 20, 30), "Transform not correct!");
+		//			ASSERT(mesh.source.has_value() && mesh.source.value().m_path == "Some path", "Mesh not correct!");
+		//		}
 
 		while (!Platform::window_should_close(window))
 		{

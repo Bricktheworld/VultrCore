@@ -1,5 +1,6 @@
 #pragma once
 #include "core/vultr_core.h"
+#include "ecs/world.h"
 
 namespace Vultr
 {
@@ -18,12 +19,12 @@ namespace Vultr
 		FreeListAllocator *general_allocator = nullptr;
 		SlabAllocator *slab_allocator        = nullptr;
 		PoolAllocator *pool_allocator        = nullptr;
+		void *world                          = nullptr;
 	};
 
 	extern GameMemory *g_game_memory;
 
 	GameMemory *init_game_memory();
-
 	void destroy_game_memory(GameMemory *m);
 
 	typedef void (*UseGameMemoryApi)(GameMemory *m);
