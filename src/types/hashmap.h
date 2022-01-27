@@ -5,7 +5,7 @@
 namespace Vultr
 {
 	template <typename K, typename V, typename TraitsForK = Traits<K>>
-	struct Hashmap
+	requires(!is_l_value<V> && !is_r_value<V> && !is_l_value<K> && !is_r_value<K>) struct Hashmap
 	{
 		struct Entry
 		{
@@ -122,10 +122,22 @@ namespace Vultr
 		HIterator remove(const HIterator &iterator) { return m_table.remove(iterator); }
 
 		template <typename U = K, typename TraitsForU = default_traits<U>>
-		V &get(const U &value)
+		V &get(const U &key)
+		{
+			if let (auto value, try_get(key))
+				return value;
+			else
+				THROW("Not found!");
+		}
+
+		template <typename U = K, typename TraitsForU = default_traits<U>>
+		Option<V &> try_get(const U &value)
 		{
 			HIterator it = find<U, TraitsForU>(value);
-			ASSERT(it != end(), "Key not found!");
+
+			if (it == end())
+				return None;
+
 			return it->value;
 		}
 

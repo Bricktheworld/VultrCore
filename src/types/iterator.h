@@ -64,12 +64,12 @@ namespace Vultr
 			m_index = other.m_index;
 			return *this;
 		}
-		Iterator(const Iterator &obj) = default;
+		constexpr Iterator(const Iterator &obj) = default;
 
 	  private:
 		friend Container;
-		static Iterator begin(Container *container) { return Iterator(container, 0); }
-		static Iterator end(Container *container)
+		constexpr static Iterator begin(Container *container) { return Iterator(container, 0); }
+		constexpr static Iterator end(Container *container)
 		{
 			using raw_type = remove_cv<Container>;
 			if constexpr (is_same<raw_type, StringView> || is_same<raw_type, String>)

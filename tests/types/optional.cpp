@@ -11,6 +11,10 @@ TEST(Option, Creation)
 	ASSERT_TRUE(number);
 	ASSERT_EQ(number.value(), 0);
 
+	Option<u32 &> number_ref = number.value();
+	number_ref.value()++;
+	ASSERT_EQ(number.value(), 1);
+
 	bool worked;
 	if let (auto &value, number)
 	{

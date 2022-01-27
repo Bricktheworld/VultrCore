@@ -23,7 +23,7 @@ namespace Vultr
 		void push(T &&element)
 		{
 			auto res = try_push_impl();
-			ASSERT(res.has_value(), res.get_error().message);
+			ASSERT(res.has_value(), res.get_error().message.c_str());
 			new (res.value()) T(move(element));
 		}
 
@@ -39,6 +39,14 @@ namespace Vultr
 			auto res = try_push_impl();
 			ASSERT(res.has_value(), "%s", res.get_error().message.c_str());
 			new (res.value()) T(element);
+		}
+
+		Option<T &> try_front()
+		{
+			if (empty())
+				return None;
+
+			return storage()[m_front];
 		}
 
 		T &front()
