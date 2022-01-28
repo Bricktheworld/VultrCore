@@ -2,7 +2,7 @@
 #define private public
 #define protected public
 
-#include <core/memory/vultr_memory.h>
+#include <core/memory/memory.h>
 #include <core/memory/free_list.h>
 
 using namespace Vultr;

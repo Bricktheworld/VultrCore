@@ -1,5 +1,5 @@
 #include <benchmark/benchmark.h>
-#include <core/memory/vultr_memory.h>
+#include <core/memory/memory.h>
 #include <core/memory/pool.h>
 #include <core/memory/free_list.h>
 #include <core/memory/slab.h>

@@ -2,7 +2,7 @@
 #include "types.h"
 #include "iterator.h"
 #include "utils/transfer.h"
-#include <vultr.h>
+#include <vultr_memory.h>
 #include "optional.h"
 
 namespace Vultr

@@ -2,7 +2,7 @@
 #define private public
 #define protected public
 
-#include <vultr.h>
+#include <vultr_memory.h>
 
 using namespace Vultr;
 TEST(MemoryArena, InitMemArena)

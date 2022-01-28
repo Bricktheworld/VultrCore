@@ -54,5 +54,4 @@ namespace Vultr
 	{
 		Trait::equals(a, b);
 	};
-
 } // namespace Vultr

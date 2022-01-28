@@ -36,13 +36,22 @@ namespace Vultr
 
 		return game_memory;
 	}
-
 	void destroy_game_memory(GameMemory *m)
 	{
 		ASSERT(m != nullptr && m->arena != nullptr, "GameMemory not properly initialized!");
 		// We could go one by one and actually free each of the allocators, but this is faster, so we don't really care.
 		destroy_mem_arena(m->arena);
 	}
+
+	void init()
+	{
+		g_game_memory        = init_game_memory();
+		g_game_memory->world = linear_alloc(g_game_memory->persistent_storage, sizeof(World));
+		ASSERT(g_game_memory->world != nullptr, "Failed to allocate ECS world!");
+		new (g_game_memory->world) World();
+	}
+
+	void destroy() { destroy_game_memory(g_game_memory); }
 
 } // namespace Vultr
 

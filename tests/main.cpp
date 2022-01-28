@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "vultr.h"
+#include "vultr_memory.h"
 
 int main(int argc, char **argv)
 {

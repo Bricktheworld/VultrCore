@@ -5,7 +5,8 @@ namespace Vultr
 {
 	struct Material
 	{
-		Path vertex_src;
-		Path fragment_src;
+		Option<Path> vertex_src;
+		Option<Path> fragment_src;
 	};
+
 } // namespace Vultr

@@ -105,6 +105,12 @@ namespace Vultr
 	};
 
 	template <typename T>
+	struct Contains<T, T>
+	{
+		static constexpr bool contains = true;
+	};
+
+	template <typename T>
 	struct __MakeUnsigned
 	{
 		using Type = void;

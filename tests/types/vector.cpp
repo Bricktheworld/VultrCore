@@ -2,7 +2,7 @@
 #define private public
 #define protected public
 #include <types/vector.h>
-#include <vultr.h>
+#include <vultr_memory.h>
 
 using namespace Vultr;
 TEST(VectorTests, EmptyInitialize)

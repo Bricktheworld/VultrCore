@@ -1,5 +1,5 @@
 #pragma once
-#include "vultr_memory_internal.h"
+#include "memory_impl.h"
 #include "linear.h"
 #include "pool.h"
 #include "free_list.h"

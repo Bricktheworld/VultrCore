@@ -1,6 +1,6 @@
 #pragma once
 #include "entity.h"
-#include <core/memory/vultr_memory.h>
+#include <core/memory/memory.h>
 #include <types/types.h>
 
 namespace Vultr
@@ -15,7 +15,7 @@ namespace Vultr
 		EntityDestroyed m_destroyed{};
 	};
 
-	System new_system(void *component, System::EntityCreated created_cb, System::EntityDestroyed destroyed_cb)
+	inline System new_system(void *component, System::EntityCreated created_cb, System::EntityDestroyed destroyed_cb)
 	{
 		return {
 			.component   = component,

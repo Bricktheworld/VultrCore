@@ -1,5 +1,5 @@
 #pragma once
-#include <vultr.h>
+#include <vultr_memory.h>
 #include <platform/platform.h>
 
 namespace Vultr

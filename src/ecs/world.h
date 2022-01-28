@@ -2,6 +2,7 @@
 #include <types/tuple.h>
 #include <types/queue.h>
 #include <types/hashmap.h>
+#include <types/vector.h>
 #include "entity.h"
 #include "component.h"
 #include "system.h"
@@ -33,7 +34,8 @@ namespace Vultr
 
 		void destroy_entity(Entity entity)
 		{
-			ASSERT(m_living_entities.remove(entity), "Entity has already been destroyed!");
+			auto res = m_living_entities.remove(entity);
+			ASSERT(res, "Entity has already been destroyed!");
 			m_queue.push(entity);
 		}
 	};
@@ -45,7 +47,7 @@ namespace Vultr
 		ErrorOr<void> add_entity(Entity entity, const T &component)
 		{
 			if (m_entity_to_index.contains(entity))
-				return Error("Component added to the same entity more than once!");
+				return Error("DefaultComponent added to the same entity more than once!");
 
 			auto new_index = m_size;
 			m_entity_to_index.set(entity, new_index);
@@ -104,18 +106,36 @@ namespace Vultr
 		*out = v_alloc<ComponentArray<T>>();
 	}
 
-	template <typename... Component>
+	template <typename... DefaultComponent>
 	struct ComponentManager
 	{
-		using Types = TypeList<Component...>;
-		void *component_arrays[MAX_COMPONENTS]{};
-		ComponentManager() { m_init(typename SequenceImpl<sizeof...(Component)>::type()); }
+		using Types = TypeList<DefaultComponent...>;
+		Vector<void *, sizeof...(DefaultComponent)> component_arrays{};
+		Hashmap<u32, size_t> type_to_index;
+
+		ComponentManager()
+		{
+			component_arrays.resize(sizeof...(DefaultComponent));
+			m_init(typename SequenceImpl<sizeof...(DefaultComponent)>::type());
+		}
+
+		template <typename T>
+		void register_component()
+		{
+			constexpr u32 type_id = ReflTraits<T>::type_id();
+			ASSERT(!type_to_index.contains(type_id), "Component already registered!");
+			size_t index = component_arrays.size();
+			component_arrays.push_back(v_alloc<ComponentArray<T>>());
+			type_to_index.set(type_id, index);
+		}
 
 		template <typename T>
 		size_t get_component_index()
 		{
-			static_assert(Types::template contains<T>(), "Component is not a part of the component manager!");
-			return Types::template index_of<T>();
+			if constexpr (Types::template contains<T>())
+				return Types::template index_of<T>();
+			else
+				type_to_index.get(ReflTraits<T>::type_id());
 		}
 
 		template <typename... Ts>
@@ -155,7 +175,7 @@ namespace Vultr
 		T &get_component(Entity entity)
 		{
 			auto res = try_get_component<T>(entity);
-			ASSERT(res, "Component does not exist!");
+			ASSERT(res, "DefaultComponent does not exist!");
 			return res.value();
 		}
 
@@ -182,7 +202,7 @@ namespace Vultr
 		template <size_t... S>
 		void m_init(Sequence<S...>)
 		{
-			(init_component_array<Component>(&component_arrays[S]), ...);
+			(init_component_array<DefaultComponent>(&component_arrays[S]), ...);
 		}
 	};
 
@@ -194,7 +214,7 @@ namespace Vultr
 	};
 
 	template <typename... Component>
-	struct World
+	struct WorldT
 	{
 		EntityManager entity_manager{};
 		ComponentManager<Component...> component_manager{};
@@ -203,10 +223,10 @@ namespace Vultr
 		template <typename... Ts>
 		struct IteratorContainer
 		{
-			explicit IteratorContainer(World *world) : m_world(world) {}
+			explicit IteratorContainer(WorldT *world) : m_world(world) {}
 			struct EntityIterator
 			{
-				EntityIterator(World *world, const Hashmap<Entity, Signature>::HIterator &iterator)
+				EntityIterator(WorldT *world, const Hashmap<Entity, Signature>::HIterator &iterator)
 					: m_world(world), m_iterator(iterator), m_signature(world->component_manager.template signature_from_components<Ts...>())
 				{
 					if (!matches_signature())
@@ -246,20 +266,14 @@ namespace Vultr
 
 				Hashmap<Entity, Signature>::HIterator m_iterator;
 				Signature m_signature{};
-				World *m_world = nullptr;
+				WorldT *m_world = nullptr;
 			};
 
 			EntityIterator begin() { return EntityIterator(m_world, m_world->entity_manager.m_living_entities.begin()); }
 			EntityIterator end() { return EntityIterator(m_world, m_world->entity_manager.m_living_entities.end()); }
 
-			World *m_world = nullptr;
+			WorldT *m_world = nullptr;
 		};
-
-		template <typename... Ts>
-		IteratorContainer<Ts...> iterate()
-		{
-			return IteratorContainer<Ts...>(this);
-		}
 	};
 
 } // namespace Vultr

@@ -3,7 +3,7 @@
 #include <utils/traits.h>
 #include "error_or.h"
 #include "math/min_max.h"
-#include <vultr.h>
+#include <vultr_memory.h>
 
 namespace Vultr
 {
