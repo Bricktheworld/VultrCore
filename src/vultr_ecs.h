@@ -66,6 +66,14 @@ namespace Vultr
 		return entity;
 	}
 	inline const Signature &get_signature(Entity entity) { return world()->entity_manager.get_signature(entity); }
+
+	template <typename... Ts>
+	inline bool has_component(Entity entity)
+	{
+		auto signature = world()->component_manager.template signature_from_components<Ts...>();
+		return (get_signature(entity) & signature) == signature;
+	}
+
 	inline void destroy_entity(Entity entity)
 	{
 		world()->component_manager.destroy_entity(entity);

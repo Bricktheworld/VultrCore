@@ -10,28 +10,6 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 	if check (Vultr::load_game("/home/brandon/Dev/VultrSandbox/build/libVultrDemo.so"), auto project, auto err)
 	{
 		project.init();
-		{
-			create_entity<Mesh, Transform>({}, {});
-			create_entity<Mesh, Transform, Material>({}, {}, {});
-			{
-				auto ent3 = create_entity();
-				add_component<Mesh>(ent3, {});
-
-				auto ent4 = create_entity();
-				add_component<Transform>(ent4, {});
-
-				for (auto [entity, mesh, transform] : get_entities<Mesh, Transform>())
-				{
-					transform.position.x += 20;
-					printf("%u Has a mesh {%f} and transform\n", entity, transform.position.x);
-				}
-				destroy_entity(ent4);
-			}
-			//			auto &mesh         = world.component_manager.get_component<Mesh>(ent);
-			//			mesh.source        = Path("Some path");
-			//			auto &transform    = component_manager.get_component<Transform>(0);
-			//			transform.position = Vec3(20, 20, 30);
-		}
 
 		while (!Platform::window_should_close(window))
 		{
