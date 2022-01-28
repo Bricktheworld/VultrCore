@@ -40,10 +40,19 @@ namespace Vultr
 		}
 	};
 
-	template <typename T>
-	struct ComponentArray
+	struct IComponentArray
 	{
-		ComponentArray() { m_array = v_alloc<T>(MAX_ENTITIES); }
+		typedef ErrorOr<void> (*TryRemoveEntity)(IComponentArray *arr, Entity entity);
+		TryRemoveEntity m_try_remove_entity;
+		explicit IComponentArray(TryRemoveEntity try_remove_entity) : m_try_remove_entity(try_remove_entity) {}
+
+		ErrorOr<void> try_remove_entity(Entity entity) { return m_try_remove_entity(this, entity); }
+	};
+
+	template <typename T>
+	struct ComponentArray : IComponentArray
+	{
+		ComponentArray() : IComponentArray(try_remove_entity_impl) { m_array = v_alloc<T>(MAX_ENTITIES); }
 		ErrorOr<void> add_entity(Entity entity, const T &component)
 		{
 			if (m_entity_to_index.contains(entity))
@@ -69,22 +78,24 @@ namespace Vultr
 
 		bool has_component(Entity entity) { return m_entity_to_index.contains(entity); }
 
-		ErrorOr<void> remove_entity(Entity entity)
+		static ErrorOr<void> try_remove_entity_impl(IComponentArray *p_arr, Entity entity)
 		{
-			if let (size_t removed_index, m_entity_to_index.try_get(entity))
+			auto *arr = static_cast<ComponentArray<T> *>(p_arr);
+			if let (size_t removed_index, arr->m_entity_to_index.try_get(entity))
 			{
-				size_t last_index      = m_size - 1;
+				size_t last_index           = arr->m_size - 1;
 
-				m_array[removed_index] = m_array[last_index];
+				arr->m_array[removed_index] = arr->m_array[last_index];
 
-				Entity last_entity     = m_index_to_entity.get(last_index);
-				m_entity_to_index.set(last_entity, removed_index);
-				m_index_to_entity.set(removed_index, last_entity);
+				Entity last_entity          = arr->m_index_to_entity.get(last_index);
+				arr->m_entity_to_index.set(last_entity, removed_index);
+				arr->m_index_to_entity.set(removed_index, last_entity);
 
-				m_entity_to_index.remove(entity);
-				m_index_to_entity.remove(last_index);
+				arr->m_entity_to_index.remove(entity);
+				arr->m_index_to_entity.remove(last_index);
 
-				m_size--;
+				arr->m_size--;
+				return None;
 			}
 			else
 			{
@@ -101,7 +112,7 @@ namespace Vultr
 	};
 
 	template <typename T>
-	void init_component_array(void **out)
+	void init_component_array(IComponentArray **out)
 	{
 		*out = v_alloc<ComponentArray<T>>();
 	}
@@ -110,7 +121,7 @@ namespace Vultr
 	struct ComponentManager
 	{
 		using Types = TypeList<DefaultComponent...>;
-		Vector<void *, sizeof...(DefaultComponent)> component_arrays{};
+		Vector<IComponentArray *, sizeof...(DefaultComponent)> component_arrays{};
 		Hashmap<u32, size_t> type_to_index;
 
 		ComponentManager()
@@ -196,6 +207,15 @@ namespace Vultr
 		{
 			auto res = try_remove_component<T>(entity);
 			ASSERT(res, "%s", res.get_error().message.c_str());
+		}
+
+		void destroy_entity(Entity entity)
+		{
+			(get_component_array<DefaultComponent>()->try_remove_entity(entity), ...);
+			for (auto &[type_id, index] : type_to_index)
+			{
+				component_arrays[index]->try_remove_entity(entity);
+			}
 		}
 
 	  private:

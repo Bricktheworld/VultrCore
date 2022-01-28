@@ -66,7 +66,11 @@ namespace Vultr
 		return entity;
 	}
 	inline const Signature &get_signature(Entity entity) { return world()->entity_manager.get_signature(entity); }
-	inline void destroy_entity(Entity entity) { return world()->entity_manager.destroy_entity(entity); }
+	inline void destroy_entity(Entity entity)
+	{
+		world()->component_manager.destroy_entity(entity);
+		world()->entity_manager.destroy_entity(entity);
+	}
 
 	template <typename... Ts>
 	World::IteratorContainer<Ts...> get_entities()

@@ -19,11 +19,13 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 				auto ent4 = create_entity();
 				add_component<Transform>(ent4, {});
+
 				for (auto [entity, mesh, transform] : get_entities<Mesh, Transform>())
 				{
 					transform.position.x += 20;
 					printf("%u Has a mesh {%f} and transform\n", entity, transform.position.x);
 				}
+				destroy_entity(ent4);
 			}
 			//			auto &mesh         = world.component_manager.get_component<Mesh>(ent);
 			//			mesh.source        = Path("Some path");
