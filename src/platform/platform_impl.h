@@ -179,6 +179,8 @@ namespace Vultr
 		void draw_frame(const Window *window, RenderContext *c, f64 delta_time);
 		void framebuffer_resize_callback(const Window *window, RenderContext *c, u32 width, u32 height);
 		void destroy_render_context(RenderContext *c);
+		void init_imgui(const Window *window, RenderContext *c);
+		void destroy_imgui(const Window *window, RenderContext *c);
 
 		namespace Filesystem
 		{

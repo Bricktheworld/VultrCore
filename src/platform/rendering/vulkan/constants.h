@@ -52,7 +52,7 @@ namespace Vultr
 	{                                                                                                                                                                                                                 \
 		auto result = (statement);                                                                                                                                                                                    \
 		if (result != VK_SUCCESS)                                                                                                                                                                                     \
-			THROW("Vulkan check went wrong %s", vk_err_string(result));                                                                                                                                               \
+			THROW("Vulkan check went wrong %s", Vulkan::vk_err_string(result));                                                                                                                                       \
 	}
 	} // namespace Vulkan
 } // namespace Vultr
