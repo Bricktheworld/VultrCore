@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <type_traits>
 #include <atomic>
+#include <string.h>
 
 typedef unsigned int uint;
 typedef uint64_t u64;

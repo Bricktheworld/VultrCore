@@ -5,12 +5,14 @@
 
 namespace Vultr
 {
+	inline constexpr NoneT Success = NoneT();
+
 	template <typename T>
 	struct ErrorOr
 	{
 	  public:
 		using ValueType = T;
-		ErrorOr(const NoneT none) : m_is_error(false) {}
+		ErrorOr(const NoneT success) : m_is_error(false) {}
 		ErrorOr(const Error err) : m_is_error(true), m_error(err) {}
 		ErrorOr(T value)
 		{
@@ -52,6 +54,7 @@ namespace Vultr
 		}
 
 		bool has_value() const { return !m_is_error; }
+		bool has_error() const { return !has_value(); }
 		operator bool() const { return has_value(); }
 
 	  private:
@@ -100,12 +103,18 @@ namespace Vultr
 
 #define UNWRAP(var, err) _UNWRAP(var, err, _UNIQUE_NAME(__error_result))
 
-#define VERIFY(err)                                                                                                                                                                                                   \
+#define TRY(err)                                                                                                                                                                                                      \
 	{                                                                                                                                                                                                                 \
 		auto __error_result = err;                                                                                                                                                                                    \
 		if (!__error_result)                                                                                                                                                                                          \
 			return __error_result;                                                                                                                                                                                    \
 	}
+
+#define CHECK(err)                                                                                                                                                                                                    \
+	{                                                                                                                                                                                                                 \
+		auto __error_result = err;                                                                                                                                                                                    \
+		ASSERT(!__error_result.has_value(), "An error has occurred: %s", __error_result.get_error().message.c_str());                                                                                                 \
+	} // namespace Vultr
 
 // NOTE(Brandon): This is really, really stupid but I kinda like it and I'm stubborn.
 #define check(err_or, var, err)                                                                                                                                                                                       \

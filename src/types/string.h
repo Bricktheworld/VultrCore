@@ -75,8 +75,8 @@ namespace Vultr
 
 		str c_str() const { return storage; }
 		operator str() { return storage; }
-		size_t length() const { return size() - 1; }
-		size_t is_empty() const { return length() == 0; }
+		constexpr size_t length() const { return size() - 1; }
+		constexpr size_t is_empty() const { return length() == 0; }
 
 		using SIterator = Iterator<String, char>;
 		SIterator begin() { return SIterator::begin(this); }

@@ -1,8 +1,10 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include "types/vector.h"
-#include "math/clamp.h"
+#include <types/vector.h>
+#include <math/clamp.h>
 #include <core/vultr_core.h>
+#include "../rendering.h"
+#include <types/string.h>
 
 namespace Vultr::Platform
 {
@@ -123,12 +125,12 @@ namespace Vultr::Platform
 	RenderContext *get_render_context(const Window *window) { return window->render_context; }
 	void *get_window_implementation(const Window *window) { return window->glfw; }
 
-	void update_window(Window *window)
+	f64 update_window(Window *window)
 	{
 		f64 t             = glfwGetTime();
 		f64 dt            = t - window->last_time;
 		window->last_time = t;
-		draw_frame(window, window->render_context, dt);
+		return dt;
 	}
 
 	void close_window(Window *window)

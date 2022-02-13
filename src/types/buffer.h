@@ -124,8 +124,8 @@ namespace Vultr
 
 		~BufferT() { flush(); }
 
-		size_t size() const { return m_size; }
-		bool is_empty() const { return m_size == 0; }
+		constexpr size_t size() const { return m_size; }
+		constexpr bool is_empty() const { return m_size == 0; }
 
 	  protected:
 		void flush()

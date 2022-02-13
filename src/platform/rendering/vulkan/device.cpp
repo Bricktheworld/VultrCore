@@ -227,6 +227,16 @@ namespace Vultr
 			vkGetDeviceQueue(d->device, indices.present_family.value(), 0, &d->present_queue);
 		}
 
+		static void init_memory_allocator(Device *d)
+		{
+			VmaAllocatorCreateInfo info = {
+				.physicalDevice = d->physical_device,
+				.device         = d->device,
+				.instance       = d->instance,
+			};
+			vmaCreateAllocator(&info, &d->allocator);
+		}
+
 		Device init_device(const Platform::Window *window, bool debug, PFN_vkDebugUtilsMessengerCallbackEXT debug_cb)
 		{
 			VkApplicationInfo application_info{
@@ -279,6 +289,7 @@ namespace Vultr
 			init_surface(&device, window);
 			pick_physical_device(&device);
 			init_logical_device(&device);
+			init_memory_allocator(&device);
 			return device;
 		}
 

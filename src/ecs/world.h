@@ -29,7 +29,8 @@ namespace Vultr
 			return new_entity;
 		}
 
-		void set_signature(Entity entity, const Signature &signature) { m_living_entities.set(entity, signature); }
+		void add_signature(Entity entity, const Signature &signature) { m_living_entities.set(entity, get_signature(entity) | signature); }
+		void remove_signature(Entity entity, const Signature &signature) { m_living_entities.set(entity, get_signature(entity) & (~signature)); }
 		const Signature &get_signature(Entity entity) { return m_living_entities.get(entity); }
 
 		void destroy_entity(Entity entity)
@@ -231,6 +232,42 @@ namespace Vultr
 		Vector<System> systems{};
 
 		void register_system(const System &system) { systems.push_back(system); }
+		void entity_created(Entity entity, const Signature &signature)
+		{
+			for (auto &system : systems)
+			{
+				if ((system.component_signature & signature) == system.component_signature)
+				{
+					system.m_created(system.component, entity);
+				}
+			}
+		}
+		void entity_destroyed(Entity entity, const Signature &signature)
+		{
+			for (auto &system : systems)
+			{
+				if ((system.component_signature & signature) == system.component_signature)
+				{
+					system.m_destroyed(system.component, entity);
+				}
+			}
+		}
+		void entity_signature_changed(Entity entity, const Signature &old_signature, const Signature &new_signature)
+		{
+			ASSERT(old_signature != new_signature, "Entity signature has not actually changed!");
+
+			for (auto &system : systems)
+			{
+				if ((system.component_signature & new_signature) == system.component_signature)
+				{
+					system.m_created(system.component, entity);
+				}
+				else if ((system.component_signature & old_signature) == system.component_signature)
+				{
+					system.m_destroyed(system.component, entity);
+				}
+			}
+		}
 	};
 
 	template <typename... Component>

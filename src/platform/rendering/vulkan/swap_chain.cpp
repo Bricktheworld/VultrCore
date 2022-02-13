@@ -1,6 +1,6 @@
 #include "swap_chain.h"
-#include "math/clamp.h"
 #include "render_context.h"
+#include <math/clamp.h>
 
 namespace Vultr
 {
@@ -213,20 +213,9 @@ namespace Vultr
 
 		static void init_command_pools(SwapChain *sc)
 		{
-			sc->graphics_command_pools.resize(sc->images.size());
 			auto *d = &sc->device;
 			for (u32 i = 0; i < sc->images.size(); i++)
-			{
-				auto indices = find_queue_families(d);
-
-				VkCommandPoolCreateInfo pool_info{
-					.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-					.flags            = 0,
-					.queueFamilyIndex = indices.graphics_family.value(),
-				};
-
-				VK_CHECK(vkCreateCommandPool(d->device, &pool_info, nullptr, &sc->graphics_command_pools[i]));
-			}
+				sc->render_command_pools.push_back(init_cmd_pool(d));
 		}
 
 		static void init_concurrency(SwapChain *sc)
@@ -332,7 +321,7 @@ namespace Vultr
 
 			for (u32 i = 0; i < sc->images.size(); i++)
 			{
-				vkDestroyCommandPool(d->device, sc->graphics_command_pools[i], nullptr);
+				destroy_cmd_pool(d, &sc->render_command_pools[i]);
 			}
 
 			internal_destroy_swapchain(sc);
@@ -366,7 +355,7 @@ namespace Vultr
 			//			init_descriptor_pool(sc);
 		}
 
-		ErrorOr<u32> acquire_swapchain(SwapChain *sc)
+		ErrorOr<Tuple<u32, CommandPool *, VkFramebuffer>> acquire_swapchain(SwapChain *sc)
 		{
 			auto *d = &sc->device;
 			vkWaitForFences(d->device, 1, &sc->in_flight_fences[sc->current_frame], VK_TRUE, UINT64_MAX);
@@ -389,7 +378,7 @@ namespace Vultr
 			}
 
 			sc->images_in_flight[image_index] = sc->in_flight_fences[sc->current_frame];
-			return image_index;
+			return Tuple(image_index, &sc->render_command_pools[image_index], sc->framebuffers[image_index]);
 		}
 
 		ErrorOr<void> submit_swapchain(SwapChain *sc, u32 image_index, u32 command_buffer_count, VkCommandBuffer *command_buffers)
@@ -436,6 +425,28 @@ namespace Vultr
 				THROW("Failed to present swap chain images!");
 			}
 			return None;
+		}
+
+		ErrorOr<void> queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer, VkFence fence)
+		{
+			auto *d = &sc->device;
+
+			VkSubmitInfo submit_info{
+				.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				.commandBufferCount = 1,
+				.pCommandBuffers    = &command_buffer,
+			};
+
+			vkResetFences(d->device, 1, &fence);
+			VK_TRY(vkQueueSubmit(d->graphics_queue, 1, &submit_info, fence));
+			return Success;
+		}
+
+		ErrorOr<void> wait_queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer)
+		{
+			CHECK(queue_cmd_buffer(sc, command_buffer));
+			vkQueueWaitIdle(sc->device.graphics_queue);
+			return Success;
 		}
 	} // namespace Vulkan
 	namespace Platform

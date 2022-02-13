@@ -15,6 +15,7 @@ namespace Vultr
 		SlabAllocator *slab_allocator        = nullptr;
 		PoolAllocator *pool_allocator        = nullptr;
 		void *world                          = nullptr;
+		void *engine                         = nullptr;
 	};
 
 	extern GameMemory *g_game_memory;

@@ -69,7 +69,7 @@ namespace Vultr
 		}
 
 		template <size_t other_bits>
-		auto &operator|(const Bitfield<other_bits> &other) const
+		auto operator|(const Bitfield<other_bits> &other) const
 		{
 			Bitfield<max(bits, other_bits)> res;
 			for (size_t i = 0; i < max(m_num_elements, other.m_num_elements); i++)
@@ -100,7 +100,7 @@ namespace Vultr
 		}
 
 		template <size_t other_bits>
-		auto &operator^(const Bitfield<other_bits> &other) const
+		auto operator^(const Bitfield<other_bits> &other) const
 		{
 			Bitfield<max(bits, other_bits)> res;
 			for (size_t i = 0; i < max(m_num_elements, other.m_num_elements); i++)
@@ -131,7 +131,7 @@ namespace Vultr
 			return true;
 		}
 
-		Bitfield &operator~() const
+		auto operator~() const
 		{
 			Bitfield<bits> res;
 			for (size_t i = 0; i < m_num_elements; i++)

@@ -1,6 +1,8 @@
 #pragma once
 #include "device.h"
-#include "vulkan_buffer.h"
+#include "gpu_buffer.h"
+#include "command_pool.h"
+#include <types/tuple.h>
 
 namespace Vultr
 {
@@ -25,16 +27,18 @@ namespace Vultr
 			//			VkDescriptorPool descriptor_pool = nullptr;
 			u32 current_frame = 0;
 
-			Device device;
-			Vector<VkCommandPool> graphics_command_pools{};
+			Device device{};
+			Vector<CommandPool> render_command_pools{};
 
 			bool framebuffer_was_resized = false;
 		};
 
 		SwapChain init_swapchain(const Device &device, const Platform::Window *window);
 		void recreate_swapchain(SwapChain *sc, const Platform::Window *window);
-		ErrorOr<u32> acquire_swapchain(SwapChain *sc);
+		ErrorOr<Tuple<u32, CommandPool *, VkFramebuffer>> acquire_swapchain(SwapChain *sc);
 		ErrorOr<void> submit_swapchain(SwapChain *sc, u32 image_index, u32 command_buffer_count, VkCommandBuffer *command_buffers);
+		ErrorOr<void> queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer, VkFence fence = VK_NULL_HANDLE);
+		ErrorOr<void> wait_queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer);
 		void destroy_swapchain(SwapChain *sc);
 	}; // namespace Vulkan
 } // namespace Vultr

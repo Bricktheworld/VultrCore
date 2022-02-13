@@ -1,5 +1,6 @@
 #pragma once
 #include <types/types.h>
+#include <utils/transfer.h>
 #include "iterator.h"
 
 namespace Vultr

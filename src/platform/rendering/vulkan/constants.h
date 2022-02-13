@@ -1,6 +1,7 @@
 #pragma once
 #include <types/types.h>
 #include <types/array.h>
+#include <types/error.h>
 #include <vulkan/vulkan.h>
 
 namespace Vultr
@@ -52,7 +53,15 @@ namespace Vultr
 	{                                                                                                                                                                                                                 \
 		auto result = (statement);                                                                                                                                                                                    \
 		if (result != VK_SUCCESS)                                                                                                                                                                                     \
-			THROW("Vulkan check went wrong %s", vk_err_string(result));                                                                                                                                               \
+			THROW("Vulkan check went wrong %s", Vulkan::vk_err_string(result));                                                                                                                                       \
 	}
+
+#define VK_TRY(statement)                                                                                                                                                                                             \
+	{                                                                                                                                                                                                                 \
+		auto result = (statement);                                                                                                                                                                                    \
+		if (result != VK_SUCCESS)                                                                                                                                                                                     \
+			return Error(Vulkan::vk_err_string(result));                                                                                                                                                              \
+	}
+
 	} // namespace Vulkan
 } // namespace Vultr

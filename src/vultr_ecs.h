@@ -14,7 +14,16 @@ namespace Vultr
 	template <typename T>
 	inline ErrorOr<void> try_add_component(Entity entity, const T &component)
 	{
-		return world()->component_manager.template try_add_component(entity, component);
+		auto res = world()->component_manager.template try_add_component(entity, component);
+		if (res.has_error())
+			return res.get_error();
+
+		auto signature            = world()->component_manager.template signature_from_components<T>();
+		const auto &old_signature = world()->entity_manager.get_signature(entity);
+
+		world()->entity_manager.add_signature(entity, signature);
+		world()->system_manager.entity_signature_changed(entity, old_signature, signature);
+		return Success;
 	}
 
 	template <typename... Ts>
@@ -22,7 +31,11 @@ namespace Vultr
 	{
 		auto signature = world()->component_manager.template signature_from_components<Ts...>();
 		(world()->component_manager.template add_component<Ts>(entity, components), ...);
-		world()->entity_manager.set_signature(entity, signature);
+
+		const auto &old_signature = world()->entity_manager.get_signature(entity);
+
+		world()->entity_manager.add_signature(entity, signature);
+		world()->system_manager.entity_signature_changed(entity, old_signature, signature);
 	}
 
 	template <typename... Ts>
@@ -46,13 +59,29 @@ namespace Vultr
 	template <typename T>
 	ErrorOr<void> try_remove_component(Entity entity)
 	{
-		return world()->component_manager.template try_remove_component<T>(entity);
+		auto res = world()->component_manager.template try_remove_component<T>(entity);
+		if (res.has_error())
+			return res.get_error();
+
+		auto signature            = world()->component_manager.template signature_from_components<T>();
+		const auto &old_signature = world()->entity_manager.get_signature(entity);
+
+		world()->entity_manager.remove_signature(entity, signature);
+		world()->system_manager.entity_signature_changed(entity, old_signature, signature);
+
+		return Success;
 	}
 
 	template <typename T>
 	void remove_component(Entity entity)
 	{
 		world()->component_manager.template remove_component<T>(entity);
+
+		auto signature            = world()->component_manager.template signature_from_components<T>();
+		const auto &old_signature = world()->entity_manager.get_signature(entity);
+
+		world()->entity_manager.remove_signature(entity, signature);
+		world()->system_manager.entity_signature_changed(entity, old_signature, signature);
 	}
 
 	template <typename... Ts>
@@ -76,8 +105,16 @@ namespace Vultr
 
 	inline void destroy_entity(Entity entity)
 	{
+		const auto &signature = get_signature(entity);
+		world()->system_manager.entity_destroyed(entity, signature);
 		world()->component_manager.destroy_entity(entity);
 		world()->entity_manager.destroy_entity(entity);
+	}
+
+	inline void register_system(void *component, const Signature &signature, System::EntityCreated entity_created = nullptr, System::EntityDestroyed entity_destroyed = nullptr)
+	{
+		auto system = new_system(component, signature, entity_created, entity_destroyed);
+		world()->system_manager.register_system(system);
 	}
 
 	template <typename... Ts>

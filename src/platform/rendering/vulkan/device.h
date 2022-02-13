@@ -4,6 +4,7 @@
 #include "constants.h"
 #include <types/vector.h>
 #include "../../platform_impl.h"
+#include <vma/vk_mem_alloc.h>
 
 namespace Vultr
 {
@@ -21,10 +22,14 @@ namespace Vultr
 			VkQueue present_queue                    = nullptr;
 
 			VkDebugUtilsMessengerEXT debug_messenger = nullptr;
+
+			VmaAllocator allocator                   = nullptr;
 		};
 
 		Device init_device(const Platform::Window *window, bool debug, PFN_vkDebugUtilsMessengerCallbackEXT debug_cb);
 		void destroy_device(Device *d);
+
+		// void map_memory(Device *d, void *)
 
 		struct QueueFamilyIndices
 		{

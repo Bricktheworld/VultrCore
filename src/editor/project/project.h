@@ -10,5 +10,6 @@ namespace Vultr
 		VultrInitApi init;
 		VultrUpdateApi update;
 	};
-	//	ErrorOr<Project> load_game(const char *location);
+
+	ErrorOr<Project> load_game(const char *location);
 } // namespace Vultr
