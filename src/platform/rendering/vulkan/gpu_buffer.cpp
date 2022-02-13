@@ -6,21 +6,6 @@ namespace Vultr
 {
 	namespace Vulkan
 	{
-		static u32 find_memory_type(Device *d, u32 type_filter, VkMemoryPropertyFlags properties)
-		{
-			VkPhysicalDeviceMemoryProperties mem_properties;
-			vkGetPhysicalDeviceMemoryProperties(d->physical_device, &mem_properties);
-
-			for (u32 i = 0; i < mem_properties.memoryTypeCount; i++)
-			{
-				if ((type_filter & (1 << i)) && ((mem_properties.memoryTypes[i].propertyFlags & properties) == properties))
-				{
-					return i;
-				}
-			}
-			THROW("Something went wrong trying to find a memory type!");
-		}
-
 		GpuBuffer alloc_buffer(Device *d, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage, VkSharingMode sharing_mode)
 		{
 			GpuBuffer buffer_instance{.usage = memory_usage};
@@ -31,7 +16,7 @@ namespace Vultr
 				.sharingMode = sharing_mode,
 			};
 
-			VmaAllocationCreateInfo alloc_info{memory_usage};
+			VmaAllocationCreateInfo alloc_info{.usage = memory_usage};
 
 			VK_CHECK(vmaCreateBuffer(d->allocator, &buffer_info, &alloc_info, &buffer_instance.buffer, &buffer_instance.memory, nullptr));
 			return buffer_instance;
@@ -54,9 +39,8 @@ namespace Vultr
 
 			VkBufferCopy copy_region{.size = size};
 			vkCmdCopyBuffer(cmd, src_buffer.buffer, dst_buffer.buffer, 1, &copy_region);
-			vkEndCommandBuffer(cmd);
 
-			end_cmd_buffer(&c->cmd_pool);
+			end_cmd_buffer(cmd, &c->cmd_pool);
 
 			VkSubmitInfo submit_info{
 				.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -64,10 +48,11 @@ namespace Vultr
 				.pCommandBuffers    = &cmd,
 			};
 
-			vkQueueSubmit(d->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+			vkResetFences(d->device, 1, &c->cmd_pool.fence);
+			vkQueueSubmit(d->graphics_queue, 1, &submit_info, c->cmd_pool.fence);
 
 			// TODO(Brandon): Maybe don't wait here, and instead have a fence.
-			vkQueueWaitIdle(d->graphics_queue);
+			vkWaitForFences(d->device, 1, &c->cmd_pool.fence, VK_TRUE, UINT64_MAX);
 		}
 
 		void free_buffer(Device *d, GpuBuffer *buffer)

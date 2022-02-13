@@ -234,7 +234,7 @@ namespace Vultr
 				.device         = d->device,
 				.instance       = d->instance,
 			};
-			vmaCreateAllocator(&info, &d->allocator);
+			VK_CHECK(vmaCreateAllocator(&info, &d->allocator));
 		}
 
 		Device init_device(const Platform::Window *window, bool debug, PFN_vkDebugUtilsMessengerCallbackEXT debug_cb)
@@ -304,6 +304,7 @@ namespace Vultr
 
 		void destroy_device(Device *d)
 		{
+			vmaDestroyAllocator(d->allocator);
 			vkDestroyDevice(d->device, nullptr);
 
 			vkDestroySurfaceKHR(d->instance, d->surface, nullptr);

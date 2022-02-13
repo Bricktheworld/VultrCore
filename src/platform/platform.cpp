@@ -6,6 +6,7 @@
 #include "window/desktop_window.cpp"
 #include "rendering/vulkan/vulkan.cpp"
 #include "cli/win32_cli.cpp"
+#include "mesh_importing/assimp.cpp"
 #elif __linux__
 // #include "entry_point/linux_main.cpp"
 #include "memory/linux_memory.cpp"
@@ -14,6 +15,7 @@
 #include "filesystem/linux_filesystem.cpp"
 #include "rendering/vulkan/vulkan.cpp"
 #include "cli/linux_cli.cpp"
+#include "mesh_importing/assimp.cpp"
 #else
 // TODO(Brandon): Determine what needs to be ported to MacOS.
 #endif

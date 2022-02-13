@@ -17,6 +17,21 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 			project.init();
 
+			auto resource_dir = cwd / "res/";
+			if (!exists(resource_dir))
+				THROW("Resource directory does not exist!");
+
+			auto *upload_context         = Platform::init_upload_context(engine()->context);
+			Platform::Mesh *example_mesh = nullptr;
+			auto cube_src                = resource_dir / "cube.fbx";
+			if check (Platform::load_mesh_file(upload_context, cube_src), example_mesh, auto _)
+			{
+			}
+			else
+			{
+				THROW("Failed to load %s", cube_src.m_path.c_str());
+			}
+
 			auto *render_system = RenderSystem::init();
 			while (!Platform::window_should_close(engine()->window))
 			{
@@ -25,6 +40,9 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 				RenderSystem::update(render_system);
 				project.update();
 			}
+
+			Platform::destroy_mesh(upload_context, example_mesh);
+			Platform::destroy_upload_context(upload_context);
 			Platform::close_window(engine()->window);
 			Vultr::destroy();
 

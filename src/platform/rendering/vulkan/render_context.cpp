@@ -163,7 +163,7 @@ namespace Vultr
 		{
 			auto *c = cmd->render_context;
 			vkCmdEndRenderPass(cmd->cmd_buffer);
-			Vulkan::end_cmd_buffer(cmd->cmd_pool);
+			Vulkan::end_cmd_buffer(cmd->cmd_buffer, cmd->cmd_pool);
 			Vulkan::submit_swapchain(Vulkan::get_swapchain(c), cmd->image_index, 1, &cmd->cmd_buffer);
 			v_free(cmd);
 		}

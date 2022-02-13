@@ -32,6 +32,14 @@ namespace Vultr
 			};
 
 			VK_CHECK(vkCreateCommandPool(d->device, &pool_info, nullptr, &cmd_pool.command_pool));
+
+			VkFenceCreateInfo fence_info{
+				.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+				.flags = 0,
+			};
+
+			VK_CHECK(vkCreateFence(d->device, &fence_info, nullptr, &cmd_pool.fence));
+
 			return cmd_pool;
 		}
 
@@ -54,9 +62,9 @@ namespace Vultr
 			return cmd_buffer;
 		}
 
-		void end_cmd_buffer(CommandPool *cmd_pool)
+		void end_cmd_buffer(VkCommandBuffer cmd, CommandPool *cmd_pool)
 		{
-			vkEndCommandBuffer(cmd_pool->command_buffers[cmd_pool->index]);
+			VK_CHECK(vkEndCommandBuffer(cmd));
 			cmd_pool->index++;
 		}
 
@@ -72,6 +80,7 @@ namespace Vultr
 			ASSERT(cmd_pool != nullptr, "Cannot destroy nullptr command pool.");
 			ASSERT(d != nullptr, "Cannot destroy with nullptr device.");
 
+			vkDestroyFence(d->device, cmd_pool->fence, nullptr);
 			vkDestroyCommandPool(d->device, cmd_pool->command_pool, nullptr);
 
 			cmd_pool->command_pool = nullptr;

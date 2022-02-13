@@ -14,7 +14,7 @@ namespace Vultr
 			fill_buffer(d, &staging_buffer, data, size);
 
 			auto vertex_buffer = alloc_buffer(d, size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-			copy_buffer(c, staging_buffer, vertex_buffer, size);
+			copy_buffer(c, vertex_buffer, staging_buffer, size);
 
 			free_buffer(d, &staging_buffer);
 
@@ -23,7 +23,7 @@ namespace Vultr
 			return buffer;
 		}
 
-		void destroy_vertex_buffer(Platform::RenderContext *c, VertexBuffer *buffer)
+		void destroy_vertex_buffer(UploadContext *c, VertexBuffer *buffer)
 		{
 			auto *d = Vulkan::get_device(c);
 			free_buffer(d, &buffer->vertex_buffer);

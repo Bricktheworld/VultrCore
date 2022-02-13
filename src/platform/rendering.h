@@ -3,6 +3,7 @@
 #include <types/vector.h>
 #include <types/buffer.h>
 #include <glm/glm.hpp>
+#include <filesystem/path.h>
 
 namespace Vultr
 {
@@ -17,12 +18,14 @@ namespace Vultr
 
 		struct UploadContext;
 		UploadContext *init_upload_context(RenderContext *c);
-		void destroy_upload_context(RenderContext *c, UploadContext *upload_context);
+		void destroy_upload_context(UploadContext *upload_context);
 
 		struct Vertex
 		{
-			Vec2 position;
-			Vec3 color;
+			Vec3 position;
+			Vec3 normal;
+			Vec2 uv;
+			Vec3 tangent;
 		};
 
 		enum struct VertexAttributeType
@@ -68,10 +71,18 @@ namespace Vultr
 				.attribute_descriptions = Vector<VertexAttributeDescription>({
 					{
 						.offset = offsetof(Vertex, position),
+						.type   = VertexAttributeType::F32_VEC3,
+					},
+					{
+						.offset = offsetof(Vertex, normal),
+						.type   = VertexAttributeType::F32_VEC3,
+					},
+					{
+						.offset = offsetof(Vertex, uv),
 						.type   = VertexAttributeType::F32_VEC2,
 					},
 					{
-						.offset = offsetof(Vertex, color),
+						.offset = offsetof(Vertex, tangent),
 						.type   = VertexAttributeType::F32_VEC3,
 					},
 				}),
@@ -125,6 +136,9 @@ namespace Vultr
 			mesh->index_buffer = init_index_buffer(c, indices, sizeof(u16) * index_count);
 			return mesh;
 		}
+
+		ErrorOr<Mesh *> load_mesh_file(UploadContext *c, const Path &path);
+		ErrorOr<Mesh *> load_mesh_memory(UploadContext *c, byte *data, u64 size);
 
 		inline void destroy_mesh(UploadContext *c, Mesh *mesh)
 		{

@@ -9,11 +9,13 @@ namespace Vultr
 		static Component *component(void *component) { return static_cast<Component *>(component); }
 		Component *init()
 		{
-			auto *c = v_alloc<Component>();
+			auto *c        = v_alloc<Component>();
+			auto signature = signature_from_components<Transform, Mesh>();
+			register_system(c, signature, entity_created, entity_destroyed);
 			return c;
 		}
-		void entity_created(void *system, Entity entity);
-		void entity_destroyed(void *system, Entity entity);
+		void entity_created(void *system, Entity entity) {}
+		void entity_destroyed(void *system, Entity entity) {}
 		void update(Component *system)
 		{
 			if check (Platform::begin_cmd_buffer(engine()->window), auto *cmd, auto _)

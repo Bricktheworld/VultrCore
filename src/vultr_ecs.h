@@ -118,6 +118,12 @@ namespace Vultr
 	}
 
 	template <typename... Ts>
+	inline constexpr Signature signature_from_components()
+	{
+		return world()->component_manager.signature_from_components<Ts...>();
+	}
+
+	template <typename... Ts>
 	World::IteratorContainer<Ts...> get_entities()
 	{
 		return World::IteratorContainer<Ts...>(world());
