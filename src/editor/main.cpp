@@ -6,28 +6,39 @@
 int Vultr::vultr_main(Platform::EntryArgs *args)
 {
 	Vultr::init();
-	Vultr::open_borderless_windowed("Vultr Game Engine");
-
-	if check (Vultr::load_game("/home/brandon/Dev/VultrSandbox/build/libVultrDemo.so"), auto project, auto err)
+	if check (pwd(), auto cwd, auto cwd_err)
 	{
-		project.init();
+		auto dll = cwd / VULTR_GAMEPLAY_LIBRARY_LOCATION;
+		printf("Opening %s\n", dll.m_path.c_str());
 
-		auto *render_system = RenderSystem::init();
-		while (!Platform::window_should_close(engine()->window))
+		if check (Vultr::load_game(dll), auto project, auto err)
 		{
-			Platform::poll_events(engine()->window);
-			auto dt = Platform::update_window(engine()->window);
-			RenderSystem::update(render_system);
-			project.update();
-		}
-		Platform::close_window(engine()->window);
-		Vultr::destroy();
+			Vultr::open_borderless_windowed("Vultr Game Engine");
 
-		return 0;
+			project.init();
+
+			auto *render_system = RenderSystem::init();
+			while (!Platform::window_should_close(engine()->window))
+			{
+				Platform::poll_events(engine()->window);
+				auto dt = Platform::update_window(engine()->window);
+				RenderSystem::update(render_system);
+				project.update();
+			}
+			Platform::close_window(engine()->window);
+			Vultr::destroy();
+
+			return 0;
+		}
+		else
+		{
+			fprintf(stderr, "Failed to load project file: %s\n", (str)err.message);
+			return 1;
+		}
 	}
 	else
 	{
-		fprintf(stderr, "Failed to load project file: %s", (str)err.message);
+		fprintf(stderr, "Failed to get current working directory: %s\n", cwd_err.message.c_str());
 		return 1;
 	}
 }

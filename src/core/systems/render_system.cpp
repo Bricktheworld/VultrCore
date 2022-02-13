@@ -16,11 +16,11 @@ namespace Vultr
 		void entity_destroyed(void *system, Entity entity);
 		void update(Component *system)
 		{
-			for (auto [entity, transform, mesh] : get_entities<Transform, Mesh>())
-			{
-			}
 			if check (Platform::begin_cmd_buffer(engine()->window), auto *cmd, auto _)
 			{
+				for (auto [entity, transform, mesh] : get_entities<Transform, Mesh>())
+				{
+				}
 				Platform::end_cmd_buffer(cmd);
 			}
 			else

@@ -178,6 +178,8 @@ namespace Vultr
 			ErrorOr<size_t> fsize(str path);
 			ErrorOr<bool> is_file(str path);
 			ErrorOr<bool> is_directory(str path);
+			size_t path_max();
+			ErrorOr<void> pwd(char *buf, size_t size);
 		} // namespace Filesystem
 
 	} // namespace Platform

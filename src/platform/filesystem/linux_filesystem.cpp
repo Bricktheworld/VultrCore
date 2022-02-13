@@ -46,4 +46,14 @@ namespace Vultr::Platform::Filesystem
 			return error_from_errno(errno);
 		}
 	}
+
+	size_t path_max() { return PATH_MAX; }
+
+	ErrorOr<void> pwd(char *buf, size_t size)
+	{
+		if (getcwd(buf, size) != nullptr)
+			return Success;
+
+		return error_from_errno(errno);
+	}
 } // namespace Vultr::Platform::Filesystem

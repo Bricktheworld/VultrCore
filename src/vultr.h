@@ -5,6 +5,7 @@
 
 namespace Vultr
 {
+	static constexpr str VULTR_GAMEPLAY_LIBRARY_LOCATION = "build/libGameplay.so";
 	void init();
 	void open_window(Platform::DisplayMode display_mode, str name);
 	void destroy();

@@ -5,6 +5,7 @@
 #include "dynamic_library/win32_dynamic_library.cpp"
 #include "window/desktop_window.cpp"
 #include "rendering/vulkan/vulkan.cpp"
+#include "cli/win32_cli.cpp"
 #elif __linux__
 // #include "entry_point/linux_main.cpp"
 #include "memory/linux_memory.cpp"
@@ -12,6 +13,7 @@
 #include "window/desktop_window.cpp"
 #include "filesystem/linux_filesystem.cpp"
 #include "rendering/vulkan/vulkan.cpp"
+#include "cli/linux_cli.cpp"
 #else
 // TODO(Brandon): Determine what needs to be ported to MacOS.
 #endif

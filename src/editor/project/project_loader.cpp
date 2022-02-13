@@ -3,10 +3,10 @@
 
 namespace Vultr
 {
-	ErrorOr<Project> load_game(const char *location)
+	ErrorOr<Project> load_game(const Path &location)
 	{
 		Project project{};
-		UNWRAP(project.dll, Platform::dl_open(location));
+		UNWRAP(project.dll, Platform::dl_open(location.m_path.c_str()));
 
 		UNWRAP(auto use_game_memory, Platform::dl_load_symbol<UseGameMemoryApi>(&project.dll, USE_GAME_MEMORY_SYMBOL));
 		use_game_memory(g_game_memory);

@@ -19,6 +19,13 @@ namespace Vultr
 	ErrorOr<bool> Path::is_directory() const { return Platform::Filesystem::is_directory(m_path.c_str()); }
 	ErrorOr<bool> Path::is_file() const { return Platform::Filesystem::is_file(m_path.c_str()); }
 
+	ErrorOr<Path> pwd()
+	{
+		size_t size = Platform::Filesystem::path_max() + 1;
+		char buf[size];
+		TRY(Platform::Filesystem::pwd(buf, size));
+		return Path(buf);
+	}
 
 #if 0
 	bool fremove(const IFile *file) { return remove(file->path) == 0; }

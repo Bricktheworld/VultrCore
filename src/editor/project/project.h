@@ -1,6 +1,7 @@
 #pragma once
 #include <vultr_memory.h>
 #include <platform/platform.h>
+#include <filesystem/path.h>
 
 namespace Vultr
 {
@@ -11,5 +12,5 @@ namespace Vultr
 		VultrUpdateApi update;
 	};
 
-	ErrorOr<Project> load_game(const char *location);
+	ErrorOr<Project> load_game(const Path &location);
 } // namespace Vultr

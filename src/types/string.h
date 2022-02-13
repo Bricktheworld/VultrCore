@@ -66,6 +66,16 @@ namespace Vultr
 		}
 		bool operator==(str other) const { return *this == StringView(other); }
 
+		constexpr char operator[](size_t index) const
+		{
+			ASSERT(index <= length(), "Index out of bounds!");
+
+			// Convenient null terminator.
+			if (index == length())
+				return '\0';
+			return c_str()[index];
+		}
+
 		constexpr u32 hash() const
 		{
 			if (is_empty())

@@ -16,7 +16,27 @@ namespace Vultr
 		Path operator/(const Path &other) const
 		{
 			ASSERT(is_directory(), "Cannot get subdirectory of path that doesn't end with '/'.");
-			return Path(StringView(m_path) + StringView(other.m_path));
+			if (other.m_path[0] == '/')
+			{
+				return Path(StringView(m_path) + StringView(other.m_path));
+			}
+			else
+			{
+				return Path(StringView(m_path) + "/" + StringView(other.m_path));
+			}
+		}
+
+		Path operator/(StringView other) const
+		{
+			ASSERT(is_directory(), "Cannot get subdirectory of path that doesn't end with '/'.");
+			if (other[0] == '/')
+			{
+				return Path(StringView(m_path) + StringView(other));
+			}
+			else
+			{
+				return Path(StringView(m_path) + "/" + StringView(other));
+			}
 		}
 
 		StringView basename()
@@ -78,4 +98,5 @@ namespace Vultr
 
 	bool exists(const Path &path);
 	ErrorOr<size_t> fsize(const Path &path);
+	ErrorOr<Path> pwd();
 } // namespace Vultr

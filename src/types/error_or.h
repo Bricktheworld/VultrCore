@@ -107,7 +107,7 @@ namespace Vultr
 	{                                                                                                                                                                                                                 \
 		auto __error_result = err;                                                                                                                                                                                    \
 		if (!__error_result)                                                                                                                                                                                          \
-			return __error_result;                                                                                                                                                                                    \
+			return __error_result.get_error();                                                                                                                                                                        \
 	}
 
 #define CHECK(err)                                                                                                                                                                                                    \
