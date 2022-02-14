@@ -15,7 +15,7 @@ namespace Vultr
 
 		ErrorOr<void> try_push(T &&element)
 		{
-			UNWRAP(auto buf, try_push_impl());
+			TRY_UNWRAP(auto buf, try_push_impl());
 			new (buf) T(move(element));
 			return None;
 		}
@@ -29,7 +29,7 @@ namespace Vultr
 
 		ErrorOr<void> try_push(const T &element)
 		{
-			UNWRAP(auto buf, try_push_impl());
+			TRY_UNWRAP(auto buf, try_push_impl());
 			new (buf) T(element);
 			return None;
 		}

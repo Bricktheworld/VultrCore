@@ -73,9 +73,11 @@ namespace Vultr
 		StreamFormat m_format;
 		FILE *m_handle = nullptr;
 	};
+	template <typename T>
+	requires(is_valid_stream_format<T>) void fread_all(const Path &path, BufferT<T> *buf) { CHECK(try_fread_all<T>(path, buf)); }
 
 	template <typename T>
-	requires(is_valid_stream_format<T>) ErrorOr<void> fread_all(const Path &path, BufferT<T> *buf)
+	requires(is_valid_stream_format<T>) ErrorOr<void> try_fread_all(const Path &path, BufferT<T> *buf)
 	{
 		ASSERT(exists(path), "File does not exist!");
 		ASSERT(path.is_file(), "Cannot read from a directory!");
@@ -91,7 +93,7 @@ namespace Vultr
 
 		FileInputStream stream(path, format);
 
-		UNWRAP(auto file_size, fsize(path));
+		TRY_UNWRAP(auto file_size, fsize(path));
 
 		if (buf->size() < file_size)
 		{

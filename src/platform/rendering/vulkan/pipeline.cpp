@@ -45,17 +45,16 @@ namespace Vultr
 			}
 		}
 
-		GraphicsPipeline init_graphics_pipeline(RenderContext *c, GraphicsPipelineInfo info)
+		GraphicsPipeline *init_pipeline(RenderContext *c, const GraphicsPipelineInfo &info)
 		{
 			using namespace Vulkan;
 			ASSERT(info.frag->type == ShaderType::FRAG && info.vert->type == ShaderType::VERT, "Incorrect shaders provided");
 
-			auto *sc = Vulkan::get_swapchain(c);
-			auto *d  = Vulkan::get_device(c);
-			GraphicsPipeline pipeline{
-				.vert = info.vert,
-				.frag = info.frag,
-			};
+			auto *sc                                 = Vulkan::get_swapchain(c);
+			auto *d                                  = Vulkan::get_device(c);
+			auto *pipeline                           = v_alloc<GraphicsPipeline>();
+			pipeline->vert                           = info.vert;
+			pipeline->frag                           = info.frag;
 
 			VkPipelineShaderStageCreateInfo stages[] = {{
 															.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -103,26 +102,12 @@ namespace Vultr
 
 			auto *extent = &sc->extent;
 
-			VkViewport viewport{
-				.x        = 0.0f,
-				.y        = 0.0f,
-				.width    = static_cast<f32>(extent->width),
-				.height   = static_cast<f32>(extent->height),
-				.minDepth = 0.0f,
-				.maxDepth = 1.0f,
-			};
-
-			VkRect2D scissor{
-				.offset = {0, 0},
-				.extent = *extent,
-			};
-
 			VkPipelineViewportStateCreateInfo viewport_state{
 				.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
 				.viewportCount = 1,
-				.pViewports    = &viewport,
+				.pViewports    = nullptr,
 				.scissorCount  = 1,
-				.pScissors     = &scissor,
+				.pScissors     = nullptr,
 			};
 
 			VkPipelineRasterizationStateCreateInfo rasterizer{
@@ -185,7 +170,7 @@ namespace Vultr
 				.pPushConstantRanges    = nullptr,
 			};
 
-			VK_CHECK(vkCreatePipelineLayout(d->device, &pipeline_layout_info, nullptr, &pipeline.vk_layout));
+			VK_CHECK(vkCreatePipelineLayout(d->device, &pipeline_layout_info, nullptr, &pipeline->vk_layout));
 
 			VkGraphicsPipelineCreateInfo pipeline_info{
 				.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -198,18 +183,26 @@ namespace Vultr
 				.pMultisampleState   = &multisampling,
 				.pDepthStencilState  = nullptr,
 				.pColorBlendState    = &color_blending,
-				.pDynamicState       = nullptr,
-				.layout              = pipeline.vk_layout,
+				.pDynamicState       = &dynamic_state,
+				.layout              = pipeline->vk_layout,
 				.renderPass          = sc->render_pass,
 				.subpass             = 0,
 				.basePipelineHandle  = VK_NULL_HANDLE,
 				.basePipelineIndex   = -1,
 			};
 
-			VK_CHECK(vkCreateGraphicsPipelines(d->device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline.vk_pipeline));
+			VK_CHECK(vkCreateGraphicsPipelines(d->device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline->vk_pipeline));
 			return pipeline;
 		}
 
-		void destroy_graphics_pipeline(GraphicsPipeline *pipeline) {}
+		void destroy_pipeline(RenderContext *c, GraphicsPipeline *pipeline)
+		{
+			auto *d = Vulkan::get_device(c);
+			vkDestroyPipelineLayout(d->device, pipeline->vk_layout, nullptr);
+			vkDestroyPipeline(d->device, pipeline->vk_pipeline, nullptr);
+			pipeline->vk_layout = nullptr;
+			pipeline->vk_layout = nullptr;
+			v_free(pipeline);
+		}
 	} // namespace Platform
 } // namespace Vultr

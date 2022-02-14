@@ -10,32 +10,22 @@ namespace Vultr
 		explicit Path(StringView path) : m_path(replace_all(path, "\\", "/")) { ASSERT(path.c_str() != nullptr, "Path must not be null!"); }
 		~Path() = default;
 
-		ErrorOr<bool> is_directory() const;
-		ErrorOr<bool> is_file() const;
+		bool is_directory() const;
+		bool is_file() const;
 
-		Path operator/(const Path &other) const
-		{
-			ASSERT(is_directory(), "Cannot get subdirectory of path that doesn't end with '/'.");
-			if (other.m_path[0] == '/')
-			{
-				return Path(StringView(m_path) + StringView(other.m_path));
-			}
-			else
-			{
-				return Path(StringView(m_path) + "/" + StringView(other.m_path));
-			}
-		}
+		Path operator/(const Path &other) const { return *this / StringView(other.m_path); }
 
 		Path operator/(StringView other) const
 		{
 			ASSERT(is_directory(), "Cannot get subdirectory of path that doesn't end with '/'.");
+			auto trailing_slash = String(m_path.last() == '/' ? "" : "/");
 			if (other[0] == '/')
 			{
-				return Path(StringView(m_path) + StringView(other));
+				return Path(StringView(m_path) + trailing_slash + other.substr(1));
 			}
 			else
 			{
-				return Path(StringView(m_path) + "/" + StringView(other));
+				return Path(StringView(m_path) + trailing_slash + other);
 			}
 		}
 

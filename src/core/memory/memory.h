@@ -4,7 +4,7 @@
 #include "pool.h"
 #include "free_list.h"
 #include "slab.h"
-#include "types/static_details.h"
+#include <types/static_details.h>
 
 namespace Vultr
 {

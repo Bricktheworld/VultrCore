@@ -114,6 +114,8 @@ namespace Vultr
 			}
 		}
 
+		void clear() { flush(); }
+
 		void fill(const T *data, size_t len)
 		{
 			ASSERT(len != 0, "Cannot fill buffer with a length of 0.");

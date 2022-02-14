@@ -87,6 +87,11 @@ namespace Vultr
 		operator str() { return storage; }
 		constexpr size_t length() const { return size() - 1; }
 		constexpr size_t is_empty() const { return length() == 0; }
+		constexpr char last() const
+		{
+			ASSERT(length() != 0, "Cannot get last of empty string!");
+			return c_str()[length() - 1];
+		}
 
 		using SIterator = Iterator<String, char>;
 		SIterator begin() { return SIterator::begin(this); }

@@ -93,7 +93,7 @@ namespace Vultr
 
 #define _UNIQUE_NAME(base) _CONCAT(base, __COUNTER__)
 
-#define _UNWRAP(var, err, result_var_name)                                                                                                                                                                            \
+#define _TRY_UNWRAP(var, err, result_var_name)                                                                                                                                                                        \
 	auto result_var_name = err;                                                                                                                                                                                       \
 	if (!result_var_name)                                                                                                                                                                                             \
 	{                                                                                                                                                                                                                 \
@@ -101,7 +101,13 @@ namespace Vultr
 	}                                                                                                                                                                                                                 \
 	var = result_var_name.value()
 
-#define UNWRAP(var, err) _UNWRAP(var, err, _UNIQUE_NAME(__error_result))
+#define _CHECK_UNWRAP(var, err, result_var_name)                                                                                                                                                                      \
+	auto result_var_name = err;                                                                                                                                                                                       \
+	ASSERT(result_var_name.has_value(), "An error has occurred: %s", result_var_name.get_error().message.c_str())                                                                                                     \
+	var = result_var_name.value()
+
+#define TRY_UNWRAP(var, err) _TRY_UNWRAP(var, err, _UNIQUE_NAME(__error_result))
+#define CHECK_UNWRAP(var, err) _CHECK_UNWRAP(var, err, _UNIQUE_NAME(__error_result))
 
 #define TRY(err)                                                                                                                                                                                                      \
 	{                                                                                                                                                                                                                 \
@@ -113,7 +119,7 @@ namespace Vultr
 #define CHECK(err)                                                                                                                                                                                                    \
 	{                                                                                                                                                                                                                 \
 		auto __error_result = err;                                                                                                                                                                                    \
-		ASSERT(!__error_result.has_value(), "An error has occurred: %s", __error_result.get_error().message.c_str());                                                                                                 \
+		ASSERT(__error_result.has_value(), "An error has occurred: %s", __error_result.get_error().message.c_str());                                                                                                  \
 	} // namespace Vultr
 
 // NOTE(Brandon): This is really, really stupid but I kinda like it and I'm stubborn.

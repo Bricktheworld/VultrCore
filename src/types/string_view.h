@@ -67,6 +67,12 @@ namespace Vultr
 			return StringView(ref + start, end - start);
 		}
 
+		constexpr char last() const
+		{
+			ASSERT(length() != 0, "Cannot get last of empty string!");
+			return c_str()[length() - 1];
+		}
+
 	  private:
 		size_t len = 0;
 		str ref    = nullptr;

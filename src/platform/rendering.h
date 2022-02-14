@@ -12,7 +12,6 @@ namespace Vultr
 		struct RenderContext;
 		RenderContext *init_render_context(const Window *window, bool debug);
 		RenderContext *get_render_context(const Window *window);
-		// void draw_frame(const Window *window, RenderContext *c, f64 delta_time);
 		void framebuffer_resize_callback(const Window *window, RenderContext *c, u32 width, u32 height);
 		void destroy_render_context(RenderContext *c);
 
@@ -91,13 +90,16 @@ namespace Vultr
 
 		struct Framebuffer;
 		struct Shader;
+
+		Shader *init_shader();
+
 		enum struct ShaderType
 		{
 			VERT,
 			FRAG,
 		};
 
-		ErrorOr<Shader> try_load_shader(RenderContext *c, Buffer src, ShaderType type);
+		ErrorOr<Shader *> try_load_shader(RenderContext *c, Buffer src, ShaderType type);
 		void destroy_shader(RenderContext *c, Shader *shader);
 
 		struct Texture;
@@ -146,7 +148,8 @@ namespace Vultr
 			destroy_vertex_buffer(c, mesh->vertex_buffer);
 			v_free(mesh->vertices);
 			v_free(mesh->indices);
-			mesh = {};
+			v_free(mesh);
+			*mesh = {};
 		}
 
 		struct GraphicsPipelineInfo

@@ -1,11 +1,11 @@
 #pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <types/vector.h>
 #include <glm/glm.hpp>
 #include "device.h"
 #include "swap_chain.h"
 #include "gpu_buffer.h"
+#include "pipeline.h"
 
 namespace Vultr
 {
