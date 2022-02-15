@@ -153,6 +153,17 @@ namespace Vultr
 		return slab_alloc(slab);
 	}
 
+	size_t slab_get_size(SlabAllocator *allocator, void *data)
+	{
+		for (u32 i = allocator->num_slabs; i > 0; i--)
+		{
+			if (data > allocator->slabs[i - 1])
+				return allocator->slabs[i - 1]->block_size;
+		}
+
+		THROW("Failed to find slab for data!");
+	}
+
 	void *slab_realloc(SlabAllocator *allocator, void *data, size_t size)
 	{
 		ASSERT(size <= allocator->max_slab_size, "Slab allocator does not have a slab of big enough size.");

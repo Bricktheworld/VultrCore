@@ -24,6 +24,8 @@ namespace Vultr
 
 	void *slab_alloc(SlabAllocator *allocator, size_t size);
 
+	size_t slab_get_size(SlabAllocator *allocator, void *data);
+
 	void *slab_realloc(SlabAllocator *allocator, void *data, size_t size);
 
 	void slab_free(SlabAllocator *allocator, void *data);

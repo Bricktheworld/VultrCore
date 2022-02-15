@@ -89,14 +89,14 @@ namespace Private
  *
  * @error This will return nullptr if it failed to allocate.
  */
-template <typename Allocator, typename T, typename... Args>
-requires(!Vultr::is_same<T, void>) T *v_alloc_safe(Allocator *allocator, Args... args, size_t count = 1)
+template <typename Allocator, typename T>
+requires(!Vultr::is_same<T, void>) T *v_alloc_safe(Allocator *allocator, size_t count = 1)
 {
 	T *buf = static_cast<T *>(Private::malloc(allocator, count * sizeof(T)));
 	if (buf == nullptr)
 		return nullptr;
 
-	return new (buf) T(args...);
+	return new (buf) T();
 }
 
 /**
@@ -109,10 +109,10 @@ requires(!Vultr::is_same<T, void>) T *v_alloc_safe(Allocator *allocator, Args...
  *
  * @error This will crash the program if the memory failed to allocate.
  */
-template <typename Allocator, typename T, typename... Args>
-requires(!Vultr::is_same<T, void>) T *v_alloc(Allocator *allocator, Args... args, size_t count = 1)
+template <typename Allocator, typename T>
+requires(!Vultr::is_same<T, void>) T *v_alloc_with_allocator(Allocator *allocator, size_t count = 1)
 {
-	T *buf = v_alloc_safe<Allocator, T>(allocator, args..., count);
+	T *buf = v_alloc_safe<Allocator, T>(allocator, count);
 	PRODUCTION_ASSERT(buf != nullptr, "Failed to allocate memory!");
 	return buf;
 }
@@ -146,7 +146,7 @@ requires(!Vultr::is_same<T, void>) T *v_realloc_safe(Allocator *allocator, T *me
  */
 // TODO(Brandon): Add copy constructor and destructor safety.
 template <typename Allocator, typename T>
-requires(!Vultr::is_same<T, void>) T *v_realloc(Allocator *allocator, T *memory, size_t count)
+requires(!Vultr::is_same<T, void>) T *v_realloc_with_allocator(Allocator *allocator, T *memory, size_t count)
 {
 	T *new_buf = v_realloc_safe<Allocator, T>(allocator, memory, count);
 	PRODUCTION_ASSERT(new_buf != nullptr, "Failed to reallocate memory!");
@@ -161,7 +161,7 @@ requires(!Vultr::is_same<T, void>) T *v_realloc(Allocator *allocator, T *memory,
  * @param T *memory: The memory that was allocated.
  */
 template <typename Allocator, typename T>
-void v_free(Allocator *allocator, T *memory)
+void v_free_with_allocator(Allocator *allocator, T *memory)
 {
 	if constexpr (!Vultr::is_same<T, void>)
 		// Call destructor.

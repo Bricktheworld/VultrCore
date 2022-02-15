@@ -11,7 +11,7 @@ namespace Vultr
 		auto *persistent_storage = init_linear_allocator(arena, Kilobyte(10));
 		ASSERT(persistent_storage != nullptr, "Failed to allocate persistent storage linear allocator!");
 
-		auto *game_memory               = v_alloc<LinearAllocator, GameMemory>(persistent_storage);
+		auto *game_memory               = v_alloc_with_allocator<LinearAllocator, GameMemory>(persistent_storage);
 
 		game_memory->arena              = arena;
 		game_memory->persistent_storage = persistent_storage;

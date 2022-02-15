@@ -29,5 +29,11 @@ namespace Vultr
 			free_buffer(d, &buffer->index_buffer);
 			v_free(buffer);
 		}
+
+		void bind_index_buffer(CmdBuffer *cmd, IndexBuffer *ibo)
+		{
+			ASSERT(ibo != nullptr && ibo->index_buffer.buffer != nullptr, "Cannot bind nullptr index buffer!");
+			vkCmdBindIndexBuffer(cmd->cmd_buffer, ibo->index_buffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+		}
 	} // namespace Platform
 } // namespace Vultr

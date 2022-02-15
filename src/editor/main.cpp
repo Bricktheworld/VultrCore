@@ -2,6 +2,7 @@
 #include <vultr.h>
 #include "project/project.h"
 #include <core/systems/render_system.h>
+#include <core/systems/resource_system.h>
 #include <filesystem/filestream.h>
 
 int Vultr::vultr_main(Platform::EntryArgs *args)
@@ -27,30 +28,20 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 			project.init();
 
-			auto *upload_context = Platform::init_upload_context(engine()->context);
-			CHECK_UNWRAP(auto *example_mesh, Platform::load_mesh_file(upload_context, resource_dir / "cube.fbx"));
+			auto *render_system   = RenderSystem::init();
+			auto *resource_system = ResourceSystem::init(resource_dir, build_dir);
 
-			Buffer buf;
-			fread_all(build_dir / "shaders/basic_vert.spv", &buf);
-			CHECK_UNWRAP(auto *example_vert, Platform::try_load_shader(engine()->context, buf, Platform::ShaderType::VERT));
-
-			buf.clear();
-			fread_all(build_dir / "shaders/basic_frag.spv", &buf);
-			CHECK_UNWRAP(auto *example_frag, Platform::try_load_shader(engine()->context, buf, Platform::ShaderType::FRAG));
-
-			auto *render_system = RenderSystem::init();
+			auto ent              = create_entity(Mesh{.source = Path("cube.fbx")}, Transform{}, Material{});
 			while (!Platform::window_should_close(engine()->window))
 			{
 				Platform::poll_events(engine()->window);
 				auto dt = Platform::update_window(engine()->window);
-				RenderSystem::update(render_system);
+				RenderSystem::update(render_system, resource_system);
+				ResourceSystem::update(resource_system);
 				project.update();
 			}
-
-			Platform::destroy_shader(engine()->context, example_vert);
-			Platform::destroy_shader(engine()->context, example_frag);
-			Platform::destroy_mesh(upload_context, example_mesh);
-			Platform::destroy_upload_context(upload_context);
+			ResourceSystem::destroy(resource_system);
+			RenderSystem::destroy(render_system);
 			Platform::close_window(engine()->window);
 		}
 		else

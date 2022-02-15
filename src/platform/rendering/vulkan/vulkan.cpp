@@ -8,3 +8,4 @@
 #include "upload_context.cpp"
 #include "index_buffer.cpp"
 #include "vertex_buffer.cpp"
+#include "commands.cpp"

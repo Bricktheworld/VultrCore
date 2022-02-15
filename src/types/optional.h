@@ -44,7 +44,7 @@ namespace Vultr
 			return *reinterpret_cast<const T *>(&m_storage);
 		}
 
-		T &value_or(const T &replacement)
+		T &value_or(T &replacement)
 		{
 			if (m_has_value)
 			{

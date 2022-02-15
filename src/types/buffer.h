@@ -1,5 +1,6 @@
 #pragma once
 #include "types.h"
+#include <utils/transfer.h>
 #include <vultr_memory.h>
 
 namespace Vultr
@@ -101,7 +102,7 @@ namespace Vultr
 					if (new_size > inline_capacity)
 					{
 						storage = v_alloc<T>(new_size);
-						memcpy(storage, m_inline_storage, m_size);
+						Utils::move(storage, m_inline_storage, m_size);
 						m_inline = false;
 					}
 					m_size = new_size;

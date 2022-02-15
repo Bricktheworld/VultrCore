@@ -25,6 +25,7 @@ namespace Vultr
 			Vec3 normal;
 			Vec2 uv;
 			Vec3 tangent;
+			Vec3 bitangent;
 		};
 
 		enum struct VertexAttributeType
@@ -62,8 +63,8 @@ namespace Vultr
 		template <typename T>
 		VertexDescription get_vertex_description();
 
-		template <Vertex>
-		inline VertexDescription get_vertex_description()
+		template <>
+		inline VertexDescription get_vertex_description<Vertex>()
 		{
 			return {
 				.stride                 = sizeof(Vertex),
@@ -82,6 +83,10 @@ namespace Vultr
 					},
 					{
 						.offset = offsetof(Vertex, tangent),
+						.type   = VertexAttributeType::F32_VEC3,
+					},
+					{
+						.offset = offsetof(Vertex, bitangent),
 						.type   = VertexAttributeType::F32_VEC3,
 					},
 				}),
@@ -110,7 +115,9 @@ namespace Vultr
 		struct MeshT
 		{
 			T *vertices                 = nullptr;
+			u32 vertex_count            = 0;
 			u16 *indices                = nullptr;
+			u32 index_count             = 0;
 			VertexBuffer *vertex_buffer = nullptr;
 			IndexBuffer *index_buffer   = nullptr;
 		};
@@ -125,14 +132,16 @@ namespace Vultr
 
 		inline Mesh *init_mesh(UploadContext *c, Vertex *vertices, size_t vertex_count, u16 *indices, size_t index_count)
 		{
-			auto *mesh     = v_alloc<Mesh>();
+			auto *mesh         = new Mesh();
 
-			mesh->vertices = v_alloc<Vertex>(vertex_count);
+			mesh->vertices     = new Vertex[vertex_count];
+			mesh->vertex_count = vertex_count;
 			Utils::copy(mesh->vertices, vertices, vertex_count);
 
 			mesh->vertex_buffer = init_vertex_buffer(c, vertices, sizeof(Vertex) * vertex_count);
 
-			mesh->indices       = v_alloc<u16>(index_count);
+			mesh->indices       = new u16[index_count];
+			mesh->index_count   = index_count;
 			Utils::copy(mesh->indices, indices, index_count);
 
 			mesh->index_buffer = init_index_buffer(c, indices, sizeof(u16) * index_count);
@@ -149,7 +158,6 @@ namespace Vultr
 			v_free(mesh->vertices);
 			v_free(mesh->indices);
 			v_free(mesh);
-			*mesh = {};
 		}
 
 		struct GraphicsPipelineInfo
@@ -172,7 +180,24 @@ namespace Vultr
 		struct CmdBuffer;
 
 		ErrorOr<CmdBuffer *> begin_cmd_buffer(const Window *window);
-		void cmd_begin_renderpass(CmdBuffer *cmd);
-		void end_cmd_buffer(CmdBuffer *c);
+		//		void cmd_begin_renderpass(CmdBuffer *cmd);
+
+		void bind_pipeline(CmdBuffer *cmd, GraphicsPipeline *pipeline);
+		void bind_vertex_buffer(CmdBuffer *cmd, VertexBuffer *vbo);
+		void bind_index_buffer(CmdBuffer *cmd, IndexBuffer *ibo);
+		void draw_indexed(CmdBuffer *cmd, u32 index_count, u32 instance_count = 1, u32 first_index = 0, u32 vertex_offset = 0, u32 first_instance_id = 0);
+
+		inline void bind_mesh(CmdBuffer *cmd, Mesh *mesh)
+		{
+			ASSERT(mesh != nullptr, "Cannot draw nullptr mesh!");
+			bind_vertex_buffer(cmd, mesh->vertex_buffer);
+			bind_index_buffer(cmd, mesh->index_buffer);
+		}
+		inline void draw_mesh(CmdBuffer *cmd, Mesh *mesh)
+		{
+			bind_mesh(cmd, mesh);
+			draw_indexed(cmd, mesh->index_count);
+		}
+		void end_cmd_buffer(CmdBuffer *cmd);
 	} // namespace Platform
 } // namespace Vultr

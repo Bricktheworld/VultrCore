@@ -7,6 +7,7 @@ namespace Vultr
 {
 	struct Path
 	{
+		Path() = default;
 		explicit Path(StringView path) : m_path(replace_all(path, "\\", "/")) { ASSERT(path.c_str() != nullptr, "Path must not be null!"); }
 		~Path() = default;
 
@@ -28,6 +29,8 @@ namespace Vultr
 				return Path(StringView(m_path) + trailing_slash + other);
 			}
 		}
+
+		bool operator==(const Path &other) const { return m_path == other.m_path; }
 
 		StringView basename()
 		{
@@ -89,4 +92,12 @@ namespace Vultr
 	bool exists(const Path &path);
 	ErrorOr<size_t> fsize(const Path &path);
 	ErrorOr<Path> pwd();
+
+	template <>
+	struct Traits<Path> : public GenericTraits<Path>
+	{
+		static u32 hash(const Path &p) { return p.m_path.hash(); }
+		static u32 equals(const Path &a, const Path &b) { return a == b; }
+		static u32 equals(const Path &a, str b) { return a.m_path == b; }
+	};
 } // namespace Vultr

@@ -32,14 +32,14 @@ namespace Vultr
 		auto signature = world()->component_manager.template signature_from_components<Ts...>();
 		(world()->component_manager.template add_component<Ts>(entity, components), ...);
 
-		const auto &old_signature = world()->entity_manager.get_signature(entity);
+		const auto old_signature = world()->entity_manager.get_signature(entity);
 
 		world()->entity_manager.add_signature(entity, signature);
 		world()->system_manager.entity_signature_changed(entity, old_signature, signature);
 	}
 
 	template <typename... Ts>
-	inline Tuple<Ts &...> get_component(Entity entity)
+	inline Tuple<Ts &...> get_components(Entity entity)
 	{
 		return world()->component_manager.get_components<Ts...>(entity);
 	}

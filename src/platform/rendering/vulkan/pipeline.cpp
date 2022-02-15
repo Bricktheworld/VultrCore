@@ -78,12 +78,11 @@ namespace Vultr
 			u32 i = 0;
 			for (auto &description : info.description.attribute_descriptions)
 			{
-				attribute_descriptions[i] = {
-					.location = i,
-					.binding  = 0,
-					.format   = vk_format(description.type),
-					.offset   = description.offset,
-				};
+				attribute_descriptions[i].location = i;
+				attribute_descriptions[i].binding  = 0;
+				attribute_descriptions[i].format   = vk_format(description.type);
+				attribute_descriptions[i].offset   = description.offset;
+				i++;
 			}
 
 			VkPipelineVertexInputStateCreateInfo vertex_input_info{
@@ -154,7 +153,7 @@ namespace Vultr
 				.blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f},
 			};
 
-			VkDynamicState dynamic_states[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
+			VkDynamicState dynamic_states[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
 			VkPipelineDynamicStateCreateInfo dynamic_state{
 				.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
@@ -203,6 +202,12 @@ namespace Vultr
 			pipeline->vk_layout = nullptr;
 			pipeline->vk_layout = nullptr;
 			v_free(pipeline);
+		}
+
+		void bind_pipeline(CmdBuffer *cmd, GraphicsPipeline *pipeline)
+		{
+			ASSERT(pipeline != nullptr && pipeline->vk_pipeline != nullptr, "Cannot bind nullptr pipeline!");
+			vkCmdBindPipeline(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_pipeline);
 		}
 	} // namespace Platform
 } // namespace Vultr

@@ -1,5 +1,7 @@
 #pragma once
 #include "core/vultr_core.h"
+#include <utils/transfer.h>
+#include <math/min_max.h>
 
 namespace Vultr
 {
@@ -48,8 +50,8 @@ VULTR_API void vultr_update(void);
  *
  * @error This will crash the program if the memory failed to allocate.
  */
-template <typename T, typename... Args>
-requires(!Vultr::is_same<T, void>) T *v_alloc(Args... args, size_t count = 1)
+template <typename T>
+requires(!Vultr::is_same<T, void>) T *v_alloc(size_t count = 1)
 {
 	ASSERT(Vultr::g_game_memory != nullptr, "Cannot allocate using `v_alloc(Args... args, size_t count)` without first calling `init_game_memory()`. \n"
 											"Use `v_alloc(Allocator *allocator, Args... args, size_t count)` if you would like to use an allocator.");
@@ -58,11 +60,11 @@ requires(!Vultr::is_same<T, void>) T *v_alloc(Args... args, size_t count = 1)
 
 	if (sizeof(T) * count <= slab_allocator->max_slab_size)
 	{
-		auto *data = v_alloc_safe<Vultr::SlabAllocator, T>(slab_allocator, args..., count);
+		auto *data = v_alloc_safe<Vultr::SlabAllocator, T>(slab_allocator, count);
 		if (data != nullptr)
 			return data;
 	}
-	return v_alloc<Vultr::FreeListAllocator, T>(free_list_allocator, args..., count);
+	return v_alloc_with_allocator<Vultr::FreeListAllocator, T>(free_list_allocator, count);
 }
 
 /**
@@ -94,10 +96,13 @@ requires(!Vultr::is_same<T, void>) T *v_realloc(T *memory, size_t count)
 				return data;
 			}
 		}
-		v_free<Vultr::SlabAllocator, T>(slab_allocator, memory);
-		return v_alloc<Vultr::FreeListAllocator, T>(free_list_allocator, count);
+		auto *new_buf = v_alloc_with_allocator<Vultr::FreeListAllocator, T>(free_list_allocator, count);
+		auto old_size = Vultr::slab_get_size(slab_allocator, memory);
+		Vultr::Utils::move(new_buf, memory, Vultr::min(old_size, count * sizeof(T)));
+		v_free_with_allocator<Vultr::SlabAllocator, T>(slab_allocator, memory);
+		return new_buf;
 	}
-	return v_realloc<Vultr::FreeListAllocator, T>(free_list_allocator, memory, count);
+	return v_realloc_with_allocator<Vultr::FreeListAllocator, T>(free_list_allocator, memory, count);
 }
 
 /**
@@ -116,10 +121,10 @@ void v_free(T *memory)
 	// If the memory resides in the slab allocator.
 	if (reinterpret_cast<byte *>(memory) > reinterpret_cast<byte *>(slab_allocator))
 	{
-		v_free<Vultr::SlabAllocator, T>(slab_allocator, memory);
+		v_free_with_allocator<Vultr::SlabAllocator, T>(slab_allocator, memory);
 	}
 	else
 	{
-		v_free<Vultr::FreeListAllocator>(free_list_allocator, memory);
+		v_free_with_allocator<Vultr::FreeListAllocator>(free_list_allocator, memory);
 	}
 }

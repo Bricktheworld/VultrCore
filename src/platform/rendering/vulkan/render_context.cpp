@@ -48,26 +48,6 @@ namespace Vultr
 		//			VK_CHECK(vkCreateDescriptorSetLayout(d->device, &layout_info, nullptr, &c->descriptor_set_layout));
 		//		}
 
-		// TODO(Brandon): Definitely don't do this here.
-		static void init_graphics_pipeline(Platform::RenderContext *c)
-		{
-			auto *d = &c->swap_chain.device;
-			Buffer vert_shader_src;
-			fread_all(Path("./build/shaders/basic_vert.spv"), &vert_shader_src);
-
-			Buffer frag_shader_src;
-			fread_all(Path("./build/shaders/basic_frag.spv"), &frag_shader_src);
-
-			// auto vert_shader_module     = init_shader_module(c, vert_shader_src);
-			// auto frag_shader_module     = init_shader_module(c, frag_shader_src);
-
-			// auto binding_description    = get_binding_description();
-			// auto attribute_descriptions = get_attribute_descriptions();
-
-			// vkDestroyShaderModule(d->device, frag_shader_module, nullptr);
-			// vkDestroyShaderModule(d->device, vert_shader_module, nullptr);
-		}
-
 		//		static void update_uniform_buffer(Platform::RenderContext *c, u32 image_index, f64 dt)
 		//		{
 		//			auto *sc = &c->swap_chain;
@@ -112,7 +92,25 @@ namespace Vultr
 				auto [image_index, cmd_pool, framebuffer] = res.value();
 				//				Vulkan::update_uniform_buffer(c, image_index, dt);
 
-				auto cmd                 = Vulkan::begin_cmd_buffer(Vulkan::get_device(c), cmd_pool);
+				Vulkan::recycle_cmd_pool(Vulkan::get_device(c), cmd_pool);
+				auto cmd = Vulkan::begin_cmd_buffer(Vulkan::get_device(c), cmd_pool);
+
+				VkViewport viewport{
+					.x        = 0,
+					.y        = 0,
+					.width    = static_cast<f32>(c->swap_chain.extent.width),
+					.height   = static_cast<f32>(c->swap_chain.extent.height),
+					.minDepth = 0.0f,
+					.maxDepth = 1.0f,
+				};
+
+				vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+				VkRect2D scissor{
+					.offset = {.x = 0, .y = 0},
+					.extent = c->swap_chain.extent,
+				};
+				vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 				VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
@@ -131,15 +129,6 @@ namespace Vultr
 
 				vkCmdBeginRenderPass(cmd, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-				// vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, c->graphics_pipeline);
-
-				// VkBuffer vertex_buffers[] = {c->vertex_buffer.buffer};
-				// VkDeviceSize offsets[]    = {0};
-				// vkCmdBindVertexBuffers(cmd, 0, 1, vertex_buffers, offsets);
-				// vkCmdBindIndexBuffer(cmd, c->index_buffer.buffer, 0, VK_INDEX_TYPE_UINT16);
-
-				// vkCmdDrawIndexed(cmd, static_cast<u32>(c->indices.size()), 1, 0, 0, 0);
-
 				auto *buf           = v_alloc<CmdBuffer>();
 				buf->render_context = c;
 				buf->cmd_buffer     = cmd;
@@ -150,12 +139,8 @@ namespace Vultr
 			}
 			else
 			{
-				auto *d = &c->swap_chain.device;
-				Vulkan::recreate_swapchain(&c->swap_chain, window);
+				Vulkan::recreate_swapchain(Vulkan::get_swapchain(c), window);
 				return Error("Need to recreate swap chain.");
-
-				// Vulkan::init_graphics_pipeline(c);
-				// Vulkan::init_command_buffers(c);
 			}
 		}
 

@@ -29,5 +29,13 @@ namespace Vultr
 			free_buffer(d, &buffer->vertex_buffer);
 			v_free(buffer);
 		}
+
+		void bind_vertex_buffer(CmdBuffer *cmd, VertexBuffer *vbo)
+		{
+			ASSERT(vbo != nullptr && vbo->vertex_buffer.buffer != nullptr, "Cannot bind nullptr vertex buffer!");
+			VkBuffer vertex_buffers[] = {vbo->vertex_buffer.buffer};
+			VkDeviceSize offsets[]    = {0};
+			vkCmdBindVertexBuffers(cmd->cmd_buffer, 0, 1, vertex_buffers, offsets);
+		}
 	} // namespace Platform
 } // namespace Vultr
