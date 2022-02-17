@@ -132,15 +132,15 @@ namespace Vultr
 
 		inline Mesh *init_mesh(UploadContext *c, Vertex *vertices, size_t vertex_count, u16 *indices, size_t index_count)
 		{
-			auto *mesh         = new Mesh();
+			auto *mesh         = v_alloc<Mesh>();
 
-			mesh->vertices     = new Vertex[vertex_count];
+			mesh->vertices     = v_alloc<Vertex>(vertex_count);
 			mesh->vertex_count = vertex_count;
 			Utils::copy(mesh->vertices, vertices, vertex_count);
 
 			mesh->vertex_buffer = init_vertex_buffer(c, vertices, sizeof(Vertex) * vertex_count);
 
-			mesh->indices       = new u16[index_count];
+			mesh->indices       = v_alloc<u16>(index_count);
 			mesh->index_count   = index_count;
 			Utils::copy(mesh->indices, indices, index_count);
 
@@ -160,11 +160,30 @@ namespace Vultr
 			v_free(mesh);
 		}
 
+		struct PushConstant
+		{
+			Vec4 color{};
+			Mat4 model{};
+		};
+
+		struct DescriptorLayout;
+
+		DescriptorLayout *init_descriptor_layout(RenderContext *c, size_t size, u32 max_objects);
+		void destroy_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
+		void bind_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
+
+		template <typename T>
+		DescriptorLayout *init_descriptor_layout(RenderContext *c, u32 max_objects)
+		{
+			return init_descriptor_layout(c, sizeof(T), max_objects);
+		}
+
 		struct GraphicsPipelineInfo
 		{
 			Shader *vert                  = nullptr;
 			Shader *frag                  = nullptr;
 			VertexDescription description = get_vertex_description<Vertex>();
+			Vector<DescriptorLayout *> descriptor_layouts{};
 		};
 
 		struct GraphicsPipeline;
@@ -185,7 +204,11 @@ namespace Vultr
 		void bind_pipeline(CmdBuffer *cmd, GraphicsPipeline *pipeline);
 		void bind_vertex_buffer(CmdBuffer *cmd, VertexBuffer *vbo);
 		void bind_index_buffer(CmdBuffer *cmd, IndexBuffer *ibo);
-		void draw_indexed(CmdBuffer *cmd, u32 index_count, u32 instance_count = 1, u32 first_index = 0, u32 vertex_offset = 0, u32 first_instance_id = 0);
+		void draw_indexed(CmdBuffer *cmd, u32 index_count, u32 instance_count = 1, u32 first_index = 0, s32 vertex_offset = 0, u32 first_instance_id = 0);
+		void push_constants(CmdBuffer *cmd, GraphicsPipeline *pipeline, const PushConstant &constant);
+		void update_descriptor_set(CmdBuffer *cmd, DescriptorLayout *layout, void *data, u32 index);
+		void flush_descriptor_set_changes(CmdBuffer *cmd);
+		void bind_descriptor_set(CmdBuffer *cmd, GraphicsPipeline *pipeline, DescriptorLayout *layout, u32 set, u32 index);
 
 		inline void bind_mesh(CmdBuffer *cmd, Mesh *mesh)
 		{
@@ -199,5 +222,7 @@ namespace Vultr
 			draw_indexed(cmd, mesh->index_count);
 		}
 		void end_cmd_buffer(CmdBuffer *cmd);
+
+		void wait_idle(RenderContext *c);
 	} // namespace Platform
 } // namespace Vultr

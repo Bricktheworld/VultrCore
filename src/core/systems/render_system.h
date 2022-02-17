@@ -1,13 +1,19 @@
 #pragma once
-
 #include <ecs/entity.h>
-#include "resource_system.h"
+#include <platform/rendering.h>
+
 namespace Vultr
 {
+	namespace ResourceSystem
+	{
+		struct Component;
+	}
+
 	namespace RenderSystem
 	{
 		struct Component
 		{
+			Platform::DescriptorLayout *camera_layout = nullptr;
 		};
 
 		Component *init();

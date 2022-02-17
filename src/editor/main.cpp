@@ -29,9 +29,10 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			project.init();
 
 			auto *render_system   = RenderSystem::init();
-			auto *resource_system = ResourceSystem::init(resource_dir, build_dir);
+			auto *resource_system = ResourceSystem::init(render_system, resource_dir, build_dir);
 
 			auto ent              = create_entity(Mesh{.source = Path("cube.fbx")}, Transform{}, Material{});
+			auto camera_ent       = create_entity(Camera{}, Transform{});
 			while (!Platform::window_should_close(engine()->window))
 			{
 				Platform::poll_events(engine()->window);
@@ -40,6 +41,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 				ResourceSystem::update(resource_system);
 				project.update();
 			}
+			Platform::wait_idle(engine()->context);
 			ResourceSystem::destroy(resource_system);
 			RenderSystem::destroy(render_system);
 			Platform::close_window(engine()->window);

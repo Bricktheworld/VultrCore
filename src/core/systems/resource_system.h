@@ -6,6 +6,10 @@
 
 namespace Vultr
 {
+	namespace RenderSystem
+	{
+		struct Component;
+	}
 	namespace ResourceSystem
 	{
 		struct Component
@@ -16,7 +20,7 @@ namespace Vultr
 			Hashmap<u32, Platform::Mesh *> loaded_meshes{};
 		};
 
-		Component *init(const Path &resource_dir, const Path &build_path);
+		Component *init(RenderSystem::Component *render_system, const Path &resource_dir, const Path &build_path);
 		void entity_created(void *system, Entity entity);
 		void entity_destroyed(void *system, Entity entity);
 		void update(Component *system);

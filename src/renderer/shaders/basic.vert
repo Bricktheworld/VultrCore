@@ -1,5 +1,4 @@
-#version 330 core
-#extension GL_ARB_separate_shader_objects: enable
+#version 450
 
 layout (location = 0) in vec3 v_Position;
 layout (location = 1) in vec3 v_Normal;
@@ -7,38 +6,38 @@ layout (location = 2) in vec2 v_UV;
 layout (location = 3) in vec3 v_Tangent;
 layout (location = 4) in vec3 v_Bitangent;
 
-out vec3 f_Normal;
-out vec3 f_Position;
-out vec2 f_UV;
-out mat3 f_TBN;
+layout (location = 0) out vec3 f_Position;
+layout (location = 1) out vec3 f_Normal;
+layout (location = 2) out vec2 f_UV;
+layout (location = 3) out mat3 f_TBN;
 
-layout(push_constant) uniform constants
+layout(push_constant) uniform Constants
 {
     vec4 color;
-    mat4 model_matrix;
-} u_Push_constants;
+    mat4 mat;
+} u_Model;
 
-//layout (std140) uniform Camera {
-//    vec4 position;
-//    mat4 view_matrix;
-//    mat4 projection_matrix;
-//} ub_Camera;
-//
-//uniform mat4 u_MVP;
-//uniform mat4 u_Model_matrix;
-//uniform mat3 u_Normal_matrix;
+layout (set = 0, binding = 0) uniform Camera {
+    vec4 position;
+    mat4 view;
+    mat4 proj;
+    mat4 view_proj;
+} u_Camera;
 
 void main()
 {
-    gl_Position = u_MVP * vec4(v_Position, 1.0f);
-    f_Position  = vec3(u_Model_matrix * vec4(v_Position, 1.0f));
+    mat4 mvp    = u_Camera.view_proj * u_Model.mat;
+    mat3 normal_mat = mat3(transpose(inverse(u_Model.mat)));
+    gl_Position = mvp * vec4(v_Position, 1.0f);
+    f_Position  = vec3(u_Model.mat * vec4(v_Position, 1.0f));
     f_Normal    = v_Normal;
-    f_UV    = v_UV;
+    f_UV        = v_UV;
 
 
     // TBN matrix calculation
-    vec3 T = normalize(u_Normal_matrix * v_Tangent);
-    vec3 N = normalize(u_Normal_matrix * v_Normal);
+    vec3 T = normalize(normal_mat * v_Tangent);
+    vec3 N = normalize(normal_mat * v_Normal);
+
     // Re-orthogonalize T with respect to N
     T = normalize(T - dot(T, N) * N);
 

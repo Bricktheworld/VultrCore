@@ -134,6 +134,8 @@ namespace Vultr
 		}
 		SwapChainSupportDetails query_swap_chain_support(Device *d) { return query_swap_chain_support(d->surface, d->physical_device); };
 
+		size_t min_ubo_alignment(Device *d) { return d->properties.limits.minUniformBufferOffsetAlignment; }
+
 		static u32 rate_device_suitability(VkSurfaceKHR surface, VkPhysicalDevice device)
 		{
 			VkPhysicalDeviceProperties properties;
@@ -187,6 +189,7 @@ namespace Vultr
 
 			PRODUCTION_ASSERT(best_score != 0 && best_device != nullptr, "No GPUs on this machine are supported!");
 			d->physical_device = best_device;
+			vkGetPhysicalDeviceProperties(d->physical_device, &d->properties);
 		}
 
 		static void init_logical_device(Device *d)

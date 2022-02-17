@@ -12,8 +12,9 @@ namespace Vultr
 	{
 		struct Device
 		{
-			VkInstance instance                      = nullptr;
-			VkPhysicalDevice physical_device         = nullptr;
+			VkInstance instance              = nullptr;
+			VkPhysicalDevice physical_device = nullptr;
+			VkPhysicalDeviceProperties properties{};
 
 			VkDevice device                          = nullptr;
 			VkSurfaceKHR surface                     = nullptr;
@@ -46,6 +47,7 @@ namespace Vultr
 
 		QueueFamilyIndices find_queue_families(Device *d);
 		SwapChainSupportDetails query_swap_chain_support(Device *d);
+		size_t min_ubo_alignment(Device *d);
 
 		void wait_idle(Device *d);
 

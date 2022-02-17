@@ -211,11 +211,15 @@ namespace Vultr
 			}
 		}
 
-		static void init_command_pools(SwapChain *sc)
+		static void init_frames(SwapChain *sc)
 		{
-			auto *d = &sc->device;
 			for (u32 i = 0; i < sc->images.size(); i++)
-				sc->render_command_pools.push_back(init_cmd_pool(d));
+			{
+				sc->frames.push_back({
+					.cmd_pool        = init_cmd_pool(get_device(sc)),
+					.descriptor_pool = init_descriptor_pool(get_device(sc)),
+				});
+			}
 		}
 
 		static void init_concurrency(SwapChain *sc)
@@ -267,6 +271,13 @@ namespace Vultr
 		//			};
 		//			VK_CHECK(vkCreateDescriptorPool(d->device, &pool_info, nullptr, &sc->descriptor_pool));
 		//		}
+		//		static void init_descriptor_set(SwapChain *sc)
+		//		{
+		//			for (auto &frame : sc->frames)
+		//			{
+		//				frame.global_buffer = alloc_buffer(get_device(sc), sizeof(Platform::CameraDescriptor), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+		//			}
+		//		}
 
 		SwapChain init_swapchain(const Device &device, const Platform::Window *window)
 		{
@@ -276,7 +287,7 @@ namespace Vultr
 			init_image_views(&sc);
 			init_render_pass(&sc);
 			init_framebuffers(&sc);
-			init_command_pools(&sc);
+			init_frames(&sc);
 			init_concurrency(&sc);
 			//			init_uniform_buffers(&sc);
 			//			init_descriptor_pool(&sc);
@@ -321,7 +332,15 @@ namespace Vultr
 
 			for (u32 i = 0; i < sc->images.size(); i++)
 			{
-				destroy_cmd_pool(d, &sc->render_command_pools[i]);
+				auto *frame = &sc->frames[i];
+				for (auto [layout, descriptor_set] : frame->descriptor_buffers)
+				{
+					destroy_descriptor_set_buffer(d, &descriptor_set);
+				}
+				frame->descriptor_buffers.clear();
+
+				destroy_descriptor_pool(d, frame->descriptor_pool);
+				destroy_cmd_pool(d, &frame->cmd_pool);
 			}
 
 			internal_destroy_swapchain(sc);
@@ -355,7 +374,7 @@ namespace Vultr
 			//			init_descriptor_pool(sc);
 		}
 
-		ErrorOr<Tuple<u32, CommandPool *, VkFramebuffer>> acquire_swapchain(SwapChain *sc)
+		ErrorOr<Tuple<u32, Frame *, VkFramebuffer>> acquire_swapchain(SwapChain *sc)
 		{
 			auto *d = &sc->device;
 			vkWaitForFences(d->device, 1, &sc->in_flight_fences[sc->current_frame], VK_TRUE, UINT64_MAX);
@@ -378,7 +397,7 @@ namespace Vultr
 			}
 
 			sc->images_in_flight[image_index] = sc->in_flight_fences[sc->current_frame];
-			return Tuple(image_index, &sc->render_command_pools[image_index], sc->framebuffers[image_index]);
+			return Tuple(image_index, &sc->frames[image_index], sc->framebuffers[image_index]);
 		}
 
 		ErrorOr<void> submit_swapchain(SwapChain *sc, u32 image_index, u32 command_buffer_count, VkCommandBuffer *command_buffers)
@@ -452,5 +471,15 @@ namespace Vultr
 	namespace Platform
 	{
 		void framebuffer_resize_callback(const Platform::Window *window, Platform::RenderContext *c, u32 width, u32 height) { c->swap_chain.framebuffer_was_resized = true; }
+		void bind_descriptor_layout(RenderContext *c, DescriptorLayout *layout)
+		{
+			auto *sc = Vulkan::get_swapchain(c);
+			for (auto &frame : sc->frames)
+			{
+				ASSERT(!frame.descriptor_buffers.contains(layout), "Already bound descriptor layout!");
+				auto descriptor_buffer = Vulkan::init_descriptor_set_buffer(Vulkan::get_device(c), frame.descriptor_pool, layout);
+				frame.descriptor_buffers.set(layout, descriptor_buffer);
+			}
+		}
 	} // namespace Platform
 } // namespace Vultr

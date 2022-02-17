@@ -1,4 +1,5 @@
 #include "resource_system.h"
+#include "render_system.h"
 #include <vultr.h>
 #include <filesystem/filestream.h>
 
@@ -7,7 +8,7 @@ namespace Vultr
 	namespace ResourceSystem
 	{
 		static Component *component(void *component) { return static_cast<Component *>(component); }
-		Component *init(const Path &resource_dir, const Path &build_path)
+		Component *init(RenderSystem::Component *render_system, const Path &resource_dir, const Path &build_path)
 		{
 			auto *c           = v_alloc<Component>();
 			c->upload_context = Platform::init_upload_context(engine()->context);
@@ -22,9 +23,11 @@ namespace Vultr
 			CHECK_UNWRAP(auto *example_frag, Platform::try_load_shader(engine()->context, buf, Platform::ShaderType::FRAG));
 
 			Platform::GraphicsPipelineInfo info{
-				.vert = example_vert,
-				.frag = example_frag,
+				.vert               = example_vert,
+				.frag               = example_frag,
+				.descriptor_layouts = Vector({render_system->camera_layout}),
 			};
+
 			c->pipeline = Platform::init_pipeline(engine()->context, info);
 
 			Platform::destroy_shader(engine()->context, example_vert);

@@ -53,8 +53,7 @@ namespace Vultr
 			auto *sc                                 = Vulkan::get_swapchain(c);
 			auto *d                                  = Vulkan::get_device(c);
 			auto *pipeline                           = v_alloc<GraphicsPipeline>();
-			pipeline->vert                           = info.vert;
-			pipeline->frag                           = info.frag;
+			pipeline->layout                         = info;
 
 			VkPipelineShaderStageCreateInfo stages[] = {{
 															.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -98,8 +97,6 @@ namespace Vultr
 				.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 				.primitiveRestartEnable = VK_FALSE,
 			};
-
-			auto *extent = &sc->extent;
 
 			VkPipelineViewportStateCreateInfo viewport_state{
 				.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -161,12 +158,27 @@ namespace Vultr
 				.pDynamicStates    = dynamic_states,
 			};
 
+			VkPushConstantRange push_constant_range{
+				.offset     = 0,
+				.size       = sizeof(PushConstant),
+				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+			};
+
+			VkDescriptorSetLayout layouts[pipeline->layout.descriptor_layouts.size()];
+
+			u32 j = 0;
+			for (auto *descriptor_layout : pipeline->layout.descriptor_layouts)
+			{
+				layouts[j] = descriptor_layout->vk_layout;
+				j++;
+			}
+
 			VkPipelineLayoutCreateInfo pipeline_layout_info{
 				.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-				.setLayoutCount         = 0,
-				.pSetLayouts            = nullptr,
-				.pushConstantRangeCount = 0,
-				.pPushConstantRanges    = nullptr,
+				.setLayoutCount         = static_cast<u32>(pipeline->layout.descriptor_layouts.size()),
+				.pSetLayouts            = layouts,
+				.pushConstantRangeCount = 1,
+				.pPushConstantRanges    = &push_constant_range,
 			};
 
 			VK_CHECK(vkCreatePipelineLayout(d->device, &pipeline_layout_info, nullptr, &pipeline->vk_layout));

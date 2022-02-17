@@ -6,7 +6,7 @@ namespace Vultr
 {
 	namespace Vulkan
 	{
-		GpuBuffer alloc_buffer(Device *d, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage, VkSharingMode sharing_mode)
+		GpuBuffer alloc_buffer(Device *d, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage, VkMemoryPropertyFlags flags, VkSharingMode sharing_mode)
 		{
 			GpuBuffer buffer_instance{.usage = memory_usage};
 			VkBufferCreateInfo buffer_info{
@@ -16,7 +16,10 @@ namespace Vultr
 				.sharingMode = sharing_mode,
 			};
 
-			VmaAllocationCreateInfo alloc_info{.usage = memory_usage};
+			VmaAllocationCreateInfo alloc_info{
+				.usage         = memory_usage,
+				.requiredFlags = flags,
+			};
 
 			VK_CHECK(vmaCreateBuffer(d->allocator, &buffer_info, &alloc_info, &buffer_instance.buffer, &buffer_instance.memory, nullptr));
 			return buffer_instance;
@@ -24,7 +27,7 @@ namespace Vultr
 
 		void fill_buffer(Device *d, GpuBuffer *buffer, void *data, size_t size)
 		{
-			ASSERT(buffer->usage != VMA_MEMORY_USAGE_GPU_TO_CPU && buffer->usage != VMA_MEMORY_USAGE_GPU_TO_CPU, "Cannot fill buffer that is on the GPU!");
+			ASSERT(buffer->usage != VMA_MEMORY_USAGE_GPU_TO_CPU && buffer->usage != VMA_MEMORY_USAGE_GPU_ONLY, "Cannot fill buffer that is on the GPU!");
 			void *mapped = nullptr;
 			vmaMapMemory(d->allocator, buffer->memory, &mapped);
 			memcpy(mapped, data, size);
@@ -54,6 +57,16 @@ namespace Vultr
 			// TODO(Brandon): Maybe don't wait here, and instead have a fence.
 			vkWaitForFences(d->device, 1, &c->cmd_pool.fence, VK_TRUE, UINT64_MAX);
 		}
+
+		void *map_buffer(Device *d, GpuBuffer *buffer)
+		{
+			ASSERT(buffer->usage != VMA_MEMORY_USAGE_GPU_TO_CPU && buffer->usage != VMA_MEMORY_USAGE_GPU_ONLY, "Cannot map memory that is not visible to the CPU!");
+			void *mapped = nullptr;
+			VK_CHECK(vmaMapMemory(d->allocator, buffer->memory, &mapped));
+			ASSERT(mapped != nullptr, "Failed to map buffer!");
+			return mapped;
+		}
+		void unmap_buffer(Device *d, GpuBuffer *buffer) { vmaUnmapMemory(d->allocator, buffer->memory); }
 
 		void free_buffer(Device *d, GpuBuffer *buffer)
 		{

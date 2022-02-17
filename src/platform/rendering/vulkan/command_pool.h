@@ -22,6 +22,7 @@ namespace Vultr
 		void end_cmd_buffer(VkCommandBuffer cmd, CommandPool *cmd_pool);
 		void recycle_cmd_pool(Device *d, CommandPool *cmd_pool);
 		void destroy_cmd_pool(Device *d, CommandPool *cmd_pool);
+		struct Frame;
 
 	} // namespace Vulkan
 
@@ -31,7 +32,7 @@ namespace Vultr
 		struct CmdBuffer
 		{
 			u32 image_index               = 0;
-			Vulkan::CommandPool *cmd_pool = nullptr;
+			Vulkan::Frame *frame          = nullptr;
 			VkCommandBuffer cmd_buffer    = nullptr;
 			RenderContext *render_context = nullptr;
 		};

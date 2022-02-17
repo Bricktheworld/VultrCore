@@ -2,6 +2,7 @@
 #include "material.h"
 #include "mesh.h"
 #include "transform.h"
+#include "camera.h"
 
 #include <utils/traits.h>
 namespace Vultr
@@ -16,4 +17,5 @@ namespace Vultr
 	COMPONENT_TRAITS(Material);
 	COMPONENT_TRAITS(Transform);
 	COMPONENT_TRAITS(Mesh);
+	COMPONENT_TRAITS(Camera);
 } // namespace Vultr
