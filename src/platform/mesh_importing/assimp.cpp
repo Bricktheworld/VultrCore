@@ -41,7 +41,7 @@ namespace Vultr
 				indices[index + 2] = face.mIndices[2];
 				index += 3;
 			}
-			auto *mesh = init_mesh(c, vertices, imported_mesh->mNumVertices, indices, imported_mesh->mNumFaces);
+			auto *mesh = init_mesh(c, vertices, imported_mesh->mNumVertices, indices, imported_mesh->mNumFaces * 3);
 			v_free(vertices);
 			v_free(indices);
 			return mesh;

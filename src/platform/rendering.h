@@ -170,7 +170,7 @@ namespace Vultr
 
 		DescriptorLayout *init_descriptor_layout(RenderContext *c, size_t size, u32 max_objects);
 		void destroy_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
-		void bind_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
+		void register_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
 
 		template <typename T>
 		DescriptorLayout *init_descriptor_layout(RenderContext *c, u32 max_objects)
@@ -224,5 +224,11 @@ namespace Vultr
 		void end_cmd_buffer(CmdBuffer *cmd);
 
 		void wait_idle(RenderContext *c);
+
+		struct ImGuiContext;
+		ImGuiContext *init_imgui(const Window *window, UploadContext *upload_context);
+		void begin_frame(CmdBuffer *cmd, ImGuiContext *c);
+		void end_frame(CmdBuffer *cmd, ImGuiContext *c);
+		void destroy_imgui(RenderContext *c, ImGuiContext *imgui_c);
 	} // namespace Platform
 } // namespace Vultr

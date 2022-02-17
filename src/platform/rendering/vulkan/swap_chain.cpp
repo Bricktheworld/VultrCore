@@ -456,7 +456,8 @@ namespace Vultr
 				.pCommandBuffers    = &command_buffer,
 			};
 
-			vkResetFences(d->device, 1, &fence);
+			if (fence != nullptr)
+				vkResetFences(d->device, 1, &fence);
 			VK_TRY(vkQueueSubmit(d->graphics_queue, 1, &submit_info, fence));
 			return Success;
 		}
@@ -471,7 +472,7 @@ namespace Vultr
 	namespace Platform
 	{
 		void framebuffer_resize_callback(const Platform::Window *window, Platform::RenderContext *c, u32 width, u32 height) { c->swap_chain.framebuffer_was_resized = true; }
-		void bind_descriptor_layout(RenderContext *c, DescriptorLayout *layout)
+		void register_descriptor_layout(RenderContext *c, DescriptorLayout *layout)
 		{
 			auto *sc = Vulkan::get_swapchain(c);
 			for (auto &frame : sc->frames)

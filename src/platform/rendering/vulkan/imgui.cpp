@@ -1,5 +1,6 @@
 #include "../../platform_impl.h"
 #include "render_context.h"
+#include "command_pool.h"
 #include <types/array.h>
 #include <vulkan/vulkan.h>
 #include <imgui/imgui.h>
@@ -10,8 +11,13 @@ namespace Vultr
 {
 	namespace Platform
 	{
-		void init_imgui(const Window *window, RenderContext *c)
+		struct ImGuiContext
 		{
+			VkDescriptorPool descriptor_pool = nullptr;
+		};
+		ImGuiContext *init_imgui(const Window *window, UploadContext *upload_context)
+		{
+			auto *imgui_c                        = v_alloc<ImGuiContext>();
 			auto pool_sizes                      = Array<VkDescriptorPoolSize, 11>({{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
                                                                {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
                                                                {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
@@ -32,8 +38,9 @@ namespace Vultr
 				.pPoolSizes    = &pool_sizes[0],
 			};
 
-			VkDescriptorPool imgui_pool;
-			VK_CHECK(vkCreateDescriptorPool(c->swap_chain.device.device, &pool_info, nullptr, &imgui_pool));
+			auto *c = get_render_context(window);
+			auto *d = Vulkan::get_device(c);
+			VK_CHECK(vkCreateDescriptorPool(d->device, &pool_info, nullptr, &imgui_c->descriptor_pool));
 
 			ImGui::CreateContext();
 
@@ -41,22 +48,52 @@ namespace Vultr
 			ImGui_ImplGlfw_InitForVulkan(glfw, true);
 
 			ImGui_ImplVulkan_InitInfo init_info = {
-				.Instance       = c->swap_chain.device.instance,
-				.PhysicalDevice = c->swap_chain.device.physical_device,
-				.Device         = c->swap_chain.device.device,
-				.Queue          = c->swap_chain.device.graphics_queue,
-				.DescriptorPool = imgui_pool,
+				.Instance       = d->instance,
+				.PhysicalDevice = d->physical_device,
+				.Device         = d->device,
+				.Queue          = d->graphics_queue,
+				.DescriptorPool = imgui_c->descriptor_pool,
 				.MinImageCount  = 3,
 				.ImageCount     = 3,
 				.MSAASamples    = VK_SAMPLE_COUNT_1_BIT,
 
 			};
-			ImGui_ImplVulkan_Init(&init_info, c->swap_chain.render_pass);
-			//			ImGui_ImplVulkan_CreateFontsTexture(cmd);
+			ImGui_ImplVulkan_Init(&init_info, Vulkan::get_swapchain(c)->render_pass);
+			auto cmd = Vulkan::begin_cmd_buffer(d, &upload_context->cmd_pool);
+			ImGui_ImplVulkan_CreateFontsTexture(cmd);
+			Vulkan::end_cmd_buffer(cmd, &upload_context->cmd_pool);
+
+			Vulkan::wait_queue_cmd_buffer(Vulkan::get_swapchain(c), cmd);
 
 			ImGui_ImplVulkan_DestroyFontUploadObjects();
+			return imgui_c;
 		}
 
-		void destroy_imgui(const Window *window, RenderContext *c) { vkDestroyDescriptorPool(c->swap_chain.device.device, imguiPool, nullptr); }
+		void begin_frame(CmdBuffer *cmd, ImGuiContext *c)
+		{
+			ImGui_ImplVulkan_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+		}
+
+		void end_frame(CmdBuffer *cmd, ImGuiContext *c)
+		{
+			ImGuiIO &io = ImGui::GetIO();
+			ImGui::Render();
+			//			cb.beginRenderPass({imguiRenderPass, imguiFramebuffers[swapchainCurrentImage], {{0, 0}, swapchainExtent}, 1, &clearValue}, vk::SubpassContents::eInline);
+			//			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cb);
+			//			cb.endRenderPass();
+			//			cb.end();
+			//			Vulkan::queue_cmd_buffer(Vulkan::get_swapchain(cmd->render_context), );
+		}
+
+		void destroy_imgui(RenderContext *c, ImGuiContext *imgui_c)
+		{
+			ImGui_ImplVulkan_Shutdown();
+			ImGui_ImplGlfw_Shutdown();
+			ImGui::DestroyContext();
+			vkDestroyDescriptorPool(Vulkan::get_device(c)->device, imgui_c->descriptor_pool, nullptr);
+			v_free(imgui_c);
+		}
 	} // namespace Platform
 } // namespace Vultr

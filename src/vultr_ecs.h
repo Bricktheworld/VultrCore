@@ -4,7 +4,7 @@
 
 namespace Vultr
 {
-	using World = WorldT<Mesh, Transform, Material, Camera>;
+	using World = WorldT<Mesh, Transform, Material, Camera, DirectionalLight>;
 
 	inline World *world()
 	{

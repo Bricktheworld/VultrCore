@@ -3,6 +3,7 @@
 #include "mesh.h"
 #include "transform.h"
 #include "camera.h"
+#include "directional_light.h"
 
 #include <utils/traits.h>
 namespace Vultr
@@ -18,4 +19,5 @@ namespace Vultr
 	COMPONENT_TRAITS(Transform);
 	COMPONENT_TRAITS(Mesh);
 	COMPONENT_TRAITS(Camera);
+	COMPONENT_TRAITS(DirectionalLight);
 } // namespace Vultr

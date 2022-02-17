@@ -13,9 +13,12 @@ namespace Vultr::Platform
 		GLFWwindow *glfw              = nullptr;
 		RenderContext *render_context = nullptr;
 		String title{};
-		u32 width     = 0;
-		u32 height    = 0;
-		f64 last_time = 0;
+		u32 width           = 0;
+		u32 height          = 0;
+		f64 last_time       = 0;
+		Vec2 last_mouse_pos = Vec2(0);
+		s32 cursor_mode     = GLFW_CURSOR_NORMAL;
+		bool is_focused     = true;
 	};
 	struct Monitor
 	{
@@ -42,6 +45,14 @@ namespace Vultr::Platform
 		PRODUCTION_ASSERT(width >= 0 && height >= 0, "Invalid width and height received on resize!");
 		auto *window = reinterpret_cast<Window *>(glfwGetWindowUserPointer(glfw));
 		framebuffer_resize_callback(window, window->render_context, static_cast<u32>(width), static_cast<u32>(height));
+	}
+
+	static void window_focus_callback(GLFWwindow *glfw, int focused)
+	{
+		auto *window       = reinterpret_cast<Window *>(glfwGetWindowUserPointer(glfw));
+		window->is_focused = focused;
+		if (focused)
+			window->last_mouse_pos = get_mouse_pos(window);
 	}
 
 	Window *open_window(DisplayMode mode, Monitor *monitor, const char *title, bool debug, u32 width, u32 height)
@@ -116,6 +127,7 @@ namespace Vultr::Platform
 		window->height         = height;
 
 		window->render_context = init_render_context(window, debug);
+		window->last_mouse_pos = get_mouse_pos(window);
 
 		return window;
 	}
@@ -141,6 +153,36 @@ namespace Vultr::Platform
 		glfwDestroyWindow(window->glfw);
 		glfwTerminate();
 	}
+
+	bool is_focused(Window *window) { return window->is_focused; }
+	Vec2 get_mouse_pos(Window *window)
+	{
+		f64 x, y;
+		glfwGetCursorPos(window->glfw, &x, &y);
+		return Vec2{x, y} / Vec2{window->width, window->height};
+	}
+
+	bool mouse_down(Window *window, Input::MouseButton button) { return glfwGetMouseButton(window->glfw, button) == GLFW_PRESS; }
+
+	void lock_cursor(Window *window)
+	{
+		if (window->cursor_mode != GLFW_CURSOR_DISABLED)
+			glfwSetInputMode(window->glfw, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	}
+	void unlock_cursor(Window *window)
+	{
+		if (window->cursor_mode != GLFW_CURSOR_NORMAL)
+			glfwSetInputMode(window->glfw, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
+	Vec2 get_mouse_delta(Window *window)
+	{
+		auto current           = get_mouse_pos(window);
+		auto delta             = current - window->last_mouse_pos;
+		window->last_mouse_pos = current;
+		return delta / Vec2{window->width, window->height};
+	}
+
+	bool key_down(Window *window, Input::Key key) { return glfwGetKey(window->glfw, key) == GLFW_PRESS; }
 
 	bool window_should_close(Window *window) { return glfwWindowShouldClose(window->glfw); }
 

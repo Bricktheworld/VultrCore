@@ -10,6 +10,7 @@ layout (location = 0) out vec3 f_Position;
 layout (location = 1) out vec3 f_Normal;
 layout (location = 2) out vec2 f_UV;
 layout (location = 3) out mat3 f_TBN;
+layout (location = 6) out mat3 f_Normal_matrix;
 
 layout(push_constant) uniform Constants
 {
@@ -24,6 +25,23 @@ layout (set = 0, binding = 0) uniform Camera {
     mat4 view_proj;
 } u_Camera;
 
+layout (set = 1, binding = 0) uniform DirectionalLight {
+    vec4 direction;
+
+    vec4 ambient;
+    vec4 diffuse;
+    float specular;
+    float intensity;
+    int exists;
+} u_Directional_light;
+
+layout (set = 2, binding = 0) uniform Material {
+    vec4 albedo;
+    float metallic;
+    float ambient_occlusion;
+    float roughness;
+} u_Material;
+
 void main()
 {
     mat4 mvp    = u_Camera.view_proj * u_Model.mat;
@@ -32,6 +50,7 @@ void main()
     f_Position  = vec3(u_Model.mat * vec4(v_Position, 1.0f));
     f_Normal    = v_Normal;
     f_UV        = v_UV;
+    f_Normal_matrix = normal_mat;
 
 
     // TBN matrix calculation
