@@ -25,7 +25,7 @@ namespace Vultr
 			Platform::GraphicsPipelineInfo info{
 				.vert               = example_vert,
 				.frag               = example_frag,
-				.descriptor_layouts = Vector({render_system->camera_layout, render_system->directional_light_layout, render_system->material_layout}),
+				.descriptor_layouts = Vector({render_system->camera_layout, render_system->material_layout}),
 			};
 
 			c->pipeline = Platform::init_pipeline(engine()->context, info);

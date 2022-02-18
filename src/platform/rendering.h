@@ -98,10 +98,10 @@ namespace Vultr
 
 		Shader *init_shader();
 
-		enum struct ShaderType
+		enum struct ShaderType : u8
 		{
-			VERT,
-			FRAG,
+			VERT = 0x1,
+			FRAG = 0x2,
 		};
 
 		ErrorOr<Shader *> try_load_shader(RenderContext *c, Buffer src, ShaderType type);
@@ -166,17 +166,32 @@ namespace Vultr
 			Mat4 model{};
 		};
 
+		enum struct DescriptorSetBindingType
+		{
+			UNIFORM_BUFFER,
+			TEXTURE
+		};
+
+		struct DescriptorSetBinding
+		{
+			DescriptorSetBindingType type = DescriptorSetBindingType::UNIFORM_BUFFER;
+			u32 size                      = 0;
+		};
+
 		struct DescriptorLayout;
 
-		DescriptorLayout *init_descriptor_layout(RenderContext *c, size_t size, u32 max_objects);
+		template <typename T>
+		DescriptorSetBinding ubo_binding()
+		{
+			return {
+				.type = DescriptorSetBindingType::UNIFORM_BUFFER,
+				.size = sizeof(T),
+			};
+		}
+
+		DescriptorLayout *init_descriptor_layout(RenderContext *c, const Vector<DescriptorSetBinding> &bindings, u32 max_objects);
 		void destroy_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
 		void register_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
-
-		template <typename T>
-		DescriptorLayout *init_descriptor_layout(RenderContext *c, u32 max_objects)
-		{
-			return init_descriptor_layout(c, sizeof(T), max_objects);
-		}
 
 		struct GraphicsPipelineInfo
 		{
@@ -206,7 +221,7 @@ namespace Vultr
 		void bind_index_buffer(CmdBuffer *cmd, IndexBuffer *ibo);
 		void draw_indexed(CmdBuffer *cmd, u32 index_count, u32 instance_count = 1, u32 first_index = 0, s32 vertex_offset = 0, u32 first_instance_id = 0);
 		void push_constants(CmdBuffer *cmd, GraphicsPipeline *pipeline, const PushConstant &constant);
-		void update_descriptor_set(CmdBuffer *cmd, DescriptorLayout *layout, void *data, u32 index);
+		void update_descriptor_set(CmdBuffer *cmd, DescriptorLayout *layout, void *data, u32 index, u32 binding);
 		void flush_descriptor_set_changes(CmdBuffer *cmd);
 		void bind_descriptor_set(CmdBuffer *cmd, GraphicsPipeline *pipeline, DescriptorLayout *layout, u32 set, u32 index);
 

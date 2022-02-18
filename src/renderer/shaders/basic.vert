@@ -25,7 +25,7 @@ layout (set = 0, binding = 0) uniform Camera {
     mat4 view_proj;
 } u_Camera;
 
-layout (set = 1, binding = 0) uniform DirectionalLight {
+layout (set = 0, binding = 1) uniform DirectionalLight {
     vec4 direction;
 
     vec4 ambient;
@@ -35,7 +35,7 @@ layout (set = 1, binding = 0) uniform DirectionalLight {
     int exists;
 } u_Directional_light;
 
-layout (set = 2, binding = 0) uniform Material {
+layout (set = 1, binding = 0) uniform Material {
     vec4 albedo;
     float metallic;
     float ambient_occlusion;

@@ -59,7 +59,6 @@ namespace Vultr
 						memcpy(dest, src, copied_bytes);
 					}
 				}
-				return count;
 			}
 			else
 			{
@@ -76,6 +75,7 @@ namespace Vultr
 					}
 				}
 			}
+			return count;
 		}
 	} // namespace Utils
 } // namespace Vultr

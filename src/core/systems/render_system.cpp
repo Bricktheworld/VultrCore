@@ -44,11 +44,14 @@ namespace Vultr
 			auto signature = signature_from_components<Transform, Mesh>();
 			register_system(c, signature, entity_created, entity_destroyed);
 
-			c->camera_layout            = Platform::init_descriptor_layout<CameraUBO>(engine()->context, 1);
-			c->directional_light_layout = Platform::init_descriptor_layout<DirectionalLightUBO>(engine()->context, 1);
-			c->material_layout          = Platform::init_descriptor_layout<MaterialUBO>(engine()->context, 1);
+			c->camera_layout   = Platform::init_descriptor_layout(engine()->context,
+																  Vector({
+                                                                    Platform::ubo_binding<CameraUBO>(),
+                                                                    Platform::ubo_binding<DirectionalLightUBO>(),
+                                                                }),
+																  1);
+			c->material_layout = Platform::init_descriptor_layout(engine()->context, Vector({Platform::ubo_binding<MaterialUBO>()}), 1);
 			Platform::register_descriptor_layout(engine()->context, c->camera_layout);
-			Platform::register_descriptor_layout(engine()->context, c->directional_light_layout);
 			Platform::register_descriptor_layout(engine()->context, c->material_layout);
 
 			return c;
@@ -88,7 +91,7 @@ namespace Vultr
 				return;
 			}
 
-			Platform::update_descriptor_set(cmd, system->camera_layout, &camera_ubo, 0);
+			Platform::update_descriptor_set(cmd, system->camera_layout, &camera_ubo, 0, 0);
 			{
 				Transform transform{.rotation = Quat(0, 0, 0.180962935090065, 0.9834899306297302)};
 
@@ -100,7 +103,7 @@ namespace Vultr
 					.intensity = 20,
 					.exists    = true,
 				};
-				Platform::update_descriptor_set(cmd, system->directional_light_layout, &ubo, 0);
+				Platform::update_descriptor_set(cmd, system->camera_layout, &ubo, 0, 1);
 			}
 			{
 				MaterialUBO material_ubo{
@@ -109,14 +112,13 @@ namespace Vultr
 					.metallic          = 0,
 					.roughness         = 0,
 				};
-				Platform::update_descriptor_set(cmd, system->material_layout, &material_ubo, 0);
+				Platform::update_descriptor_set(cmd, system->material_layout, &material_ubo, 0, 0);
 			}
 			Platform::flush_descriptor_set_changes(cmd);
 
 			Platform::bind_pipeline(cmd, resource_system->pipeline);
 			Platform::bind_descriptor_set(cmd, resource_system->pipeline, system->camera_layout, 0, 0);
-			Platform::bind_descriptor_set(cmd, resource_system->pipeline, system->directional_light_layout, 1, 0);
-			Platform::bind_descriptor_set(cmd, resource_system->pipeline, system->material_layout, 2, 0);
+			Platform::bind_descriptor_set(cmd, resource_system->pipeline, system->material_layout, 1, 0);
 			for (auto [entity, transform, mesh] : get_entities<Transform, Mesh>())
 			{
 				auto hash         = Traits<Path>::hash(mesh.source.value_or({}));
@@ -149,7 +151,6 @@ namespace Vultr
 		void destroy(Component *c)
 		{
 			Platform::destroy_descriptor_layout(engine()->context, c->material_layout);
-			Platform::destroy_descriptor_layout(engine()->context, c->directional_light_layout);
 			Platform::destroy_descriptor_layout(engine()->context, c->camera_layout);
 			v_free(c);
 		}

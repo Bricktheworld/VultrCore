@@ -14,7 +14,26 @@ namespace Vultr
 		struct Bucket
 		{
 			T *storage() { return reinterpret_cast<T *>(m_storage); }
-			const T *storage() const { return reinterpret_cast<T *>(m_storage); }
+			const T *storage() const { return reinterpret_cast<const T *>(m_storage); }
+
+			Bucket() = default;
+			Bucket(const Bucket &other)
+			{
+				used    = other.used;
+				deleted = other.deleted;
+				end     = other.end;
+				if (used && !deleted && !end)
+					new (m_storage) T(*other.storage());
+			}
+
+			Bucket(Bucket &&other)
+			{
+				used    = other.used;
+				deleted = other.deleted;
+				end     = other.end;
+				if (used && !deleted && !end)
+					new (m_storage) T(move(*other.storage()));
+			}
 
 			bool used    = false;
 			bool deleted = false;
@@ -66,6 +85,24 @@ namespace Vultr
 
 		HashTable()          = default;
 		explicit HashTable(size_t capacity) : m_capacity(capacity) {}
+		HashTable(const HashTable &other)
+			: m_size(other.m_size), m_capacity(other.m_capacity), m_deleted_count(other.m_deleted_count), m_buckets(other.m_capacity == 0 ? nullptr : v_alloc<Bucket>(other.m_capacity + 1))
+		{
+			if (m_buckets != nullptr)
+				Utils::copy(m_buckets, other.m_buckets, m_capacity + 1);
+		}
+		HashTable(HashTable &&other) : m_size(other.m_size), m_capacity(other.m_capacity), m_deleted_count(other.m_deleted_count), m_buckets(other.m_capacity == 0 ? nullptr : v_alloc<Bucket>(other.m_capacity + 1))
+		{
+			if (m_buckets != nullptr)
+			{
+				Utils::move(m_buckets, other.m_buckets, m_capacity + 1);
+				v_free(other.m_buckets);
+			}
+			other.m_buckets       = nullptr;
+			other.m_size          = 0;
+			other.m_capacity      = 0;
+			other.m_deleted_count = 0;
+		}
 		~HashTable() { clear(); }
 
 		HashTableIterator begin()

@@ -7,10 +7,14 @@ namespace Vultr
 	{
 		struct DescriptorSetBuffer
 		{
+			struct MappedBuffer
+			{
+				Vulkan::GpuBuffer buffer{};
+				void *mapped = nullptr;
+			};
 			const Platform::DescriptorLayout *layout = nullptr;
 			VkDescriptorSet vk_set                   = nullptr;
-			Vulkan::GpuBuffer buffer{};
-			void *mapped = nullptr;
+			Hashmap<u32, MappedBuffer> binding_buffers{};
 			bool updated = false;
 		};
 
@@ -25,7 +29,7 @@ namespace Vultr
 	{
 		struct DescriptorLayout
 		{
-			size_t size                     = 0;
+			Vector<DescriptorSetBinding> bindings{};
 			u32 max_objects                 = 0;
 			VkDescriptorSetLayout vk_layout = nullptr;
 		};

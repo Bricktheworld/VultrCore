@@ -13,9 +13,8 @@ namespace Vultr
 	{
 		struct Component
 		{
-			Platform::DescriptorLayout *camera_layout            = nullptr;
-			Platform::DescriptorLayout *directional_light_layout = nullptr;
-			Platform::DescriptorLayout *material_layout          = nullptr;
+			Platform::DescriptorLayout *camera_layout   = nullptr;
+			Platform::DescriptorLayout *material_layout = nullptr;
 		};
 
 		Component *init();
