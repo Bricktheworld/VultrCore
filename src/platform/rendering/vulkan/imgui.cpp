@@ -69,22 +69,18 @@ namespace Vultr
 			return imgui_c;
 		}
 
-		void begin_frame(CmdBuffer *cmd, ImGuiContext *c)
+		void imgui_begin_frame(CmdBuffer *cmd, ImGuiContext *c)
 		{
 			ImGui_ImplVulkan_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 		}
 
-		void end_frame(CmdBuffer *cmd, ImGuiContext *c)
+		void imgui_end_frame(CmdBuffer *cmd, ImGuiContext *c)
 		{
 			ImGuiIO &io = ImGui::GetIO();
 			ImGui::Render();
-			//			cb.beginRenderPass({imguiRenderPass, imguiFramebuffers[swapchainCurrentImage], {{0, 0}, swapchainExtent}, 1, &clearValue}, vk::SubpassContents::eInline);
-			//			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cb);
-			//			cb.endRenderPass();
-			//			cb.end();
-			//			Vulkan::queue_cmd_buffer(Vulkan::get_swapchain(cmd->render_context), );
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd->cmd_buffer);
 		}
 
 		void destroy_imgui(RenderContext *c, ImGuiContext *imgui_c)

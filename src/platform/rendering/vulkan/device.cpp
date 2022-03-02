@@ -305,6 +305,21 @@ namespace Vultr
 
 		void wait_idle(Device *d) { vkDeviceWaitIdle(d->device); }
 
+		VkFormat get_supported_depth_format(Device *d)
+		{
+			VkFormat depth_formats[] = {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D16_UNORM};
+			for (auto format : depth_formats)
+			{
+				VkFormatProperties properties;
+				vkGetPhysicalDeviceFormatProperties(d->physical_device, format, &properties);
+				if (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+				{
+					return format;
+				}
+			}
+			THROW("No supported depth formats found!");
+		}
+
 		void destroy_device(Device *d)
 		{
 			vmaDestroyAllocator(d->allocator);

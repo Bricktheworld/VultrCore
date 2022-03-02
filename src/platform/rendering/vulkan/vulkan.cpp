@@ -8,6 +8,8 @@
 #include "upload_context.cpp"
 #include "index_buffer.cpp"
 #include "vertex_buffer.cpp"
+#include "texture.cpp"
+#include "framebuffer.cpp"
 #include "commands.cpp"
 #include "descriptor_set.cpp"
 #include "imgui.cpp"

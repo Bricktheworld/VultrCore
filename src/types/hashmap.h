@@ -60,6 +60,7 @@ namespace Vultr
 		template <typename U = K>
 		void set(const U &key, const V &value)
 		{
+
 			if constexpr (is_same<U, K>)
 			{
 				return m_table.set({static_cast<K>(key), move(value)});

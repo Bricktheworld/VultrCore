@@ -28,6 +28,7 @@ namespace Vultr
 		};
 
 		Device init_device(const Platform::Window *window, bool debug, PFN_vkDebugUtilsMessengerCallbackEXT debug_cb);
+		VkFormat get_supported_depth_format(Device *d);
 		void destroy_device(Device *d);
 
 		// void map_memory(Device *d, void *)

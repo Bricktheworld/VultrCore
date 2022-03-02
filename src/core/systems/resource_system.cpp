@@ -52,7 +52,7 @@ namespace Vultr
 		void update(Component *system) {}
 		void destroy(Component *c)
 		{
-			for (auto [hash, platform_mesh] : c->loaded_meshes)
+			for (auto &[hash, platform_mesh] : c->loaded_meshes)
 			{
 				Platform::destroy_mesh(c->upload_context, platform_mesh);
 			}

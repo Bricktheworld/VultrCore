@@ -44,15 +44,16 @@ namespace Vultr
 			auto signature = signature_from_components<Transform, Mesh>();
 			register_system(c, signature, entity_created, entity_destroyed);
 
-			c->camera_layout   = Platform::init_descriptor_layout(engine()->context,
-																  Vector({
-                                                                    Platform::ubo_binding<CameraUBO>(),
-                                                                    Platform::ubo_binding<DirectionalLightUBO>(),
-                                                                }),
-																  1);
-			c->material_layout = Platform::init_descriptor_layout(engine()->context, Vector({Platform::ubo_binding<MaterialUBO>()}), 1);
+			c->camera_layout   = Platform::init_descriptor_layout<Platform::UboBinding<CameraUBO>, Platform::UboBinding<DirectionalLightUBO>>(engine()->context, 1);
+			c->material_layout = Platform::init_descriptor_layout<Platform::UboBinding<MaterialUBO>>(engine()->context, 1);
 			Platform::register_descriptor_layout(engine()->context, c->camera_layout);
 			Platform::register_descriptor_layout(engine()->context, c->material_layout);
+
+			{
+				const auto attachment_descriptions = Vector<Platform::AttachmentDescription>({{.format = Platform::TextureFormat::RGBA8}});
+				auto *fb                           = Platform::init_framebuffer(engine()->context, attachment_descriptions);
+				Platform::destroy_framebuffer(engine()->context, fb);
+			}
 
 			return c;
 		}
@@ -92,25 +93,28 @@ namespace Vultr
 			}
 
 			Platform::update_descriptor_set(cmd, system->camera_layout, &camera_ubo, 0, 0);
+			bool update_light = false;
+			for (auto [light, transform_component, directional_light] : get_entities<Transform, DirectionalLight>())
 			{
-				Transform transform{.rotation = Quat(0, 0, 0.180962935090065, 0.9834899306297302)};
-
 				DirectionalLightUBO ubo{
 					.ambient   = Vec4(163, 226, 253, 1),
-					.diffuse   = Vec4(1),
-					.direction = Vec4(-up(transform), 0),
-					.specular  = 1,
-					.intensity = 20,
+					.diffuse   = Vec4(2000),
+					.direction = Vec4(forward(transform_component), 0),
+					.specular  = 1000,
+					.intensity = 2000,
 					.exists    = true,
 				};
 				Platform::update_descriptor_set(cmd, system->camera_layout, &ubo, 0, 1);
+				update_light = true;
+				break;
 			}
+			ASSERT(update_light, "No directional light found!");
 			{
 				MaterialUBO material_ubo{
 					.albedo            = Vec4(1),
-					.ambient_occlusion = 0,
-					.metallic          = 0,
-					.roughness         = 0,
+					.ambient_occlusion = 1,
+					.metallic          = 1,
+					.roughness         = 1,
 				};
 				Platform::update_descriptor_set(cmd, system->material_layout, &material_ubo, 0, 0);
 			}

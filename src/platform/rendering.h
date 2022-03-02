@@ -93,7 +93,56 @@ namespace Vultr
 			};
 		}
 
+		struct Texture;
+		struct TextureRef;
+
+		enum struct TextureFormat
+		{
+			RGB8,
+			RGB16,
+			RGBA8,
+			RGBA16,
+			SRGB8,
+			SRGBA8,
+			DEPTH,
+		};
+
+		Texture *init_texture(RenderContext *c, u32 width, u32 height, TextureFormat format);
+		void destroy_texture(RenderContext *c, Texture *texture);
+
+		struct RenderPassInfo
+		{
+		};
+
+		struct Subpass;
+		struct RenderPass;
+
 		struct Framebuffer;
+
+		enum struct LoadOp
+		{
+			DONT_CARE,
+			CLEAR,
+			LOAD,
+		};
+
+		enum struct StoreOp
+		{
+			DONT_CARE,
+			STORE,
+		};
+
+		struct AttachmentDescription
+		{
+			TextureFormat format = TextureFormat::RGBA8;
+
+			LoadOp load_op       = LoadOp::DONT_CARE;
+			StoreOp store_op     = StoreOp::STORE;
+		};
+
+		Framebuffer *init_framebuffer(RenderContext *c, const Vector<AttachmentDescription> &attachments, Option<u32> width = None, Option<u32> height = None);
+		void destroy_framebuffer(RenderContext *c, Framebuffer *framebuffer);
+
 		struct Shader;
 
 		Shader *init_shader();
@@ -107,7 +156,6 @@ namespace Vultr
 		ErrorOr<Shader *> try_load_shader(RenderContext *c, Buffer src, ShaderType type);
 		void destroy_shader(RenderContext *c, Shader *shader);
 
-		struct Texture;
 		struct VertexBuffer;
 		struct IndexBuffer;
 
@@ -180,16 +228,30 @@ namespace Vultr
 
 		struct DescriptorLayout;
 
-		template <typename T>
-		DescriptorSetBinding ubo_binding()
+		template <size_t size, DescriptorSetBindingType type>
+		struct BindingT
 		{
-			return {
-				.type = DescriptorSetBindingType::UNIFORM_BUFFER,
-				.size = sizeof(T),
-			};
-		}
+			static constexpr DescriptorSetBinding get_binding()
+			{
+				return {
+					.type = type,
+					.size = size,
+				};
+			}
+		};
+
+		template <typename T>
+		struct UboBinding : BindingT<sizeof(T), DescriptorSetBindingType::UNIFORM_BUFFER>
+		{
+		};
 
 		DescriptorLayout *init_descriptor_layout(RenderContext *c, const Vector<DescriptorSetBinding> &bindings, u32 max_objects);
+
+		template <typename... T>
+		DescriptorLayout *init_descriptor_layout(RenderContext *c, u32 max_objects)
+		{
+			return init_descriptor_layout(c, Vector<DescriptorSetBinding>({T::get_binding()...}), max_objects);
+		}
 		void destroy_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
 		void register_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
 
@@ -204,12 +266,6 @@ namespace Vultr
 		struct GraphicsPipeline;
 		GraphicsPipeline *init_pipeline(RenderContext *c, const GraphicsPipelineInfo &info);
 		void destroy_pipeline(RenderContext *c, GraphicsPipeline *pipeline);
-
-		struct RenderPassInfo
-		{
-		};
-
-		struct RenderPass;
 
 		struct CmdBuffer;
 
@@ -242,8 +298,8 @@ namespace Vultr
 
 		struct ImGuiContext;
 		ImGuiContext *init_imgui(const Window *window, UploadContext *upload_context);
-		void begin_frame(CmdBuffer *cmd, ImGuiContext *c);
-		void end_frame(CmdBuffer *cmd, ImGuiContext *c);
+		void imgui_begin_frame(CmdBuffer *cmd, ImGuiContext *c);
+		void imgui_end_frame(CmdBuffer *cmd, ImGuiContext *c);
 		void destroy_imgui(RenderContext *c, ImGuiContext *imgui_c);
 	} // namespace Platform
 } // namespace Vultr

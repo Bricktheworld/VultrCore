@@ -243,42 +243,6 @@ namespace Vultr
 			}
 		}
 
-		//		static void init_uniform_buffers(SwapChain *sc)
-		//		{
-		//			auto *d = &sc->device;
-		//			sc->uniform_buffers.resize(sc->images.size());
-		//
-		//			VkDeviceSize size = sizeof(UniformBufferObject);
-		//			for (size_t i = 0; i < sc->images.size(); i++)
-		//			{
-		//				sc->uniform_buffers[i] = alloc_buffer(d, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_SHARING_MODE_EXCLUSIVE);
-		//			}
-		//		}
-		//
-		//		static void init_descriptor_pool(SwapChain *sc)
-		//		{
-		//			auto *d = &sc->device;
-		//			VkDescriptorPoolSize pool_size{
-		//				.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		//				.descriptorCount = static_cast<u32>(sc->images.size()),
-		//			};
-		//
-		//			VkDescriptorPoolCreateInfo pool_info{
-		//				.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-		//				.maxSets       = static_cast<u32>(sc->images.size()),
-		//				.poolSizeCount = 1,
-		//				.pPoolSizes    = &pool_size,
-		//			};
-		//			VK_CHECK(vkCreateDescriptorPool(d->device, &pool_info, nullptr, &sc->descriptor_pool));
-		//		}
-		//		static void init_descriptor_set(SwapChain *sc)
-		//		{
-		//			for (auto &frame : sc->frames)
-		//			{
-		//				frame.global_buffer = alloc_buffer(get_device(sc), sizeof(Platform::CameraDescriptor), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-		//			}
-		//		}
-
 		SwapChain init_swapchain(const Device &device, const Platform::Window *window)
 		{
 			SwapChain sc{};
@@ -289,20 +253,12 @@ namespace Vultr
 			init_framebuffers(&sc);
 			init_frames(&sc);
 			init_concurrency(&sc);
-			//			init_uniform_buffers(&sc);
-			//			init_descriptor_pool(&sc);
 			return sc;
 		}
 
 		static void internal_destroy_swapchain(SwapChain *sc)
 		{
 			auto *d = &sc->device;
-
-			//			for (auto &uniform_buffer : sc->uniform_buffers)
-			//			{
-			//				free_buffer(d, &uniform_buffer);
-			//			}
-			//			vkDestroyDescriptorPool(d->device, sc->descriptor_pool, nullptr);
 
 			for (auto *framebuffer : sc->framebuffers)
 			{
@@ -370,8 +326,6 @@ namespace Vultr
 			init_image_views(sc);
 			init_render_pass(sc);
 			init_framebuffers(sc);
-			//			init_uniform_buffers(sc);
-			//			init_descriptor_pool(sc);
 		}
 
 		ErrorOr<Tuple<u32, Frame *, VkFramebuffer>> acquire_swapchain(SwapChain *sc)

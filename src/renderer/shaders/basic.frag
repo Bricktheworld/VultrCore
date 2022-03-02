@@ -76,7 +76,7 @@ void main()
 
     // Output luminance accumulation
     vec3 output_luminance = calc_directional_light(view_direction, normal, roughness, metallic, F0, albedo.rgb);
-    //    for (int i = 0; i < ub_Point_lights.count; i++)
+    //    for (int i = 0; i <        8.2.  SDP Parameters.......................................... 52ub_Point_lights.count; i++)
     //    {
     //        // Create a point light that we can use from the uniform buffer
     //        PointLight light = PointLight(ub_Point_lights.positions[i].xyz,
@@ -92,7 +92,7 @@ void main()
     //        output_luminance += calc_point_light(light, view_direction, normal, roughness, metallic, F0, albedo.rgb);//(kD * albedo.rgb / PI + specular) * radiance * cos_theta;
     //    }
 
-    vec3 ambient = vec3(0.03) * albedo.rgb * ao;
+    vec3 ambient = vec3(0.03) * albedo.rgb;
     vec3 result  = ambient + output_luminance;
 
     color     = vec4(result, albedo.a);
