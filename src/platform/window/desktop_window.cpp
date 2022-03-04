@@ -167,12 +167,20 @@ namespace Vultr::Platform
 	void lock_cursor(Window *window)
 	{
 		if (window->cursor_mode != GLFW_CURSOR_DISABLED)
+		{
 			glfwSetInputMode(window->glfw, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			window->cursor_mode    = GLFW_CURSOR_DISABLED;
+			window->last_mouse_pos = get_mouse_pos(window);
+		}
 	}
 	void unlock_cursor(Window *window)
 	{
 		if (window->cursor_mode != GLFW_CURSOR_NORMAL)
+		{
 			glfwSetInputMode(window->glfw, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			window->cursor_mode    = GLFW_CURSOR_NORMAL;
+			window->last_mouse_pos = get_mouse_pos(window);
+		}
 	}
 	Vec2 get_mouse_delta(Window *window)
 	{

@@ -35,6 +35,7 @@ namespace Vultr
 			Vulkan::Frame *frame          = nullptr;
 			VkCommandBuffer cmd_buffer    = nullptr;
 			RenderContext *render_context = nullptr;
+			VkFramebuffer out_framebuffer = nullptr;
 		};
 	} // namespace Platform
 

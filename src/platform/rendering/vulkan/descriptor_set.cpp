@@ -19,13 +19,14 @@ namespace Vultr
 		{
 			VkDescriptorPoolSize pool_sizes[] = {
 				{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, .descriptorCount = 1000},
+				{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1000},
 			};
 
 			VkDescriptorPoolCreateInfo info{
 				.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 				.flags         = 0,
 				.maxSets       = 10,
-				.poolSizeCount = 1,
+				.poolSizeCount = 2,
 				.pPoolSizes    = pool_sizes,
 			};
 			VkDescriptorPool pool = nullptr;
@@ -34,20 +35,24 @@ namespace Vultr
 		}
 		void destroy_descriptor_pool(Device *d, VkDescriptorPool descriptor_pool) { vkDestroyDescriptorPool(d->device, descriptor_pool, nullptr); }
 
-		DescriptorSetBuffer init_descriptor_set_buffer(Device *d, VkDescriptorPool pool, Platform::DescriptorLayout *layout)
+		DescriptorSet init_descriptor_set(Device *d, VkDescriptorPool pool, Platform::DescriptorLayout *layout)
 		{
-			DescriptorSetBuffer descriptor_buffer{.layout = layout};
+			DescriptorSet descriptor_set{.layout = layout};
 			u32 i = 0;
 			for (auto &binding : layout->bindings)
 			{
-				if (binding.type != Platform::DescriptorSetBindingType::UNIFORM_BUFFER)
-					continue;
-
-				auto padded_size = pad_size(d, binding.size);
-				auto buffer =
-					alloc_buffer(d, padded_size * layout->max_objects, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-				void *mapped = map_buffer(d, &buffer);
-				descriptor_buffer.binding_buffers.set(i, {.buffer = buffer, .mapped = mapped});
+				if (binding.type == Platform::DescriptorSetBindingType::UNIFORM_BUFFER)
+				{
+					auto padded_size = pad_size(d, binding.size);
+					auto buffer      = alloc_buffer(d, padded_size * layout->max_objects, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
+													VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+					void *mapped     = map_buffer(d, &buffer);
+					descriptor_set.binding_buffers.set(i, {.buffer = buffer, .mapped = mapped});
+				}
+				else if (binding.type == Platform::DescriptorSetBindingType::TEXTURE)
+				{
+					descriptor_set.binding_samplers.set(i, None);
+				}
 				i++;
 			}
 
@@ -59,11 +64,11 @@ namespace Vultr
 				.pNext              = nullptr,
 			};
 
-			VK_CHECK(vkAllocateDescriptorSets(d->device, &info, &descriptor_buffer.vk_set));
-			return descriptor_buffer;
+			VK_CHECK(vkAllocateDescriptorSets(d->device, &info, &descriptor_set.vk_set));
+			return descriptor_set;
 		}
 
-		void destroy_descriptor_set_buffer(Device *d, DescriptorSetBuffer *set_buffer)
+		void destroy_descriptor_set(Device *d, DescriptorSet *set_buffer)
 		{
 			for (auto [binding, binding_buffer] : set_buffer->binding_buffers)
 			{
@@ -71,6 +76,7 @@ namespace Vultr
 				free_buffer(d, &binding_buffer.buffer);
 			}
 			set_buffer->binding_buffers.clear();
+			set_buffer->binding_samplers.clear();
 		}
 
 	} // namespace Vulkan
@@ -93,7 +99,7 @@ namespace Vultr
 						descriptor_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 						break;
 					case DescriptorSetBindingType::TEXTURE:
-						descriptor_type = VK_DESCRIPTOR_TYPE_SAMPLER;
+						descriptor_type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 						break;
 				}
 
@@ -132,7 +138,7 @@ namespace Vultr
 			auto *d              = Vulkan::get_device(c);
 			auto *frame          = cmd->frame;
 
-			auto *descriptor_set = &frame->descriptor_buffers.get(layout);
+			auto *descriptor_set = &frame->descriptor_sets.get(layout);
 			auto *mapped_buffer  = &descriptor_set->binding_buffers.get(binding);
 
 			auto size            = layout->bindings[binding].size;
@@ -146,51 +152,85 @@ namespace Vultr
 			descriptor_set->updated = true;
 		}
 
+		void update_descriptor_set(CmdBuffer *cmd, DescriptorLayout *layout, Texture *texture, u32 binding)
+		{
+			auto *frame            = cmd->frame;
+
+			auto *descriptor_set   = &frame->descriptor_sets.get(layout);
+			auto *existing_texture = &descriptor_set->binding_samplers.get(binding);
+
+			if (existing_texture->has_value() && texture != nullptr && existing_texture->value() == *texture)
+				return;
+
+			*existing_texture       = *texture;
+			descriptor_set->updated = true;
+		}
+
 		void flush_descriptor_set_changes(CmdBuffer *cmd)
 		{
 			auto *c     = cmd->render_context;
 			auto *frame = cmd->frame;
 			Vector<VkWriteDescriptorSet> write_sets{};
-			Vector<VkDescriptorBufferInfo> buffer_infos{};
-			for (auto [layout, descriptor_set] : frame->descriptor_buffers)
+			for (auto &[layout, descriptor_set] : frame->descriptor_sets)
 			{
-				if (descriptor_set.updated)
+				if (!descriptor_set.updated)
+					continue;
+
+				descriptor_set.updated = false;
+				for (auto [binding, binding_buffer] : descriptor_set.binding_buffers)
 				{
-					for (auto [binding, binding_buffer] : descriptor_set.binding_buffers)
-					{
-						auto &info = buffer_infos.push_back({
-							.buffer = binding_buffer.buffer.buffer,
-							.offset = 0,
-							.range  = pad_size(Vulkan::get_device(c), layout->bindings[binding].size) * layout->max_objects,
-						});
-						write_sets.push_back({
-							.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-							.pNext           = nullptr,
-							.dstSet          = descriptor_set.vk_set,
-							.dstBinding      = binding,
-							.descriptorCount = 1,
-							.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-							.pBufferInfo     = &info,
-						});
-					}
+					VkDescriptorBufferInfo info{
+						.buffer = binding_buffer.buffer.buffer,
+						.offset = 0,
+						.range  = pad_size(Vulkan::get_device(c), layout->bindings[binding].size) * layout->max_objects,
+					};
+					write_sets.push_back({
+						.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+						.pNext           = nullptr,
+						.dstSet          = descriptor_set.vk_set,
+						.dstBinding      = binding,
+						.descriptorCount = 1,
+						.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+						.pBufferInfo     = &info,
+					});
+				}
+
+				for (auto [binding, binding_sampler] : descriptor_set.binding_samplers)
+				{
+					if (!binding_sampler.has_value())
+						continue;
+
+					VkDescriptorImageInfo info{
+						.sampler     = binding_sampler.value().sampler,
+						.imageView   = binding_sampler.value().image_view,
+						.imageLayout = binding_sampler.value().layout,
+					};
+					write_sets.push_back({
+						.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+						.pNext           = nullptr,
+						.dstSet          = descriptor_set.vk_set,
+						.dstBinding      = binding,
+						.descriptorCount = 1,
+						.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+						.pImageInfo      = &info,
+					});
 				}
 			}
-			vkUpdateDescriptorSets(Vulkan::get_device(c)->device, write_sets.size(), &write_sets[0], 0, nullptr);
+			vkUpdateDescriptorSets(Vulkan::get_device(c)->device, write_sets.size(), write_sets.empty() ? nullptr : &write_sets[0], 0, nullptr);
 		}
 
 		void bind_descriptor_set(CmdBuffer *cmd, GraphicsPipeline *pipeline, DescriptorLayout *layout, u32 set, u32 index)
 		{
 			auto *c              = cmd->render_context;
 			auto *frame          = cmd->frame;
-			auto *descriptor_set = &frame->descriptor_buffers.get(layout);
-			u32 offsets[layout->bindings.size()];
-			u32 i = 0;
+			auto *descriptor_set = &frame->descriptor_sets.get(layout);
+			Vector<u32> offsets{};
 			for (auto &binding : layout->bindings)
 			{
-				offsets[i] = pad_size(Vulkan::get_device(c), binding.size) * index;
-				i++;
+				if (binding.type == DescriptorSetBindingType::UNIFORM_BUFFER)
+					offsets.push_back(pad_size(Vulkan::get_device(c), binding.size) * index);
 			}
-			vkCmdBindDescriptorSets(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_layout, set, 1, &descriptor_set->vk_set, layout->bindings.size(), offsets);
+			vkCmdBindDescriptorSets(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_layout, set, 1, &descriptor_set->vk_set, offsets.size(), offsets.empty() ? nullptr : &offsets[0]);
 		}
 	} // namespace Platform
 } // namespace Vultr

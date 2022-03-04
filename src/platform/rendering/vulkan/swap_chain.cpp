@@ -30,12 +30,16 @@ namespace Vultr
 		{
 			for (const auto &format : available_formats)
 			{
-				if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+				if (format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM)
 				{
-					return format;
+					if (format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+					{
+						return format;
+					}
 				}
 			}
 
+			THROW("No good swap chain format found!");
 			return available_formats[0];
 		}
 
@@ -289,11 +293,11 @@ namespace Vultr
 			for (u32 i = 0; i < sc->images.size(); i++)
 			{
 				auto *frame = &sc->frames[i];
-				for (auto [layout, descriptor_set] : frame->descriptor_buffers)
+				for (auto [layout, descriptor_set] : frame->descriptor_sets)
 				{
-					destroy_descriptor_set_buffer(d, &descriptor_set);
+					destroy_descriptor_set(d, &descriptor_set);
 				}
-				frame->descriptor_buffers.clear();
+				frame->descriptor_sets.clear();
 
 				destroy_descriptor_pool(d, frame->descriptor_pool);
 				destroy_cmd_pool(d, &frame->cmd_pool);
@@ -431,9 +435,9 @@ namespace Vultr
 			auto *sc = Vulkan::get_swapchain(c);
 			for (auto &frame : sc->frames)
 			{
-				ASSERT(!frame.descriptor_buffers.contains(layout), "Already bound descriptor layout!");
-				auto descriptor_buffer = Vulkan::init_descriptor_set_buffer(Vulkan::get_device(c), frame.descriptor_pool, layout);
-				frame.descriptor_buffers.set(layout, descriptor_buffer);
+				ASSERT(!frame.descriptor_sets.contains(layout), "Already bound descriptor layout!");
+				auto descriptor_buffer = Vulkan::init_descriptor_set(Vulkan::get_device(c), frame.descriptor_pool, layout);
+				frame.descriptor_sets.set(layout, descriptor_buffer);
 			}
 		}
 	} // namespace Platform

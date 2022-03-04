@@ -16,7 +16,10 @@ namespace Vultr
 
 			VkFramebuffer vk_framebuffer = nullptr;
 			VkFramebufferCreateInfo vk_fb_info{};
-			Vector<VkImageView> vk_image_views{};
 		};
 	} // namespace Platform
+	namespace Vulkan
+	{
+		bool has_depth(Platform::Framebuffer *framebuffer);
+	}
 } // namespace Vultr

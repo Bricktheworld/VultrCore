@@ -20,6 +20,7 @@ namespace Vultr
 
 			auto *buffer          = v_alloc<VertexBuffer>();
 			buffer->vertex_buffer = vertex_buffer;
+
 			return buffer;
 		}
 

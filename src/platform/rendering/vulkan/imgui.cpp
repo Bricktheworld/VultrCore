@@ -43,6 +43,7 @@ namespace Vultr
 			VK_CHECK(vkCreateDescriptorPool(d->device, &pool_info, nullptr, &imgui_c->descriptor_pool));
 
 			ImGui::CreateContext();
+			ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 			auto *glfw = static_cast<GLFWwindow *>(Platform::get_window_implementation(window));
 			ImGui_ImplGlfw_InitForVulkan(glfw, true);
@@ -56,7 +57,6 @@ namespace Vultr
 				.MinImageCount  = 3,
 				.ImageCount     = 3,
 				.MSAASamples    = VK_SAMPLE_COUNT_1_BIT,
-
 			};
 			ImGui_ImplVulkan_Init(&init_info, Vulkan::get_swapchain(c)->render_pass);
 			auto cmd = Vulkan::begin_cmd_buffer(d, &upload_context->cmd_pool);
@@ -80,6 +80,11 @@ namespace Vultr
 		{
 			ImGuiIO &io = ImGui::GetIO();
 			ImGui::Render();
+			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+			{
+				ImGui::UpdatePlatformWindows();
+				ImGui::RenderPlatformWindowsDefault();
+			}
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd->cmd_buffer);
 		}
 
@@ -90,6 +95,14 @@ namespace Vultr
 			ImGui::DestroyContext();
 			vkDestroyDescriptorPool(Vulkan::get_device(c)->device, imgui_c->descriptor_pool, nullptr);
 			v_free(imgui_c);
+		}
+
+		ImTextureID imgui_get_texture_id(Texture *texture)
+		{
+			if (texture->cached_texture_id == nullptr)
+				texture->cached_texture_id = ImGui_ImplVulkan_AddTexture(texture->sampler, texture->image_view, texture->layout);
+
+			return texture->cached_texture_id;
 		}
 	} // namespace Platform
 } // namespace Vultr

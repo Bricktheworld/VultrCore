@@ -1,4 +1,5 @@
 #include "pipeline.h"
+#include "framebuffer.h"
 
 namespace Vultr
 {
@@ -45,12 +46,11 @@ namespace Vultr
 			}
 		}
 
-		GraphicsPipeline *init_pipeline(RenderContext *c, const GraphicsPipelineInfo &info)
+		static GraphicsPipeline *init_vk_pipeline(RenderContext *c, const GraphicsPipelineInfo &info, VkRenderPass render_pass, bool has_depth)
 		{
 			using namespace Vulkan;
 			ASSERT(info.frag->type == ShaderType::FRAG && info.vert->type == ShaderType::VERT, "Incorrect shaders provided");
 
-			auto *sc                                 = Vulkan::get_swapchain(c);
 			auto *d                                  = Vulkan::get_device(c);
 			auto *pipeline                           = v_alloc<GraphicsPipeline>();
 			pipeline->layout                         = info;
@@ -183,6 +183,14 @@ namespace Vultr
 
 			VK_CHECK(vkCreatePipelineLayout(d->device, &pipeline_layout_info, nullptr, &pipeline->vk_layout));
 
+			VkPipelineDepthStencilStateCreateInfo depth_stencil_info{
+				.sType             = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+				.depthTestEnable   = VK_TRUE,
+				.depthWriteEnable  = VK_TRUE,
+				.depthCompareOp    = VK_COMPARE_OP_LESS,
+				.stencilTestEnable = VK_FALSE,
+			};
+
 			VkGraphicsPipelineCreateInfo pipeline_info{
 				.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 				.stageCount          = 2,
@@ -192,11 +200,11 @@ namespace Vultr
 				.pViewportState      = &viewport_state,
 				.pRasterizationState = &rasterizer,
 				.pMultisampleState   = &multisampling,
-				.pDepthStencilState  = nullptr,
+				.pDepthStencilState  = has_depth ? &depth_stencil_info : nullptr,
 				.pColorBlendState    = &color_blending,
 				.pDynamicState       = &dynamic_state,
 				.layout              = pipeline->vk_layout,
-				.renderPass          = sc->render_pass,
+				.renderPass          = render_pass,
 				.subpass             = 0,
 				.basePipelineHandle  = VK_NULL_HANDLE,
 				.basePipelineIndex   = -1,
@@ -205,6 +213,10 @@ namespace Vultr
 			VK_CHECK(vkCreateGraphicsPipelines(d->device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline->vk_pipeline));
 			return pipeline;
 		}
+
+		GraphicsPipeline *init_pipeline(RenderContext *c, const GraphicsPipelineInfo &info) { return init_vk_pipeline(c, info, Vulkan::get_swapchain(c)->render_pass, false); }
+
+		GraphicsPipeline *init_pipeline(RenderContext *c, Framebuffer *framebuffer, const GraphicsPipelineInfo &info) { return init_vk_pipeline(c, info, framebuffer->vk_renderpass, Vulkan::has_depth(framebuffer)); }
 
 		void destroy_pipeline(RenderContext *c, GraphicsPipeline *pipeline)
 		{
@@ -222,4 +234,5 @@ namespace Vultr
 			vkCmdBindPipeline(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_pipeline);
 		}
 	} // namespace Platform
+
 } // namespace Vultr

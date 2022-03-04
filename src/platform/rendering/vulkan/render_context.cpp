@@ -2,6 +2,8 @@
 #include "render_context.h"
 #include "../../rendering.h"
 #include "gpu_buffer.h"
+#include "framebuffer.h"
+#include "texture.h"
 
 namespace Vultr
 {
@@ -55,47 +57,14 @@ namespace Vultr
 				//				Vulkan::update_uniform_buffer(c, image_index, dt);
 
 				Vulkan::recycle_cmd_pool(Vulkan::get_device(c), cmd_pool);
-				auto cmd = Vulkan::begin_cmd_buffer(Vulkan::get_device(c), cmd_pool);
+				auto cmd             = Vulkan::begin_cmd_buffer(Vulkan::get_device(c), cmd_pool);
 
-				VkViewport viewport{
-					.x        = 0,
-					.y        = 0,
-					.width    = static_cast<f32>(c->swap_chain.extent.width),
-					.height   = static_cast<f32>(c->swap_chain.extent.height),
-					.minDepth = 0.0f,
-					.maxDepth = 1.0f,
-				};
-
-				vkCmdSetViewport(cmd, 0, 1, &viewport);
-
-				VkRect2D scissor{
-					.offset = {.x = 0, .y = 0},
-					.extent = c->swap_chain.extent,
-				};
-				vkCmdSetScissor(cmd, 0, 1, &scissor);
-
-				VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-
-				VkRenderPassBeginInfo render_pass_info{
-					.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass  = c->swap_chain.render_pass,
-					.framebuffer = framebuffer,
-					.renderArea =
-						{
-							.offset = {0, 0},
-							.extent = c->swap_chain.extent,
-						},
-					.clearValueCount = 1,
-					.pClearValues    = &clear_color,
-				};
-
-				vkCmdBeginRenderPass(cmd, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-
-				auto *buf           = v_alloc<CmdBuffer>();
-				buf->render_context = c;
-				buf->cmd_buffer     = cmd;
-				buf->frame          = frame;
-				buf->image_index    = image_index;
+				auto *buf            = v_alloc<CmdBuffer>();
+				buf->render_context  = c;
+				buf->cmd_buffer      = cmd;
+				buf->frame           = frame;
+				buf->image_index     = image_index;
+				buf->out_framebuffer = framebuffer;
 
 				return buf;
 			}
@@ -106,10 +75,72 @@ namespace Vultr
 			}
 		}
 
+		static void begin_vk_framebuffer(VkCommandBuffer cmd, VkRenderPass render_pass, VkFramebuffer framebuffer, u32 width, u32 height, const Vector<VkClearValue> &clear_colors)
+		{
+			VkViewport viewport{
+				.x        = 0,
+				.y        = 0,
+				.width    = static_cast<f32>(width),
+				.height   = static_cast<f32>(height),
+				.minDepth = 0.0f,
+				.maxDepth = 1.0f,
+			};
+
+			vkCmdSetViewport(cmd, 0, 1, &viewport);
+			VkExtent2D extent = {width, height};
+
+			VkRect2D scissor{
+				.offset = {.x = 0, .y = 0},
+				.extent = extent,
+			};
+
+			vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+			VkRenderPassBeginInfo render_pass_info{
+				.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				.renderPass  = render_pass,
+				.framebuffer = framebuffer,
+				.renderArea =
+					{
+						.offset = {0, 0},
+						.extent = extent,
+					},
+				.clearValueCount = static_cast<u32>(clear_colors.size()),
+				.pClearValues    = &clear_colors[0],
+			};
+
+			vkCmdBeginRenderPass(cmd, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+		}
+
+		void begin_window_framebuffer(CmdBuffer *cmd, Vec4 clear_color)
+		{
+			auto *sc               = Vulkan::get_swapchain(cmd->render_context);
+			const auto clear_value = VkClearValue{.color = {.float32 = {clear_color.x, clear_color.y, clear_color.z, clear_color.w}}};
+			begin_vk_framebuffer(cmd->cmd_buffer, sc->render_pass, cmd->out_framebuffer, sc->extent.width, sc->extent.height, Vector({clear_value}));
+		}
+
+		void begin_framebuffer(CmdBuffer *cmd, Framebuffer *framebuffer, Vec4 clear_color)
+		{
+			Vector<VkClearValue> clear_colors{};
+			for (auto *image : framebuffer->attachments)
+			{
+				if (image->format == TextureFormat::DEPTH)
+				{
+					clear_colors.push_back(VkClearValue{.depthStencil = {1.0f, 0}});
+				}
+				else
+				{
+					clear_colors.push_back(VkClearValue{.color = {.float32 = {clear_color.x, clear_color.y, clear_color.z, clear_color.w}}});
+				}
+			}
+
+			begin_vk_framebuffer(cmd->cmd_buffer, framebuffer->vk_renderpass, framebuffer->vk_framebuffer, framebuffer->width, framebuffer->height, clear_colors);
+		}
+		void end_framebuffer(CmdBuffer *cmd) { vkCmdEndRenderPass(cmd->cmd_buffer); }
+
 		void end_cmd_buffer(CmdBuffer *cmd)
 		{
 			auto *c = cmd->render_context;
-			vkCmdEndRenderPass(cmd->cmd_buffer);
 			Vulkan::end_cmd_buffer(cmd->cmd_buffer, &cmd->frame->cmd_pool);
 			Vulkan::submit_swapchain(Vulkan::get_swapchain(c), cmd->image_index, 1, &cmd->cmd_buffer);
 			v_free(cmd);

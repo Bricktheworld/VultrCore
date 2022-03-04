@@ -36,14 +36,15 @@ namespace Vultr
 			auto *fb   = v_alloc<Framebuffer>();
 			fb->width  = width.value_or(sc->extent.width);
 			fb->height = height.value_or(sc->extent.height);
+			printf("Creating framebuffer with width %u and height %u\n", fb->width, fb->height);
 
 			VkAttachmentDescription attachment_descriptions[attachments.size()];
 			Vector<VkAttachmentReference> color_attachments{};
 			VkAttachmentReference depth_attachment{VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+			Vector<VkImageView> image_views{};
 
 			for (u32 i = 0; i < attachments.size(); i++)
 			{
-
 				if (attachments[i].format != TextureFormat::DEPTH)
 				{
 					color_attachments.push_back({i, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
@@ -55,7 +56,7 @@ namespace Vultr
 				}
 
 				fb->attachments.push_back(init_texture(c, fb->width, fb->height, attachments[i].format));
-				fb->vk_image_views.push_back(Vulkan::get_image_view(d, fb->attachments[i]));
+				image_views.push_back(fb->attachments[i]->image_view);
 
 				attachment_descriptions[i] = VkAttachmentDescription{
 					.format         = fb->attachments[i]->image_info.format,
@@ -72,24 +73,22 @@ namespace Vultr
 
 			// TODO(Brandon): Figure out what the fuck these are supposed to do.
 			VkSubpassDependency subpass_dependencies[2] = {{
-															   .srcSubpass    = VK_SUBPASS_EXTERNAL,
-															   .dstSubpass    = 0,
-															   .srcStageMask  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-															   .dstStageMask  = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-															   .srcAccessMask = 0,
-															   .dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-																				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-															   .dependencyFlags = 0,
+															   .srcSubpass      = VK_SUBPASS_EXTERNAL,
+															   .dstSubpass      = 0,
+															   .srcStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+															   .dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+															   .srcAccessMask   = VK_ACCESS_SHADER_READ_BIT,
+															   .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+															   .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
 														   },
 														   {
-															   .srcSubpass    = 0,
-															   .dstSubpass    = VK_SUBPASS_EXTERNAL,
-															   .srcStageMask  = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-															   .dstStageMask  = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-															   .srcAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-																				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-															   .dstAccessMask   = 0,
-															   .dependencyFlags = 0,
+															   .srcSubpass      = 0,
+															   .dstSubpass      = VK_SUBPASS_EXTERNAL,
+															   .srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+															   .dstStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+															   .srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+															   .dstAccessMask   = VK_ACCESS_SHADER_READ_BIT,
+															   .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
 														   }}; // namespace Platform
 
 			VkSubpassDescription subpass_description    = {
@@ -115,8 +114,8 @@ namespace Vultr
 			fb->vk_fb_info = {
 				.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 				.renderPass      = fb->vk_renderpass,
-				.attachmentCount = static_cast<u32>(fb->vk_image_views.size()),
-				.pAttachments    = &fb->vk_image_views[0],
+				.attachmentCount = static_cast<u32>(image_views.size()),
+				.pAttachments    = &image_views[0],
 				.width           = fb->width,
 				.height          = fb->height,
 				.layers          = 1,
@@ -132,11 +131,6 @@ namespace Vultr
 			vkDestroyFramebuffer(d->device, framebuffer->vk_framebuffer, nullptr);
 			vkDestroyRenderPass(d->device, framebuffer->vk_renderpass, nullptr);
 
-			for (auto image_view : framebuffer->vk_image_views)
-			{
-				Vulkan::destroy_image_view(d, image_view);
-			}
-
 			for (auto *texture : framebuffer->attachments)
 			{
 				destroy_texture(c, texture);
@@ -144,5 +138,27 @@ namespace Vultr
 
 			v_free(framebuffer);
 		}
+
+		Texture *get_attachment_texture(Framebuffer *framebuffer, u32 index)
+		{
+			ASSERT(index < framebuffer->attachments.size(), "Cannot get texture for attachment %u with only %zu attachments", index, framebuffer->attachments.size());
+			return framebuffer->attachments[index];
+		}
+
+		u32 get_width(Framebuffer *framebuffer) { return framebuffer->width; }
+		u32 get_height(Framebuffer *framebuffer) { return framebuffer->height; }
 	} // namespace Platform
+
+	namespace Vulkan
+	{
+		bool has_depth(Platform::Framebuffer *framebuffer)
+		{
+			for (auto *texture : framebuffer->attachments)
+			{
+				if (texture->format == Platform::TextureFormat::DEPTH)
+					return true;
+			}
+			return false;
+		}
+	} // namespace Vulkan
 } // namespace Vultr

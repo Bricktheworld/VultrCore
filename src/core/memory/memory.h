@@ -96,7 +96,9 @@ requires(!Vultr::is_same<T, void>) T *v_alloc_safe(Allocator *allocator, size_t 
 	if (buf == nullptr)
 		return nullptr;
 
-	return new (buf) T();
+	for (size_t i = 0; i < count; i++)
+		new (buf + i) T();
+	return buf;
 }
 
 /**

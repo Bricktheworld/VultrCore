@@ -24,36 +24,11 @@ namespace Vultr
 					return Vulkan::get_supported_depth_format(d);
 			}
 		}
-
-		VkImageView get_image_view(Device *d, Platform::Texture *texture)
-		{
-			VkImageViewCreateInfo info{
-				.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-				.format   = texture->image_info.format,
-				.viewType = VK_IMAGE_VIEW_TYPE_2D,
-				.subresourceRange =
-					{
-						.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-						.baseMipLevel   = 0,
-						.levelCount     = 1,
-						.baseArrayLayer = 0,
-						.layerCount     = 1,
-					},
-				.image = texture->image,
-
-			};
-			VkImageView view;
-			VK_CHECK(vkCreateImageView(d->device, &info, nullptr, &view));
-			return view;
-		}
-
-		void destroy_image_view(Device *d, VkImageView view) { vkDestroyImageView(d->device, view, nullptr); }
 	} // namespace Vulkan
 	namespace Platform
 	{
-		Texture *init_texture(RenderContext *c, u32 width, u32 height, TextureFormat format)
+		static Texture *init_texture(Vulkan::Device *d, u32 width, u32 height, TextureFormat format)
 		{
-			auto *d         = Vulkan::get_device(c);
 			auto *texture   = v_alloc<Texture>();
 
 			texture->width  = width;
@@ -91,16 +66,138 @@ namespace Vultr
 
 			VK_CHECK(vmaCreateImage(d->allocator, &texture->image_info, &alloc_info, &texture->image, &texture->allocation, &texture->alloc_info));
 
+			texture->sampler_info = {
+				.sType         = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+				.magFilter     = VK_FILTER_LINEAR,
+				.minFilter     = VK_FILTER_LINEAR,
+				.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+				.addressModeU  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				.addressModeV  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				.addressModeW  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				.mipLodBias    = 0.0f,
+				.maxAnisotropy = 1.0f,
+				.minLod        = 0.0f,
+				.maxLod        = 0.0f,
+				.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+			};
+
+			VK_CHECK(vkCreateSampler(d->device, &texture->sampler_info, nullptr, &texture->sampler));
+
+			texture->image_view_info = {
+				.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				.format   = texture->image_info.format,
+				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.subresourceRange =
+					{
+						.aspectMask     = texture->format != Platform::TextureFormat::DEPTH ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT,
+						.baseMipLevel   = 0,
+						.levelCount     = 1,
+						.baseArrayLayer = 0,
+						.layerCount     = 1,
+					},
+				.image = texture->image,
+
+			};
+
+			texture->layout = VK_IMAGE_LAYOUT_GENERAL;
+			VK_CHECK(vkCreateImageView(d->device, &texture->image_view_info, nullptr, &texture->image_view));
+
+			texture->cached_texture_id = nullptr;
+
 			return texture;
 		}
 
-		void destroy_texture(RenderContext *c, Texture *texture)
+		Texture *init_texture(RenderContext *c, u32 width, u32 height, TextureFormat format) { return init_texture(Vulkan::get_device(c), width, height, format); }
+		Texture *init_texture(UploadContext *c, u32 width, u32 height, TextureFormat format) { return init_texture(Vulkan::get_device(c), width, height, format); }
+
+		void fill_texture(UploadContext *c, Texture *texture, byte *data)
+		{
+			auto *d             = Vulkan::get_device(c);
+
+			auto staging_buffer = alloc_buffer(d, texture->width * texture->height * 4, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+			fill_buffer(d, &staging_buffer, data, texture->width * texture->height * 4);
+
+			VkImageSubresourceRange range{
+				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel   = 0,
+				.levelCount     = 1,
+				.baseArrayLayer = 0,
+				.layerCount     = 1,
+			};
+
+			VkImageMemoryBarrier barrier_to_transfer = {
+				.sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.oldLayout        = VK_IMAGE_LAYOUT_UNDEFINED,
+				.newLayout        = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				.image            = texture->image,
+				.subresourceRange = range,
+				.srcAccessMask    = 0,
+				.dstAccessMask    = VK_ACCESS_TRANSFER_WRITE_BIT,
+			};
+
+			auto cmd = begin_cmd_buffer(d, &c->cmd_pool);
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_to_transfer);
+
+			VkBufferImageCopy copy = {
+				.bufferOffset      = 0,
+				.bufferRowLength   = 0,
+				.bufferImageHeight = 0,
+				.imageSubresource =
+					{
+						.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+						.mipLevel       = 0,
+						.baseArrayLayer = 0,
+						.layerCount     = 1,
+					},
+				.imageExtent = texture->image_info.extent,
+			};
+
+			vkCmdCopyBufferToImage(cmd, staging_buffer.buffer, texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+
+			VkImageMemoryBarrier barrier_to_readable{
+				.sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.oldLayout        = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				.newLayout        = texture->layout,
+				.image            = texture->image,
+				.subresourceRange = range,
+				.srcAccessMask    = VK_ACCESS_TRANSFER_WRITE_BIT,
+				.dstAccessMask    = VK_ACCESS_SHADER_READ_BIT,
+			};
+
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_to_readable);
+
+			end_cmd_buffer(cmd, &c->cmd_pool);
+
+			VkSubmitInfo submit_info{
+				.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				.commandBufferCount = 1,
+				.pCommandBuffers    = &cmd,
+			};
+
+			vkResetFences(d->device, 1, &c->cmd_pool.fence);
+			vkQueueSubmit(d->graphics_queue, 1, &submit_info, c->cmd_pool.fence);
+
+			// TODO(Brandon): Maybe don't wait here, and instead have a fence.
+			vkWaitForFences(d->device, 1, &c->cmd_pool.fence, VK_TRUE, UINT64_MAX);
+
+			Vulkan::free_buffer(d, &staging_buffer);
+		}
+
+		u32 get_width(Texture *texture) { return texture->width; }
+		u32 get_height(Texture *texture) { return texture->height; }
+
+		static void destroy_texture(Vulkan::Device *d, Texture *texture)
 		{
 			ASSERT(texture != nullptr, "Cannot destroy invalid texture!");
-			auto *d = Vulkan::get_device(c);
+			vkDestroyImageView(d->device, texture->image_view, nullptr);
+			vkDestroySampler(d->device, texture->sampler, nullptr);
 			vmaDestroyImage(d->allocator, texture->image, texture->allocation);
 			*texture = {};
 			v_free(texture);
 		}
+
+		void destroy_texture(RenderContext *c, Texture *texture) { destroy_texture(Vulkan::get_device(c), texture); }
+		void destroy_texture(UploadContext *c, Texture *texture) { destroy_texture(Vulkan::get_device(c), texture); }
 	} // namespace Platform
 } // namespace Vultr

@@ -1,5 +1,4 @@
 #include "resource_system.h"
-#include "render_system.h"
 #include <vultr.h>
 #include <filesystem/filestream.h>
 
@@ -8,32 +7,13 @@ namespace Vultr
 	namespace ResourceSystem
 	{
 		static Component *component(void *component) { return static_cast<Component *>(component); }
-		Component *init(RenderSystem::Component *render_system, const Path &resource_dir, const Path &build_path)
+		Component *init(const Path &resource_dir)
 		{
 			auto *c           = v_alloc<Component>();
 			c->upload_context = Platform::init_upload_context(engine()->context);
 			c->resource_dir   = resource_dir;
 
-			Buffer buf;
-			fread_all(build_path / "shaders/basic_vert.spv", &buf);
-			CHECK_UNWRAP(auto *example_vert, Platform::try_load_shader(engine()->context, buf, Platform::ShaderType::VERT));
-
-			buf.clear();
-			fread_all(build_path / "shaders/basic_frag.spv", &buf);
-			CHECK_UNWRAP(auto *example_frag, Platform::try_load_shader(engine()->context, buf, Platform::ShaderType::FRAG));
-
-			Platform::GraphicsPipelineInfo info{
-				.vert               = example_vert,
-				.frag               = example_frag,
-				.descriptor_layouts = Vector({render_system->camera_layout, render_system->material_layout}),
-			};
-
-			c->pipeline = Platform::init_pipeline(engine()->context, info);
-
-			Platform::destroy_shader(engine()->context, example_vert);
-			Platform::destroy_shader(engine()->context, example_frag);
-
-			auto signature = signature_from_components<Mesh>();
+			auto signature    = signature_from_components<Mesh>();
 			register_system(c, signature, entity_created, entity_destroyed);
 			return c;
 		}
@@ -56,7 +36,6 @@ namespace Vultr
 			{
 				Platform::destroy_mesh(c->upload_context, platform_mesh);
 			}
-			Platform::destroy_pipeline(engine()->context, c->pipeline);
 			Platform::destroy_upload_context(c->upload_context);
 			v_free(c);
 		}

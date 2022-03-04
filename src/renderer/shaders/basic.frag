@@ -95,7 +95,8 @@ void main()
     vec3 ambient = vec3(0.03) * albedo.rgb;
     vec3 result  = ambient + output_luminance;
 
-    color     = vec4(result, albedo.a);
+    //    color     = vec4(result, albedo.a);
+    color = vec4(1);
 }
 
 vec3 calc_directional_light(vec3 view_direction, vec3 normal, float roughness, float metallic, vec3 F0, vec3 albedo)

@@ -37,7 +37,7 @@ namespace Vultr
 		};
 
 		static Component *component(void *component) { return static_cast<Component *>(component); }
-		Component *init()
+		Component *init(const Path &build_path)
 		{
 			auto *c        = v_alloc<Component>();
 
@@ -49,11 +49,27 @@ namespace Vultr
 			Platform::register_descriptor_layout(engine()->context, c->camera_layout);
 			Platform::register_descriptor_layout(engine()->context, c->material_layout);
 
-			{
-				const auto attachment_descriptions = Vector<Platform::AttachmentDescription>({{.format = Platform::TextureFormat::RGBA8}});
-				auto *fb                           = Platform::init_framebuffer(engine()->context, attachment_descriptions);
-				Platform::destroy_framebuffer(engine()->context, fb);
-			}
+			c->output_framebuffer = nullptr;
+			reinitialize(c);
+
+			Buffer buf;
+			fread_all(build_path / "shaders/basic_vert.spv", &buf);
+			CHECK_UNWRAP(auto *example_vert, Platform::try_load_shader(engine()->context, buf, Platform::ShaderType::VERT));
+
+			buf.clear();
+			fread_all(build_path / "shaders/basic_frag.spv", &buf);
+			CHECK_UNWRAP(auto *example_frag, Platform::try_load_shader(engine()->context, buf, Platform::ShaderType::FRAG));
+
+			Platform::GraphicsPipelineInfo info{
+				.vert               = example_vert,
+				.frag               = example_frag,
+				.descriptor_layouts = Vector({c->camera_layout, c->material_layout}),
+			};
+
+			c->pipeline = Platform::init_pipeline(engine()->context, c->output_framebuffer, info);
+
+			Platform::destroy_shader(engine()->context, example_vert);
+			Platform::destroy_shader(engine()->context, example_frag);
 
 			return c;
 		}
@@ -120,9 +136,9 @@ namespace Vultr
 			}
 			Platform::flush_descriptor_set_changes(cmd);
 
-			Platform::bind_pipeline(cmd, resource_system->pipeline);
-			Platform::bind_descriptor_set(cmd, resource_system->pipeline, system->camera_layout, 0, 0);
-			Platform::bind_descriptor_set(cmd, resource_system->pipeline, system->material_layout, 1, 0);
+			Platform::bind_pipeline(cmd, system->pipeline);
+			Platform::bind_descriptor_set(cmd, system->pipeline, system->camera_layout, 0, 0);
+			Platform::bind_descriptor_set(cmd, system->pipeline, system->material_layout, 1, 0);
 			for (auto [entity, transform, mesh] : get_entities<Transform, Mesh>())
 			{
 				auto hash         = Traits<Path>::hash(mesh.source.value_or({}));
@@ -135,25 +151,46 @@ namespace Vultr
 					.model = model,
 				};
 
-				Platform::push_constants(cmd, resource_system->pipeline, push_constant);
+				Platform::push_constants(cmd, system->pipeline, push_constant);
 				Platform::draw_mesh(cmd, loaded_mesh);
 			}
+		}
+
+		void update(Platform::CmdBuffer *cmd, Component *system, ResourceSystem::Component *resource_system)
+		{
+			Platform::begin_framebuffer(cmd, system->output_framebuffer);
+			render(system, cmd, resource_system);
+			Platform::end_framebuffer(cmd);
+		}
+
+		void reinitialize(Component *c)
+		{
+			printf("Recreating framebuffer!\n");
+			const auto attachment_descriptions = Vector<Platform::AttachmentDescription>({{.format = Platform::TextureFormat::RGBA8}, {.format = Platform::TextureFormat::DEPTH}});
+			if (c->output_framebuffer != nullptr)
+				Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
+			c->output_framebuffer = Platform::init_framebuffer(engine()->context, attachment_descriptions);
 		}
 
 		void update(Component *system, ResourceSystem::Component *resource_system)
 		{
 			if check (Platform::begin_cmd_buffer(engine()->window), auto *cmd, auto _)
 			{
+				Platform::begin_window_framebuffer(cmd, Vec4(1));
 				render(system, cmd, resource_system);
+				Platform::end_framebuffer(cmd);
 				Platform::end_cmd_buffer(cmd);
 			}
 			else
 			{
+				reinitialize(system);
 			}
 		}
 
 		void destroy(Component *c)
 		{
+			Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
+			Platform::destroy_pipeline(engine()->context, c->pipeline);
 			Platform::destroy_descriptor_layout(engine()->context, c->material_layout);
 			Platform::destroy_descriptor_layout(engine()->context, c->camera_layout);
 			v_free(c);

@@ -13,7 +13,7 @@ namespace Vultr
 		{
 			CommandPool cmd_pool{};
 			VkDescriptorPool descriptor_pool{};
-			Hashmap<Platform::DescriptorLayout *, DescriptorSetBuffer> descriptor_buffers{};
+			Hashmap<Platform::DescriptorLayout *, DescriptorSet> descriptor_sets{};
 		};
 
 		struct SwapChain
