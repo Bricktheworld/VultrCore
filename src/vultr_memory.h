@@ -25,21 +25,11 @@ namespace Vultr
 	GameMemory *init_game_memory();
 	void destroy_game_memory(GameMemory *m);
 
-	typedef void (*UseGameMemoryApi)(GameMemory *m);
-
-	// TODO(Brandon): Update these with actual parameters.
-	typedef void (*VultrInitApi)(void);
-	typedef void (*VultrUpdateApi)(void);
-
 	constexpr const char *USE_GAME_MEMORY_SYMBOL = "vultr_init";
 	constexpr const char *VULTR_INIT_SYMBOL      = "vultr_init";
 	constexpr const char *VULTR_UPDATE_SYMBOL    = "vultr_update";
 
 } // namespace Vultr
-
-VULTR_API void use_game_memory(void *m);
-VULTR_API void vultr_init(void);
-VULTR_API void vultr_update(void);
 
 /**
  * Allocate some memory using game memory and call constructor.

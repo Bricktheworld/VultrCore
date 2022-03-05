@@ -5,11 +5,23 @@
 
 namespace Vultr
 {
+	static constexpr size_t string_length(str string)
+	{
+		u32 len = 0;
+		if (string)
+		{
+			while (*string++)
+			{
+				len++;
+			}
+		}
+		return len;
+	}
 	struct StringView
 	{
 	  public:
 		constexpr StringView() = default;
-		constexpr StringView(str ref) : StringView(ref, ref != nullptr ? strlen(ref) : 0) {}
+		constexpr StringView(str ref) : StringView(ref, ref != nullptr ? string_length(ref) : 0) {}
 		constexpr StringView(str ref, size_t len) : ref(ref), len(len) {}
 
 		constexpr bool is_empty() const { return len == 0; }

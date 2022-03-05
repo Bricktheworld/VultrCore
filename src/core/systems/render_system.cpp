@@ -84,30 +84,10 @@ namespace Vultr
 			return translate_matrix * rotation_matrix * scaling_matrix;
 		}
 		static Mat4 view_matrix(const Transform &transform) { return glm::lookAt(transform.position, transform.position + forward(transform), Vec3(0, 1, 0)); }
-		static Mat4 projection_matrix(Camera *camera, f32 screen_width, f32 screen_height) { return glm::perspective(camera->fov, screen_width / screen_height, camera->znear, camera->zfar); }
+		static Mat4 projection_matrix(const Camera &camera, f32 screen_width, f32 screen_height) { return glm::perspective(camera.fov, (f64)screen_width / (f64)screen_height, camera.znear, camera.zfar); }
 
-		static void render(Component *system, Platform::CmdBuffer *cmd, ResourceSystem::Component *resource_system)
+		static void render(CameraUBO camera_ubo, Component *system, Platform::CmdBuffer *cmd, ResourceSystem::Component *resource_system)
 		{
-			Entity camera = 0;
-			CameraUBO camera_ubo{};
-			for (auto [entity, transform_component, camera_component] : get_entities<Transform, Camera>())
-			{
-				camera               = entity;
-				camera_ubo.position  = Vec4(transform_component.position, 0);
-				camera_ubo.view      = view_matrix(transform_component);
-				auto width           = Platform::get_window_width(engine()->window);
-				auto height          = Platform::get_window_height(engine()->window);
-				camera_ubo.proj      = projection_matrix(&camera_component, static_cast<f32>(width), static_cast<f32>(height));
-				camera_ubo.view_proj = camera_ubo.proj * camera_ubo.view;
-				break;
-			}
-
-			if (camera == 0)
-			{
-				fprintf(stderr, "No camera found!\n");
-				return;
-			}
-
 			Platform::update_descriptor_set(cmd, system->camera_layout, &camera_ubo, 0, 0);
 			bool update_light = false;
 			for (auto [light, transform_component, directional_light] : get_entities<Transform, DirectionalLight>())
@@ -156,35 +136,57 @@ namespace Vultr
 			}
 		}
 
-		void update(Platform::CmdBuffer *cmd, Component *system, ResourceSystem::Component *resource_system)
+		void update(const Camera &camera, const Transform &transform, Platform::CmdBuffer *cmd, Component *system, ResourceSystem::Component *resource_system)
 		{
 			Platform::begin_framebuffer(cmd, system->output_framebuffer);
-			render(system, cmd, resource_system);
+
+			auto width  = Platform::get_window_width(engine()->window);
+			auto height = Platform::get_window_height(engine()->window);
+			CameraUBO camera_ubo{
+				.position  = Vec4(transform.position, 0),
+				.view      = view_matrix(transform),
+				.proj      = projection_matrix(camera, static_cast<f32>(width), static_cast<f32>(height)),
+				.view_proj = camera_ubo.proj * camera_ubo.view,
+			};
+			render(camera_ubo, system, cmd, resource_system);
+
 			Platform::end_framebuffer(cmd);
 		}
 
-		void reinitialize(Component *c)
+		void update(Platform::CmdBuffer *cmd, Component *system, ResourceSystem::Component *resource_system)
 		{
-			printf("Recreating framebuffer!\n");
-			const auto attachment_descriptions = Vector<Platform::AttachmentDescription>({{.format = Platform::TextureFormat::RGBA8}, {.format = Platform::TextureFormat::DEPTH}});
-			if (c->output_framebuffer != nullptr)
-				Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
-			c->output_framebuffer = Platform::init_framebuffer(engine()->context, attachment_descriptions);
+			Entity camera = 0;
+			for (auto [entity, transform_component, camera_component] : get_entities<Transform, Camera>())
+			{
+				camera = entity;
+				break;
+			}
+
+			if (camera == 0)
+				fprintf(stderr, "No camera found!\n");
+			else
+				update(get_component<Camera>(camera), get_component<Transform>(camera), cmd, system, resource_system);
 		}
 
 		void update(Component *system, ResourceSystem::Component *resource_system)
 		{
 			if check (Platform::begin_cmd_buffer(engine()->window), auto *cmd, auto _)
 			{
-				Platform::begin_window_framebuffer(cmd, Vec4(1));
-				render(system, cmd, resource_system);
-				Platform::end_framebuffer(cmd);
+				update(cmd, system, resource_system);
 				Platform::end_cmd_buffer(cmd);
 			}
 			else
 			{
 				reinitialize(system);
 			}
+		}
+
+		void reinitialize(Component *c)
+		{
+			const auto attachment_descriptions = Vector<Platform::AttachmentDescription>({{.format = Platform::TextureFormat::RGBA8}, {.format = Platform::TextureFormat::DEPTH}});
+			if (c->output_framebuffer != nullptr)
+				Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
+			c->output_framebuffer = Platform::init_framebuffer(engine()->context, attachment_descriptions);
 		}
 
 		void destroy(Component *c)

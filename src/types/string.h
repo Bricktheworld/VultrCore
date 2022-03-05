@@ -18,6 +18,18 @@ namespace Vultr
 			ASSERT(size() > 0, "String buffer size should never be less than 1 because of null terminator.");
 		}
 		String(str string, size_t length) : String(StringView(string, length)) {}
+		String(u32 number)
+		{
+			char temp[12]{};
+			snprintf(temp, 11, "%u", number);
+
+			size_t len = strlen(temp);
+			resize(len + 1);
+
+			fill(temp, len);
+
+			storage[len] = '\0';
+		}
 
 		String &operator=(StringView other)
 		{

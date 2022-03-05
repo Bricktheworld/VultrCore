@@ -16,7 +16,7 @@ namespace Vultr
 
 		EntityManager()
 		{
-			for (u32 entity = 0; entity < MAX_ENTITIES; entity++)
+			for (u32 entity = 1; entity < MAX_ENTITIES; entity++)
 			{
 				m_queue.push(entity);
 			}
@@ -32,6 +32,7 @@ namespace Vultr
 		void add_signature(Entity entity, const Signature &signature) { m_living_entities.set(entity, get_signature(entity) | signature); }
 		void remove_signature(Entity entity, const Signature &signature) { m_living_entities.set(entity, get_signature(entity) & (~signature)); }
 		const Signature &get_signature(Entity entity) { return m_living_entities.get(entity); }
+		bool entity_exists(Entity entity) { return m_living_entities.contains(entity); }
 
 		void destroy_entity(Entity entity)
 		{
@@ -41,19 +42,34 @@ namespace Vultr
 		}
 	};
 
+	struct ComponentInformation
+	{
+		StringView component_name{};
+		Vector<ComponentMember> component_members{};
+	};
+
 	struct IComponentArray
 	{
 		typedef ErrorOr<void> (*TryRemoveEntity)(IComponentArray *arr, Entity entity);
+		typedef void (*GetComponentInformation)(IComponentArray *arr, Entity entity, Vector<ComponentInformation> &info);
 		TryRemoveEntity m_try_remove_entity;
-		explicit IComponentArray(TryRemoveEntity try_remove_entity) : m_try_remove_entity(try_remove_entity) {}
+		GetComponentInformation m_get_component_information;
+		explicit IComponentArray(TryRemoveEntity try_remove_entity, GetComponentInformation get_component_information) : m_try_remove_entity(try_remove_entity), m_get_component_information(get_component_information)
+		{
+		}
 
 		ErrorOr<void> try_remove_entity(Entity entity) { return m_try_remove_entity(this, entity); }
+		void get_component_information(Entity entity, Vector<ComponentInformation> &info) { return m_get_component_information(this, entity, info); }
 	};
 
 	template <typename T>
 	struct ComponentArray : IComponentArray
 	{
-		ComponentArray() : IComponentArray(try_remove_entity_impl) { m_array = v_alloc<T>(MAX_ENTITIES); }
+		typedef Vector<ComponentMember> (*MemberAPI)(T *);
+		ComponentArray() : IComponentArray(try_remove_entity_impl, get_component_information_impl), m_member_api(ComponentTraits<T>::members), m_component_name(ComponentTraits<T>::type_name())
+		{
+			m_array = v_alloc<T>(MAX_ENTITIES);
+		}
 		ErrorOr<void> add_entity(Entity entity, const T &component)
 		{
 			if (m_entity_to_index.contains(entity))
@@ -104,9 +120,23 @@ namespace Vultr
 			}
 		}
 
+		static void get_component_information_impl(IComponentArray *p_arr, Entity entity, Vector<ComponentInformation> &component_members)
+		{
+			auto *arr = static_cast<ComponentArray<T> *>(p_arr);
+			if (!arr->has_component(entity))
+				return;
+
+			component_members.push_back(ComponentInformation{
+				.component_name    = arr->m_component_name,
+				.component_members = arr->m_member_api(&arr->get_component(entity).value()),
+			});
+		}
+
 		T *storage() { return static_cast<T *>(m_array); }
 
-		T *m_array = nullptr;
+		T *m_array                  = nullptr;
+		MemberAPI m_member_api      = nullptr;
+		StringView m_component_name = "";
 		Hashmap<Entity, size_t> m_entity_to_index{};
 		Hashmap<size_t, Entity> m_index_to_entity{};
 		size_t m_size = 0;
@@ -132,9 +162,9 @@ namespace Vultr
 		}
 
 		template <typename T>
-		void register_component()
+		requires(ComponentTraits<T>::component_id &&ComponentTraits<T>::members) void register_component()
 		{
-			constexpr u32 type_id = ReflTraits<T>::type_id();
+			constexpr u32 type_id = ComponentTraits<T>::component_id();
 			ASSERT(!type_to_index.contains(type_id), "Component already registered!");
 			size_t index = component_arrays.size();
 			component_arrays.push_back(v_alloc<ComponentArray<T>>());
@@ -217,6 +247,17 @@ namespace Vultr
 			{
 				component_arrays[index]->try_remove_entity(entity);
 			}
+		}
+
+		Vector<ComponentInformation> get_component_information(Entity entity)
+		{
+			Vector<ComponentInformation> information{};
+			(get_component_array<DefaultComponent>()->get_component_information(entity, information), ...);
+			for (auto &[type_id, index] : type_to_index)
+			{
+				component_arrays[index]->get_component_information(entity, information);
+			}
+			return information;
 		}
 
 	  private:

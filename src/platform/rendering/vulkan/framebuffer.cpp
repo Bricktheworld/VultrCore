@@ -36,7 +36,6 @@ namespace Vultr
 			auto *fb   = v_alloc<Framebuffer>();
 			fb->width  = width.value_or(sc->extent.width);
 			fb->height = height.value_or(sc->extent.height);
-			printf("Creating framebuffer with width %u and height %u\n", fb->width, fb->height);
 
 			VkAttachmentDescription attachment_descriptions[attachments.size()];
 			Vector<VkAttachmentReference> color_attachments{};

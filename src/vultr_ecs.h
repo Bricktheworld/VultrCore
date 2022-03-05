@@ -128,4 +128,6 @@ namespace Vultr
 	{
 		return World::IteratorContainer<Ts...>(world());
 	}
+
+	inline bool entity_exists(Entity entity) { return world()->entity_manager.entity_exists(entity); }
 } // namespace Vultr

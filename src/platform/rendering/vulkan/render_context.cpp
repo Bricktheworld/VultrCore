@@ -1,6 +1,5 @@
 #include <filesystem/filestream.h>
 #include "render_context.h"
-#include "../../rendering.h"
 #include "gpu_buffer.h"
 #include "framebuffer.h"
 #include "texture.h"
@@ -9,13 +8,6 @@ namespace Vultr
 {
 	namespace Vulkan
 	{
-		struct UniformBufferObject
-		{
-			Mat4 model;
-			Mat4 view;
-			Mat4 proj;
-		};
-
 		// TODO(Brandon): Don't do this here.
 		static VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type,
 													   const VkDebugUtilsMessengerCallbackDataEXT *callback_data, void *user_data)
