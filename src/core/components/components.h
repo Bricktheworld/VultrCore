@@ -21,14 +21,9 @@ namespace Vultr
 		{
 			return Vector({
 				ComponentMember{
-					.name = "vertex_src",
+					.name = "source",
 					.type = PrimitiveType::OPTIONAL_PATH,
-					.addr = &component->vertex_src,
-				},
-				ComponentMember{
-					.name = "fragment_src",
-					.type = PrimitiveType::OPTIONAL_PATH,
-					.addr = &component->fragment_src,
+					.addr = &component->source,
 				},
 			});
 		}
@@ -79,7 +74,7 @@ namespace Vultr
 			return Vector({
 				ComponentMember{
 					.name = "source",
-					.type = PrimitiveType::OPTIONAL_PATH,
+					.type = PrimitiveType::RESOURCE,
 					.addr = &component->source,
 				},
 			});

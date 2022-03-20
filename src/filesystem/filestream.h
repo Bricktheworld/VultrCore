@@ -125,9 +125,10 @@ namespace Vultr
 		template <typename T>
 		requires(is_valid_stream_format<T>) ErrorOr<void> write(const T *buf, size_t size)
 		{
+			ASSERT(size > 0, "Cannot write 0 bytes to buffer!");
 			if (fwrite(buf, sizeof(T) * size, 1, m_handle) != 1)
 			{
-				return Error("Failed to read!");
+				return Error("Failed to write!");
 			}
 			return Success;
 		}

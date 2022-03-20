@@ -33,7 +33,7 @@ namespace Vultr
 	template <typename T>
 	requires(is_pointer<T>) struct ResourceAllocator
 	{
-		explicit ResourceAllocator(const Path &resource_dir) : resource_dir(resource_dir) {}
+		explicit ResourceAllocator() {}
 		void incr(u32 id, const Path &path)
 		{
 			Platform::Lock lock(mutex);
@@ -127,7 +127,6 @@ namespace Vultr
 			return Success;
 		}
 
-		Path resource_dir{};
 		Hashmap<u32, ResourceInfo<T>> resources{};
 		Queue<u32, 1024> load_queue{};
 		Queue<T, 1024> free_queue{};
@@ -140,6 +139,7 @@ namespace Vultr
 	template <typename T>
 	requires(is_pointer<T>) struct Resource
 	{
+		Resource() = default;
 		explicit Resource(StringHash hash) : id(hash.value()) { resource_allocator<T>()->incr(id.value(), Path(hash.c_str())); }
 
 		explicit Resource(const Path &path) : id(Traits<StringView>::hash(path.string())) { resource_allocator<T>()->incr(id.value(), path); }
@@ -197,12 +197,7 @@ namespace Vultr
 			return *this;
 		}
 
-		bool loaded() const
-		{
-			ASSERT(id.has_value(), "Cannot get loaded from invalid resource!");
-
-			return resource_allocator<T>()->is_loaded(id.value());
-		}
+		bool loaded() const { return id.has_value() && resource_allocator<T>()->is_loaded(id.value()); }
 
 		ErrorOr<T> try_value() const
 		{

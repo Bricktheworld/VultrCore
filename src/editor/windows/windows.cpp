@@ -236,6 +236,11 @@ namespace Vultr
 								break;
 							case PrimitiveType::OTHER:
 								break;
+							case PrimitiveType::STRING:
+								break;
+							case PrimitiveType::RESOURCE:
+								ImGui::Text("RESOURCE");
+								break;
 						}
 					}
 					if (ImGui::Button("Remove"))

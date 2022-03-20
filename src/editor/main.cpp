@@ -4,33 +4,43 @@
 #include "windows/windows.h"
 #include "editor/runtime/runtime.h"
 #include <core/systems/render_system.h>
-#include <core/systems/resource_system.h>
 #include <filesystem/filestream.h>
 #include <vultr_resource_manager.h>
 
-[[noreturn]] static void texture_loader_thread()
+[[noreturn]] static void mesh_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::Path &resource_dir)
 {
-	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
+	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Mesh *>();
 	while (true)
 	{
-		printf("Waiting for another texture to load...\n");
+		printf("Waiting for another mesh to load...\n");
 		auto [resource, path] = allocator->wait_pop_load_queue();
-		printf("Loading texture %u, from path %s\n", resource, path.c_str());
-		if (!allocator->add_loaded_resource(resource, reinterpret_cast<Vultr::Platform::Texture *>(0xFFFFFFFFF)).has_value())
+		printf("Loading mesh %u, from path %s\n", resource, path.c_str());
+
+		Vultr::Buffer vertex_buffer;
+		Vultr::fread_all(resource_dir / (path.string() + ".vertex"), &vertex_buffer);
+
+		Vultr::Buffer index_buffer;
+		Vultr::fread_all(resource_dir / (path.string() + ".index"), &index_buffer);
+
+		auto *mesh = Vultr::Platform::load_mesh_memory(c, vertex_buffer, index_buffer);
+
+		if (!allocator->add_loaded_resource(resource, mesh).has_value())
 		{
 			printf("Freeing unnecessary load!\n");
+			Vultr::Platform::destroy_mesh(c, mesh);
 		}
 	}
 }
 
-[[noreturn]] static void texture_free_thread()
+[[noreturn]] static void mesh_free_thread(Vultr::Platform::UploadContext *c)
 {
-	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
+	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Mesh *>();
 	while (true)
 	{
-		printf("Waiting for another texture to free...\n");
-		auto *texture = allocator->wait_pop_free_queue();
-		printf("Freeing texture data at location %p\n", texture);
+		printf("Waiting for another mesh to free...\n");
+		auto *mesh = allocator->wait_pop_free_queue();
+		printf("Freeing mesh data at location %p\n", mesh);
+		Vultr::Platform::destroy_mesh(c, mesh);
 	}
 }
 
@@ -54,30 +64,23 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 				Platform::destroy_upload_context(upload_context);
 			}
 
-			Vultr::init_resource_allocators(resource_dir);
+			Vultr::init_resource_allocators();
 
-			Platform::Thread loading_thread(texture_loader_thread);
+			auto *c = Vultr::Platform::init_upload_context(Vultr::engine()->context);
+			Platform::Thread loading_thread(mesh_loader_thread, c, build_dir / "res");
 			loading_thread.detach();
-			Platform::Thread freeing_thread(texture_free_thread);
+			Platform::Thread freeing_thread(mesh_free_thread, c);
 			freeing_thread.detach();
 
 			EditorRuntime runtime{};
-			runtime.resource_system = ResourceSystem::init(resource_dir);
-			runtime.render_system   = RenderSystem::init(build_dir);
-			runtime.imgui_c         = Platform::init_imgui(engine()->window, runtime.resource_system->upload_context);
+			runtime.render_system  = RenderSystem::init(build_dir);
+			runtime.upload_context = Platform::init_upload_context(engine()->context);
+			runtime.imgui_c        = Platform::init_imgui(engine()->window, runtime.upload_context);
 
 			EditorWindowState state{};
 
-			create_entity(Mesh{.source = Path("cube.fbx")}, Transform{}, Material{});
+			create_entity(Mesh{.source = Resource<Platform::Mesh *>("meshes/cube.fbx")}, Transform{}, Material{});
 			auto light_ent = create_entity(Transform{}, DirectionalLight{});
-
-			{
-				auto resource = Resource<Platform::Texture *>("cube.fbx");
-				{
-					auto reference = resource;
-				}
-				sleep(1);
-			}
 
 			project.init();
 
@@ -90,8 +93,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 				if check (Platform::begin_cmd_buffer(engine()->window), auto *cmd, auto _)
 				{
-					RenderSystem::update(state.editor_camera, state.editor_camera_transform, cmd, runtime.render_system, runtime.resource_system);
-					ResourceSystem::update(runtime.resource_system);
+					RenderSystem::update(state.editor_camera, state.editor_camera_transform, cmd, runtime.render_system);
 
 					Platform::begin_window_framebuffer(cmd);
 					render_windows(cmd, &state, &runtime, dt);
@@ -108,7 +110,6 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			Platform::wait_idle(engine()->context);
 
 			Platform::destroy_imgui(engine()->context, runtime.imgui_c);
-			ResourceSystem::destroy(runtime.resource_system);
 			RenderSystem::destroy(runtime.render_system);
 			Platform::close_window(engine()->window);
 		}

@@ -41,8 +41,13 @@ namespace Vultr
 				indices[index + 2] = face.mIndices[2];
 				index += 3;
 			}
-			//			auto *mesh = init_mesh(c, vertices, imported_mesh->mNumVertices, indices, imported_mesh->mNumFaces * 3);
-			return {.vertices = vertices, .indices = indices};
+
+			return {
+				.vertices     = vertices,
+				.vertex_count = imported_mesh->mNumVertices,
+				.indices      = indices,
+				.index_count  = imported_mesh->mNumFaces * 3,
+			};
 		}
 
 		ErrorOr<ImportedMesh> import_mesh_file(const Path &path)

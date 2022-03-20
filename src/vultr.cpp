@@ -60,12 +60,12 @@ namespace Vultr
 	requires(is_pointer<T>) static ResourceAllocator<T> *resource_allocator_at(size_t index) { return reinterpret_cast<ResourceAllocator<T> *>(g_game_memory->resource_allocator) + index; }
 
 	template <size_t... S>
-	static void init_resource_allocators_internal(const Path &resource_dir, Sequence<S...>)
+	static void init_resource_allocators_internal(Sequence<S...>)
 	{
-		(new (resource_allocator_at<ResourceTypes::Type<S>>(S)) ResourceAllocator<ResourceTypes::Type<S>>(resource_dir), ...);
+		(new (resource_allocator_at<ResourceTypes::Type<S>>(S)) ResourceAllocator<ResourceTypes::Type<S>>(), ...);
 	}
 
-	void init_resource_allocators(const Path &resource_dir) { init_resource_allocators_internal(resource_dir, typename SequenceImpl<ResourceTypes::size>::type()); }
+	void init_resource_allocators() { init_resource_allocators_internal(typename SequenceImpl<ResourceTypes::size>::type()); }
 
 	void destroy() { destroy_game_memory(g_game_memory); }
 

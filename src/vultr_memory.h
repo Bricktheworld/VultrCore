@@ -26,7 +26,7 @@ namespace Vultr
 
 	GameMemory *init_game_memory();
 	struct Path;
-	void init_resource_allocators(const Path &resource_dir);
+	void init_resource_allocators();
 	void destroy_game_memory(GameMemory *m);
 
 	constexpr const char *USE_GAME_MEMORY_SYMBOL = "vultr_init";

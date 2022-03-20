@@ -100,11 +100,11 @@ namespace Vultr
 			auto *arr = static_cast<ComponentArray<T> *>(p_arr);
 			if let (size_t removed_index, arr->m_entity_to_index.try_get(entity))
 			{
-				size_t last_index           = arr->m_size - 1;
+				size_t last_index = arr->m_size - 1;
 
-				arr->m_array[removed_index] = arr->m_array[last_index];
+				Utils::move(arr->m_array + removed_index, arr->m_array + last_index, 1);
 
-				Entity last_entity          = arr->m_index_to_entity.get(last_index);
+				Entity last_entity = arr->m_index_to_entity.get(last_index);
 				arr->m_entity_to_index.set(last_entity, removed_index);
 				arr->m_index_to_entity.set(removed_index, last_entity);
 

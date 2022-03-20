@@ -32,6 +32,7 @@ namespace Vultr
 		QUAT,
 		PATH,
 		OPTIONAL_PATH,
+		RESOURCE,
 		OTHER,
 	};
 

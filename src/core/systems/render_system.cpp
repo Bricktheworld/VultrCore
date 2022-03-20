@@ -1,5 +1,4 @@
 #include "render_system.h"
-#include "resource_system.h"
 #include <vultr.h>
 #include <platform/rendering.h>
 
@@ -86,7 +85,7 @@ namespace Vultr
 		static Mat4 view_matrix(const Transform &transform) { return glm::lookAt(transform.position, transform.position + forward(transform), Vec3(0, 1, 0)); }
 		static Mat4 projection_matrix(const Camera &camera, f32 screen_width, f32 screen_height) { return glm::perspective(camera.fov, (f64)screen_width / (f64)screen_height, camera.znear, camera.zfar); }
 
-		static void render(CameraUBO camera_ubo, Component *system, Platform::CmdBuffer *cmd, ResourceSystem::Component *resource_system)
+		static void render(CameraUBO camera_ubo, Component *system, Platform::CmdBuffer *cmd)
 		{
 			Platform::update_descriptor_set(cmd, system->camera_layout, &camera_ubo, 0, 0);
 			bool update_light = false;
@@ -121,22 +120,22 @@ namespace Vultr
 			Platform::bind_descriptor_set(cmd, system->pipeline, system->material_layout, 1, 0);
 			for (auto [entity, transform, mesh] : get_entities<Transform, Mesh>())
 			{
-				auto hash         = Traits<Path>::hash(mesh.source.value_or({}));
-				auto *loaded_mesh = resource_system->loaded_meshes.get(hash);
+				if check (mesh.source.try_value(), auto render_mesh, auto _)
+				{
+					auto model = model_matrix(transform);
 
-				auto model        = model_matrix(transform);
+					Platform::PushConstant push_constant{
+						.color = Vec4(1),
+						.model = model,
+					};
 
-				Platform::PushConstant push_constant{
-					.color = Vec4(1),
-					.model = model,
-				};
-
-				Platform::push_constants(cmd, system->pipeline, push_constant);
-				Platform::draw_mesh(cmd, loaded_mesh);
+					Platform::push_constants(cmd, system->pipeline, push_constant);
+					Platform::draw_mesh(cmd, render_mesh);
+				}
 			}
 		}
 
-		void update(const Camera &camera, const Transform &transform, Platform::CmdBuffer *cmd, Component *system, ResourceSystem::Component *resource_system)
+		void update(const Camera &camera, const Transform &transform, Platform::CmdBuffer *cmd, Component *system)
 		{
 			Platform::begin_framebuffer(cmd, system->output_framebuffer);
 
@@ -148,12 +147,12 @@ namespace Vultr
 				.proj      = projection_matrix(camera, static_cast<f32>(width), static_cast<f32>(height)),
 				.view_proj = camera_ubo.proj * camera_ubo.view,
 			};
-			render(camera_ubo, system, cmd, resource_system);
+			render(camera_ubo, system, cmd);
 
 			Platform::end_framebuffer(cmd);
 		}
 
-		void update(Platform::CmdBuffer *cmd, Component *system, ResourceSystem::Component *resource_system)
+		void update(Platform::CmdBuffer *cmd, Component *system)
 		{
 			Entity camera = 0;
 			for (auto [entity, transform_component, camera_component] : get_entities<Transform, Camera>())
@@ -165,14 +164,14 @@ namespace Vultr
 			if (camera == 0)
 				fprintf(stderr, "No camera found!\n");
 			else
-				update(get_component<Camera>(camera), get_component<Transform>(camera), cmd, system, resource_system);
+				update(get_component<Camera>(camera), get_component<Transform>(camera), cmd, system);
 		}
 
-		void update(Component *system, ResourceSystem::Component *resource_system)
+		void update(Component *system)
 		{
 			if check (Platform::begin_cmd_buffer(engine()->window), auto *cmd, auto _)
 			{
-				update(cmd, system, resource_system);
+				update(cmd, system);
 				Platform::end_cmd_buffer(cmd);
 			}
 			else
