@@ -1,7 +1,7 @@
 #pragma once
 #include <filesystem/filesystem.h>
 #include <platform/rendering.h>
-#include <core/resource_manager/resource_manager.h>
+#include <core/resource_allocator/resource_allocator.h>
 
 namespace Vultr
 {

@@ -2,7 +2,7 @@
 #include "vultr_memory.h"
 #include "vultr_ecs.h"
 #include "vultr_engine.h"
-#include "vultr_resource_manager.h"
+#include "vultr_resource_allocator.h"
 
 namespace Vultr
 {

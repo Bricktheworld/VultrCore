@@ -51,24 +51,24 @@ namespace Vultr
 			c->output_framebuffer = nullptr;
 			reinitialize(c);
 
-			Buffer buf;
-			fread_all(build_path / "shaders/basic_vert.spv", &buf);
-			CHECK_UNWRAP(auto *example_vert, Platform::try_load_shader(engine()->context, buf, Platform::ShaderType::VERT));
+			Buffer vert_src;
+			fread_all(build_path / "shaders/basic_vert.spv", &vert_src);
 
-			buf.clear();
-			fread_all(build_path / "shaders/basic_frag.spv", &buf);
-			CHECK_UNWRAP(auto *example_frag, Platform::try_load_shader(engine()->context, buf, Platform::ShaderType::FRAG));
+			Buffer frag_src;
+			fread_all(build_path / "shaders/basic_frag.spv", &frag_src);
+			CHECK_UNWRAP(auto *example_shader, Platform::try_load_shader(engine()->context, {
+																								.vert_src = vert_src,
+																								.frag_src = frag_src,
+																							}));
 
 			Platform::GraphicsPipelineInfo info{
-				.vert               = example_vert,
-				.frag               = example_frag,
+				.shader             = example_shader,
 				.descriptor_layouts = Vector({c->camera_layout, c->material_layout}),
 			};
 
 			c->pipeline = Platform::init_pipeline(engine()->context, c->output_framebuffer, info);
 
-			Platform::destroy_shader(engine()->context, example_vert);
-			Platform::destroy_shader(engine()->context, example_frag);
+			Platform::destroy_shader(engine()->context, example_shader);
 
 			return c;
 		}

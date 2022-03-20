@@ -10,8 +10,8 @@ namespace Vultr
 	{
 		struct Shader
 		{
-			ShaderType type;
-			VkShaderModule vk_module = nullptr;
+			VkShaderModule vert_module = nullptr;
+			VkShaderModule frag_module = nullptr;
 		};
 	} // namespace Platform
 } // namespace Vultr

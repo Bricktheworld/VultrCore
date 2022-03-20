@@ -5,7 +5,7 @@
 #include "editor/runtime/runtime.h"
 #include <core/systems/render_system.h>
 #include <filesystem/filestream.h>
-#include <vultr_resource_manager.h>
+#include <vultr_resource_allocator.h>
 
 [[noreturn]] static void mesh_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::Path &resource_dir)
 {
@@ -79,7 +79,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 			EditorWindowState state{};
 
-			create_entity(Mesh{.source = Resource<Platform::Mesh *>("meshes/cube.fbx")}, Transform{}, Material{});
+			create_entity(Mesh{.source = Resource<Platform::Mesh *>("subdir/sphere.fbx")}, Transform{}, Material{});
 			auto light_ent = create_entity(Transform{}, DirectionalLight{});
 
 			project.init();

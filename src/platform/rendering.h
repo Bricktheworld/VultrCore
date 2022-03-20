@@ -154,15 +154,13 @@ namespace Vultr
 
 		struct Shader;
 
-		Shader *init_shader();
-
-		enum struct ShaderType : u8
+		struct CompiledShaderSrc
 		{
-			VERT = 0x1,
-			FRAG = 0x2,
+			Buffer vert_src{};
+			Buffer frag_src{};
 		};
 
-		ErrorOr<Shader *> try_load_shader(RenderContext *c, Buffer src, ShaderType type);
+		ErrorOr<Shader *> try_load_shader(RenderContext *c, const CompiledShaderSrc &compiled_shader);
 		void destroy_shader(RenderContext *c, Shader *shader);
 
 		struct VertexBuffer;
@@ -339,8 +337,7 @@ namespace Vultr
 
 		struct GraphicsPipelineInfo
 		{
-			Shader *vert                  = nullptr;
-			Shader *frag                  = nullptr;
+			Shader *shader                = nullptr;
 			VertexDescription description = get_vertex_description<Vertex>();
 			Vector<DescriptorLayout *> descriptor_layouts{};
 			// TODO(Brandon): Make this actually used.

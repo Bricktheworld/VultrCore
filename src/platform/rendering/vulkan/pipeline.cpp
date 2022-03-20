@@ -49,7 +49,6 @@ namespace Vultr
 		static GraphicsPipeline *init_vk_pipeline(RenderContext *c, const GraphicsPipelineInfo &info, VkRenderPass render_pass, bool has_depth)
 		{
 			using namespace Vulkan;
-			ASSERT(info.frag->type == ShaderType::FRAG && info.vert->type == ShaderType::VERT, "Incorrect shaders provided");
 
 			auto *d                                  = Vulkan::get_device(c);
 			auto *pipeline                           = v_alloc<GraphicsPipeline>();
@@ -58,13 +57,13 @@ namespace Vultr
 			VkPipelineShaderStageCreateInfo stages[] = {{
 															.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 															.stage  = VK_SHADER_STAGE_VERTEX_BIT,
-															.module = info.vert->vk_module,
+															.module = info.shader->vert_module,
 															.pName  = "main",
 														},
 														{
 															.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 															.stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
-															.module = info.frag->vk_module,
+															.module = info.shader->frag_module,
 															.pName  = "main",
 														}};
 			VkVertexInputBindingDescription binding_description{
