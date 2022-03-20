@@ -516,7 +516,7 @@ namespace Vultr
 	// TODO(Brandon): Add lots of error messages to make sure this isn't misused.
 	void *free_list_alloc(FreeListAllocator *allocator, size_t size)
 	{
-		Platform::Lock l(&allocator->mutex);
+		Platform::Lock l(allocator->mutex);
 		return free_list_alloc_no_lock(allocator, size);
 	}
 
@@ -533,14 +533,14 @@ namespace Vultr
 	}
 	void free_list_free(FreeListAllocator *allocator, void *data)
 	{
-		Platform::Lock l(&allocator->mutex);
+		Platform::Lock l(allocator->mutex);
 		PRODUCTION_ASSERT(data != nullptr, "Cannot free nullptr memory!");
 		free_list_free_no_lock(allocator, data);
 	}
 
 	void *free_list_realloc(FreeListAllocator *allocator, void *data, size_t size)
 	{
-		Platform::Lock l(&allocator->mutex);
+		Platform::Lock l(allocator->mutex);
 		auto *block         = get_block_from_allocated_data(data);
 		size_t current_size = get_mb_size(block);
 

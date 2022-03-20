@@ -1,5 +1,5 @@
 #include <types/types.h>
-#include <filesystem/path.h>
+#include <filesystem/filesystem.h>
 #include <filesystem/filestream.h>
 #include <spirv_reflect/spirv_reflect.h>
 
@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 	Path vertex_shader(argv[1]);
 	if (!exists(vertex_shader))
 	{
-		fprintf(stderr, "Vertex shader %s not found.", vertex_shader.m_path.c_str());
+		fprintf(stderr, "Vertex shader %s not found.", vertex_shader.c_str());
 		return 1;
 	}
 

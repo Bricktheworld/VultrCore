@@ -1,21 +1,28 @@
 #include <gtest/gtest.h>
 
-#include <filesystem/path.h>
+#include <filesystem/filesystem.h>
 #include "filesystem/filestream.h"
 
 using namespace Vultr;
 TEST(Filesystem, CreatePath)
 {
 	Path p("./src");
-	ASSERT_TRUE(p.m_path == "./src");
+	ASSERT_TRUE(p.string() == "./src");
 
 	ASSERT_TRUE(exists(p));
 	ASSERT_TRUE(p.is_directory());
 	ASSERT_FALSE(p.is_file());
 
 	p = Path("/src");
-	ASSERT_TRUE(p.m_path == "/src");
+	ASSERT_TRUE(p.string() == "/src");
 	ASSERT_FALSE(exists(p));
+}
+
+TEST(Filesystem, Path)
+{
+	Path p("./src");
+	Path sub_path = p / "test.cpp";
+	ASSERT_TRUE(sub_path.string() == "./src/test.cpp");
 }
 
 TEST(Filesystem, FileInputStream)

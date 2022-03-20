@@ -1,9 +1,10 @@
 #pragma once
 #include "platform.h"
+#include <filesystem/filestream.h>
 #include <types/vector.h>
 #include <types/buffer.h>
 #include <glm/glm.hpp>
-#include <filesystem/path.h>
+#include <filesystem/filesystem.h>
 #include <imgui/imgui.h>
 
 namespace Vultr
@@ -20,7 +21,7 @@ namespace Vultr
 		UploadContext *init_upload_context(RenderContext *c);
 		void destroy_upload_context(UploadContext *upload_context);
 
-		struct Vertex
+		struct __attribute__((packed)) Vertex
 		{
 			Vec3 position;
 			Vec3 normal;
@@ -118,10 +119,6 @@ namespace Vultr
 		u32 get_height(Texture *texture);
 		void destroy_texture(RenderContext *c, Texture *texture);
 		void destroy_texture(UploadContext *c, Texture *texture);
-
-		struct RenderPassInfo
-		{
-		};
 
 		struct Subpass;
 		struct RenderPass;
@@ -226,8 +223,47 @@ namespace Vultr
 			return init_mesh(c, vertices, 4, indices, 6);
 		}
 
-		ErrorOr<Mesh *> load_mesh_file(UploadContext *c, const Path &path);
-		ErrorOr<Mesh *> load_mesh_memory(UploadContext *c, byte *data, u64 size);
+		struct ImportedMesh
+		{
+			Vertex *vertices = nullptr;
+			u32 vertex_count = 0;
+			u16 *indices     = nullptr;
+			u32 index_count  = 0;
+		};
+
+		ErrorOr<ImportedMesh> import_mesh_file(const Path &path);
+		ErrorOr<ImportedMesh> import_mesh_memory(const Buffer &buffer);
+		void free_imported_mesh(ImportedMesh *mesh);
+		inline ErrorOr<void> export_mesh(const Path &vertex_output, const Path &index_output, const ImportedMesh *mesh)
+		{
+			TRY(try_fwrite_all(vertex_output, (byte *)mesh->vertices, sizeof(Vertex) * mesh->vertex_count, StreamWriteMode::OVERWRITE));
+			TRY(try_fwrite_all(index_output, (byte *)mesh->indices, sizeof(u16) * mesh->index_count, StreamWriteMode::OVERWRITE));
+			return Success;
+		}
+
+		inline Mesh *load_mesh_memory(UploadContext *c, const Buffer &vertex_buffer, const Buffer &index_buffer)
+		{
+			auto *mesh         = v_alloc<Mesh>();
+
+			mesh->vertex_count = vertex_buffer.size() / sizeof(Vertex);
+			mesh->vertices     = v_alloc<Vertex>(mesh->vertex_count);
+
+			// Flipping the UVs is necessary so that textures are not inverted.
+			for (size_t i = 0; i < mesh->vertex_count; i++)
+				mesh->vertices[i].uv.y = 1 - mesh->vertices[i].uv.y;
+
+			Utils::move((byte *)mesh->vertices, vertex_buffer.storage, vertex_buffer.size());
+
+			mesh->vertex_buffer = init_vertex_buffer(c, mesh->vertices, sizeof(Vertex) * mesh->vertex_count);
+
+			mesh->index_count   = index_buffer.size() / sizeof(u16);
+			mesh->indices       = v_alloc<u16>(mesh->index_count);
+
+			Utils::move((byte *)mesh->indices, index_buffer.storage, index_buffer.size());
+
+			mesh->index_buffer = init_index_buffer(c, mesh->indices, sizeof(u16) * mesh->index_count);
+			return mesh;
+		}
 
 		inline void destroy_mesh(UploadContext *c, Mesh *mesh)
 		{
@@ -319,7 +355,6 @@ namespace Vultr
 		struct CmdBuffer;
 
 		ErrorOr<CmdBuffer *> begin_cmd_buffer(const Window *window);
-		//		void cmd_begin_renderpass(CmdBuffer *cmd);
 
 		void begin_window_framebuffer(CmdBuffer *cmd, Vec4 clear_color = Vec4(0, 0, 0, 1));
 		void begin_framebuffer(CmdBuffer *cmd, Framebuffer *framebuffer, Vec4 clear_color = Vec4(0, 0, 0, 1));

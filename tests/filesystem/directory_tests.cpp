@@ -29,14 +29,6 @@
 
 // TEST_F(DirectoryTests, Directory)
 // {
-//     auto dir = Directory(dir_path);
-//     EXPECT_STRCASEEQ(dir.path, "res/");
-//     dir = Directory("res/");
-//     EXPECT_STRCASEEQ(dir.path, "res/");
-//     dir = Directory("C:\\Windows Path\\");
-//     EXPECT_STRCASEEQ(dir.path, "C:/Windows Path/");
-//     auto sub_dir = Directory(&dir, "subdirectory");
-//     EXPECT_STRCASEEQ(sub_dir.path, "C:/Windows Path/subdirectory/");
 // }
 
 // TEST_F(DirectoryTests, Dirbasename)

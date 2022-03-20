@@ -31,7 +31,7 @@ namespace Vultr
 
 		T &value()
 		{
-			ASSERT(!m_is_error, "Cannot return value because error was returned in ErrorOr instead! Use boolean operator on ErrorOr to make sure that it actually has a value first.");
+			ASSERT(!m_is_error, "Cannot return value because error %s was returned in ErrorOr instead! Use boolean operator on ErrorOr to make sure that it actually has a value first.", m_error.message.c_str());
 			return *reinterpret_cast<T *>(&storage);
 		}
 

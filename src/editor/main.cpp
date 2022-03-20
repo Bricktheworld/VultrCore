@@ -6,6 +6,33 @@
 #include <core/systems/render_system.h>
 #include <core/systems/resource_system.h>
 #include <filesystem/filestream.h>
+#include <vultr_resource_manager.h>
+
+[[noreturn]] static void texture_loader_thread()
+{
+	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
+	while (true)
+	{
+		printf("Waiting for another texture to load...\n");
+		auto [resource, path] = allocator->wait_pop_load_queue();
+		printf("Loading texture %u, from path %s\n", resource, path.c_str());
+		if (!allocator->add_loaded_resource(resource, reinterpret_cast<Vultr::Platform::Texture *>(0xFFFFFFFFF)).has_value())
+		{
+			printf("Freeing unnecessary load!\n");
+		}
+	}
+}
+
+[[noreturn]] static void texture_free_thread()
+{
+	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
+	while (true)
+	{
+		printf("Waiting for another texture to free...\n");
+		auto *texture = allocator->wait_pop_free_queue();
+		printf("Freeing texture data at location %p\n", texture);
+	}
+}
 
 int Vultr::vultr_main(Platform::EntryArgs *args)
 {
@@ -15,18 +42,24 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 	{
 		auto resource_dir = cwd / "res/";
 		auto build_dir    = cwd / "build/";
-		if (!exists(resource_dir))
-			THROW("Resource directory does not exist!");
+		ASSERT(exists(resource_dir), "Resource directory does not exist!");
+		ASSERT(exists(build_dir), "Build directory does not exist!");
 
-		if (!exists(build_dir))
-			THROW("Build directory does not exist!");
-
-		auto dll = build_dir / VULTR_GAMEPLAY_NAME;
-		printf("Opening %s\n", dll.m_path.c_str());
-
-		if check (Vultr::load_game(dll), auto project, auto err)
+		if check (Vultr::load_game(build_dir, resource_dir), auto project, auto err)
 		{
 			Vultr::open_borderless_windowed("Vultr Game Engine");
+			{
+				auto *upload_context = Platform::init_upload_context(engine()->context);
+				CHECK(Vultr::import_resource_dir(&project));
+				Platform::destroy_upload_context(upload_context);
+			}
+
+			Vultr::init_resource_allocators(resource_dir);
+
+			Platform::Thread loading_thread(texture_loader_thread);
+			loading_thread.detach();
+			Platform::Thread freeing_thread(texture_free_thread);
+			freeing_thread.detach();
 
 			EditorRuntime runtime{};
 			runtime.resource_system = ResourceSystem::init(resource_dir);
@@ -37,6 +70,14 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 			create_entity(Mesh{.source = Path("cube.fbx")}, Transform{}, Material{});
 			auto light_ent = create_entity(Transform{}, DirectionalLight{});
+
+			{
+				auto resource = Resource<Platform::Texture *>("cube.fbx");
+				{
+					auto reference = resource;
+				}
+				sleep(1);
+			}
 
 			project.init();
 

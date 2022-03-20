@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 #include "error_or.h"
+#include <platform/platform.h>
 
 namespace Vultr
 {
@@ -15,34 +16,51 @@ namespace Vultr
 
 		ErrorOr<void> try_push(T &&element)
 		{
-			TRY_UNWRAP(auto buf, try_push_impl());
-			new (buf) T(move(element));
+			{
+				Platform::Lock lock(mutex);
+				TRY_UNWRAP(auto buf, try_push_impl());
+				new (buf) T(move(element));
+			}
+			queue_cond.notify_one();
 			return None;
 		}
 
 		void push(T &&element)
 		{
-			auto res = try_push_impl();
-			ASSERT(res.has_value(), res.get_error().message.c_str());
-			new (res.value()) T(move(element));
+			{
+				Platform::Lock lock(mutex);
+				auto res = try_push_impl();
+				ASSERT(res.has_value(), res.get_error().message.c_str());
+				new (res.value()) T(move(element));
+			}
+			queue_cond.notify_one();
 		}
 
 		ErrorOr<void> try_push(const T &element)
 		{
-			TRY_UNWRAP(auto buf, try_push_impl());
-			new (buf) T(element);
+			{
+				Platform::Lock lock(mutex);
+				TRY_UNWRAP(auto buf, try_push_impl());
+				new (buf) T(element);
+			}
+			queue_cond.notify_one();
 			return None;
 		}
 
 		void push(const T &element)
 		{
-			auto res = try_push_impl();
-			ASSERT(res.has_value(), "%s", res.get_error().message.c_str());
-			new (res.value()) T(element);
+			{
+				Platform::Lock lock(mutex);
+				auto res = try_push_impl();
+				ASSERT(res.has_value(), "%s", res.get_error().message.c_str());
+				new (res.value()) T(element);
+			}
+			queue_cond.notify_one();
 		}
 
 		Option<T &> try_front()
 		{
+			Platform::Lock lock(mutex);
 			if (empty())
 				return None;
 
@@ -51,6 +69,7 @@ namespace Vultr
 
 		T &front()
 		{
+			Platform::Lock lock(mutex);
 			ASSERT(!empty(), "Queue is empty!");
 
 			return storage()[m_front];
@@ -58,6 +77,7 @@ namespace Vultr
 
 		ErrorOr<T> try_pop()
 		{
+			Platform::Lock lock(mutex);
 			if (empty())
 				return Error("Queue is empty!");
 
@@ -86,6 +106,18 @@ namespace Vultr
 			auto res = try_pop();
 			ASSERT(res.has_value(), "%s", res.get_error().message.c_str());
 			return res.value();
+		}
+
+		T pop_wait()
+		{
+			{
+				Platform::Lock lock(mutex);
+				while (empty())
+				{
+					queue_cond.wait(lock);
+				}
+			}
+			return pop();
 		}
 
 		void clear()
@@ -122,8 +154,10 @@ namespace Vultr
 
 	  private:
 		alignas(T) byte m_storage[capacity * sizeof(T)]{};
-		ssize_t m_front = -1;
-		ssize_t m_rear  = -1;
+		s64 m_front = -1;
+		s64 m_rear  = -1;
+		Platform::ConditionVar queue_cond{};
+		Platform::Mutex mutex{};
 
 		ErrorOr<T *> try_push_impl()
 		{

@@ -9,7 +9,7 @@ namespace Vultr
 		{
 			s32 width, height, channels;
 			stbi_set_flip_vertically_on_load(true);
-			byte *buffer = stbi_load(path.m_path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+			byte *buffer = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
 			if (buffer == nullptr)
 				return Error("stbi failed to load texture!");

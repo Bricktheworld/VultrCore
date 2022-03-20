@@ -1,14 +1,14 @@
 #include <sys/stat.h>
-#include "path.h"
+#include "filesystem.h"
 #include "filestream.h"
 #include <platform/platform.h>
 
 namespace Vultr
 {
 
-	bool exists(const Path &path) { return (access(path.m_path.c_str(), F_OK) == 0); }
+	bool exists(const Path &path) { return (access(path.c_str(), F_OK) == 0); }
 
-	ErrorOr<size_t> fsize(const Path &path) { return Platform::Filesystem::fsize(path.m_path.c_str()); }
+	ErrorOr<size_t> fsize(const Path &path) { return Platform::Filesystem::fsize(path.c_str()); }
 
 	bool Path::is_directory() const
 	{
@@ -39,6 +39,32 @@ namespace Vultr
 		char buf[size];
 		TRY(Platform::Filesystem::pwd(buf, size));
 		return Path(buf);
+	}
+
+	ErrorOr<void> makedir(const Path &path)
+	{
+		if (exists(path))
+		{
+			ASSERT(path.is_directory(), "%s is a file not a directory!", path.c_str());
+			return Success;
+		}
+
+		auto err = mkdir(path.c_str(), 0777);
+
+		if (err != 0)
+			return error_from_errno(err);
+
+		return Success;
+	}
+	ErrorOr<void> makedirp(const Path &path) { THROW("Not implemented"); }
+
+	ErrorOr<u64> fget_date_modified_ms(const Path &path)
+	{
+		if (!exists(path))
+			return Error("Cannot get date modified for non-existent file " + path.string());
+		if (!path.is_file())
+			return Error("Cannot get date modified for non-file " + path.string());
+		return Platform::Filesystem::fdate_modified_ms(path.c_str());
 	}
 
 #if 0

@@ -25,8 +25,8 @@ namespace Vultr
 			// TODO(Brandon): Handle this.
 			ASSERT(mesh.source.has_value(), "Optional mesh source paths are not yet implemented!");
 
-			CHECK_UNWRAP(auto *loaded_mesh, Platform::load_mesh_file(c->upload_context, c->resource_dir / mesh.source.value()));
-			c->loaded_meshes.set(Traits<StringView>::hash(StringView(mesh.source.value_or(Path()).m_path)), loaded_mesh);
+			//			CHECK_UNWRAP(auto *loaded_mesh, Platform::import_mesh_file(c->upload_context, c->resource_dir / mesh.source.value()));
+			//			c->loaded_meshes.set(Traits<StringView>::hash(StringView(mesh.source.value_or(Path()).string())), loaded_mesh);
 		}
 		void entity_destroyed(void *system, Entity entity) {}
 		void update(Component *system) {}

@@ -18,11 +18,15 @@ namespace Vultr
 		PoolAllocator *pool_allocator        = nullptr;
 		void *world                          = nullptr;
 		void *engine                         = nullptr;
+		void *resource_allocator             = nullptr;
+		void *memory                         = nullptr;
 	};
 
 	extern GameMemory *g_game_memory;
 
 	GameMemory *init_game_memory();
+	struct Path;
+	void init_resource_allocators(const Path &resource_dir);
 	void destroy_game_memory(GameMemory *m);
 
 	constexpr const char *USE_GAME_MEMORY_SYMBOL = "vultr_init";

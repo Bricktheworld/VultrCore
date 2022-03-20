@@ -8,7 +8,7 @@ namespace Vultr
 		auto *arena = init_mem_arena(Gigabyte(1));
 		PRODUCTION_ASSERT(arena != nullptr, "Not enough memory to initialize game memory! At least 1 gigabyte of memory is required.");
 
-		auto *persistent_storage = init_linear_allocator(arena, Kilobyte(24));
+		auto *persistent_storage = init_linear_allocator(arena, Kilobyte(48));
 		ASSERT(persistent_storage != nullptr, "Failed to allocate persistent storage linear allocator!");
 
 		auto *game_memory               = v_alloc_with_allocator<LinearAllocator, GameMemory>(persistent_storage);
@@ -45,12 +45,27 @@ namespace Vultr
 
 	void init()
 	{
-		g_game_memory         = init_game_memory();
-		g_game_memory->world  = linear_alloc(g_game_memory->persistent_storage, sizeof(World));
-		g_game_memory->engine = linear_alloc(g_game_memory->persistent_storage, sizeof(Engine));
+		g_game_memory        = init_game_memory();
+		g_game_memory->world = linear_alloc(g_game_memory->persistent_storage, sizeof(World));
 		ASSERT(g_game_memory->world != nullptr, "Failed to allocate ECS world!");
 		new (g_game_memory->world) World();
+		g_game_memory->engine = linear_alloc(g_game_memory->persistent_storage, sizeof(Engine));
+		ASSERT(g_game_memory->engine != nullptr, "Failed to allocate engine!");
+		new (g_game_memory->engine) Engine();
+		g_game_memory->resource_allocator = linear_alloc(g_game_memory->persistent_storage, ResourceTypes::size * sizeof(ResourceAllocator<void *>));
+		ASSERT(g_game_memory->resource_allocator != nullptr, "Failed to allocate resource manager!");
 	}
+
+	template <typename T>
+	requires(is_pointer<T>) static ResourceAllocator<T> *resource_allocator_at(size_t index) { return reinterpret_cast<ResourceAllocator<T> *>(g_game_memory->resource_allocator) + index; }
+
+	template <size_t... S>
+	static void init_resource_allocators_internal(const Path &resource_dir, Sequence<S...>)
+	{
+		(new (resource_allocator_at<ResourceTypes::Type<S>>(S)) ResourceAllocator<ResourceTypes::Type<S>>(resource_dir), ...);
+	}
+
+	void init_resource_allocators(const Path &resource_dir) { init_resource_allocators_internal(resource_dir, typename SequenceImpl<ResourceTypes::size>::type()); }
 
 	void destroy() { destroy_game_memory(g_game_memory); }
 

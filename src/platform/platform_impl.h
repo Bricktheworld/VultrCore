@@ -2,6 +2,10 @@
 #include <types/types.h>
 #include <types/error_or.h>
 #include <glm/glm.hpp>
+#include <types/tuple.h>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 
 namespace Vultr
 {
@@ -63,49 +67,10 @@ namespace Vultr
 		 */
 		void virtual_free(PlatformMemoryBlock *block);
 
-		/**
-		 * A struct containing platform thread information.
-		 */
-		struct Thread;
-
-		/**
-		 * A struct containing platform mutex information.
-		 */
-		struct Mutex;
-
-		/**
-		 * Lock mutex and wait
-		 *
-		 * @param Mutex *mutex: The mutex to lock and wait.
-		 */
-		void mutex_lock(Mutex *mutex);
-
-		/**
-		 * Unlock mutex.
-		 *
-		 * @param Mutex *mutex: The mutex to unlock.
-		 */
-		void mutex_unlock(Mutex *mutex);
-
-		/**
-		 * A lock that automatically unlocks.
-		 */
-		struct Lock
-		{
-			Mutex *mutex = nullptr;
-			explicit Lock(Mutex *mutex)
-			{
-				ASSERT(mutex != nullptr, "Cannot create lock from nullptr mutex.");
-				this->mutex = mutex;
-				mutex_lock(mutex);
-			}
-			~Lock() { mutex_unlock(mutex); }
-		};
-
-		/**
-		 * A struct containing platform sempahore information.
-		 */
-		struct Semaphore;
+		typedef std::thread Thread;
+		typedef std::mutex Mutex;
+		typedef std::condition_variable ConditionVar;
+		typedef std::unique_lock<Mutex> Lock;
 
 		/**
 		 * Represents a dynamic library in memory.
@@ -329,6 +294,8 @@ namespace Vultr
 		void swap_buffers(Window *window);
 		void poll_events(Window *window);
 
+		u64 current_ms();
+
 		namespace Filesystem
 		{
 			ErrorOr<size_t> fsize(str path);
@@ -336,6 +303,26 @@ namespace Vultr
 			ErrorOr<bool> is_directory(str path);
 			size_t path_max();
 			ErrorOr<void> pwd(char *buf, size_t size);
+			ErrorOr<u64> fdate_modified_ms(str path);
+
+			typedef void DirectoryHandle;
+			ErrorOr<DirectoryHandle *> open_dir(str path);
+
+			enum struct EntryType
+			{
+				FILE,
+				DIR,
+			};
+
+			struct DirectoryEntry
+			{
+				EntryType type = EntryType::FILE;
+				char *name     = nullptr;
+				u64 uuid       = 0;
+			};
+
+			ErrorOr<DirectoryEntry> read_dir(DirectoryHandle *dir);
+			ErrorOr<void> close_dir(DirectoryHandle *dir);
 		} // namespace Filesystem
 
 	} // namespace Platform

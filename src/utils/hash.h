@@ -38,10 +38,11 @@ namespace Vultr
 
 	inline u32 ptr_hash(void *ptr) { return u64_hash((u64)ptr); }
 
-	constexpr u32 string_hash(str characters, size_t length, u32 seed = 0)
+	template <u32 n>
+	inline consteval u32 string_hash(const char (&characters)[n])
 	{
-		u32 hash = seed;
-		for (size_t i = 0; i < length; ++i)
+		u32 hash = 0;
+		for (size_t i = 0; i < n; ++i)
 		{
 			hash += (u32)characters[i];
 			hash += (hash << 10);
@@ -53,7 +54,23 @@ namespace Vultr
 		return hash;
 	}
 
-	constexpr u32 case_insensitive_string_hash(str characters, size_t length, u32 seed = 0)
+	constexpr inline u32 string_hash(str characters, size_t n)
+	{
+		u32 hash = 0;
+		for (size_t i = 0; i < n; ++i)
+		{
+			hash += (u32)characters[i];
+			hash += (hash << 10);
+			hash ^= (hash >> 6);
+		}
+		hash += hash << 3;
+		hash ^= hash >> 11;
+		hash += hash << 15;
+		return hash;
+	}
+
+	template <u32 n>
+	inline consteval u32 case_insensitive_string_hash(const char (&characters)[n])
 	{
 		// AK/CharacterTypes.h cannot be included from here.
 		auto to_lowercase = [](char ch) -> u32 {
@@ -62,7 +79,29 @@ namespace Vultr
 			return static_cast<u32>(ch);
 		};
 
-		u32 hash = seed;
+		u32 hash = 0;
+		for (size_t i = 0; i < n; ++i)
+		{
+			hash += to_lowercase(characters[i]);
+			hash += (hash << 10);
+			hash ^= (hash >> 6);
+		}
+		hash += hash << 3;
+		hash ^= hash >> 11;
+		hash += hash << 15;
+		return hash;
+	}
+
+	constexpr inline u32 case_insensitive_string_hash(str characters, size_t length)
+	{
+		// AK/CharacterTypes.h cannot be included from here.
+		auto to_lowercase = [](char ch) -> u32 {
+			if (ch >= 'A' && ch <= 'Z')
+				return static_cast<u32>(ch) + 0x20;
+			return static_cast<u32>(ch);
+		};
+
+		u32 hash = 0;
 		for (size_t i = 0; i < length; ++i)
 		{
 			hash += to_lowercase(characters[i]);

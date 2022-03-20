@@ -1,6 +1,7 @@
 #include "../platform_impl.h"
 #include <sys/stat.h>
 #include <errno.h>
+#include <dirent.h>
 
 namespace Vultr::Platform::Filesystem
 {
@@ -55,5 +56,57 @@ namespace Vultr::Platform::Filesystem
 			return Success;
 
 		return error_from_errno(errno);
+	}
+
+	ErrorOr<u64> fdate_modified_ms(str path)
+	{
+		struct stat st;
+		if (stat(path, &st) == 0)
+		{
+			return st.st_mtim.tv_sec * 1e3 + st.st_mtim.tv_nsec * 1e-6;
+		}
+		else
+		{
+			return error_from_errno(errno);
+		}
+	}
+
+	ErrorOr<DirectoryHandle *> open_dir(str path)
+	{
+		DIR *dir = opendir(path);
+
+		if (dir == nullptr)
+			return error_from_errno(errno);
+
+		return dir;
+	}
+
+	ErrorOr<DirectoryEntry> read_dir(DirectoryHandle *dir)
+	{
+		while (true)
+		{
+			struct dirent64 *ent = readdir64(static_cast<DIR *>(dir));
+			if (ent == nullptr)
+				return Error("No more files to read!");
+
+			ASSERT(ent->d_type != DT_UNKNOWN, "Cannot get directory entry of unknown type!");
+			if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+				continue;
+			switch (ent->d_type)
+			{
+				case DT_REG:
+					return DirectoryEntry{.name = ent->d_name, .type = EntryType::FILE, .uuid = ent->d_ino};
+				case DT_DIR:
+					return DirectoryEntry{.name = ent->d_name, .type = EntryType::DIR, .uuid = ent->d_ino};
+				default:
+					continue;
+			}
+		}
+	}
+
+	ErrorOr<void> close_dir(DirectoryHandle *dir)
+	{
+		closedir(static_cast<DIR *>(dir));
+		return Success;
 	}
 } // namespace Vultr::Platform::Filesystem

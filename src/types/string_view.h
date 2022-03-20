@@ -17,11 +17,12 @@ namespace Vultr
 		}
 		return len;
 	}
+
 	struct StringView
 	{
 	  public:
 		constexpr StringView() = default;
-		constexpr StringView(str ref) : StringView(ref, ref != nullptr ? string_length(ref) : 0) {}
+		constexpr StringView(const char *ref) : StringView(ref, ref != nullptr ? string_length(ref) : 0) {}
 		constexpr StringView(str ref, size_t len) : ref(ref), len(len) {}
 
 		constexpr bool is_empty() const { return len == 0; }
@@ -93,9 +94,10 @@ namespace Vultr
 	template <>
 	struct Traits<StringView> : public GenericTraits<StringView>
 	{
-		static u32 hash(const StringView &s) { return s.hash(); }
-		static u32 equals(const StringView &a, const StringView &b) { return a == b; }
-		static u32 equals(const StringView &a, str b) { return a == b; }
+		static consteval u32 hash(str s, size_t n) { return StringView(s, n).hash(); }
+		static constexpr u32 hash(const StringView &s) { return s.hash(); }
+		static constexpr u32 equals(const StringView &a, const StringView &b) { return a == b; }
+		static constexpr u32 equals(const StringView &a, str b) { return a == b; }
 	};
 
 	template <typename T>
