@@ -9,23 +9,6 @@ namespace Vultr
 {
 	namespace RenderSystem
 	{
-		struct CameraUBO
-		{
-			Vec4 position{};
-			Mat4 view{};
-			Mat4 proj{};
-			Mat4 view_proj{};
-		};
-
-		struct DirectionalLightUBO
-		{
-			Vec4 direction{};
-			Vec4 ambient{};
-			Vec4 diffuse{};
-			f32 specular;
-			f32 intensity;
-			s32 exists = false;
-		};
 
 		struct MaterialUBO
 		{
@@ -36,40 +19,19 @@ namespace Vultr
 		};
 
 		static Component *component(void *component) { return static_cast<Component *>(component); }
-		Component *init(const Path &build_path)
+		Component *init()
 		{
 			auto *c        = v_alloc<Component>();
 
-			auto signature = signature_from_components<Transform, Mesh>();
+			auto signature = signature_from_components<Transform, Mesh, Material>();
 			register_system(c, signature, entity_created, entity_destroyed);
-
-			c->camera_layout   = Platform::init_descriptor_layout<Platform::UboBinding<CameraUBO>, Platform::UboBinding<DirectionalLightUBO>>(engine()->context, 1);
-			c->material_layout = Platform::init_descriptor_layout<Platform::UboBinding<MaterialUBO>>(engine()->context, 1);
-			Platform::register_descriptor_layout(engine()->context, c->camera_layout);
-			Platform::register_descriptor_layout(engine()->context, c->material_layout);
 
 			c->output_framebuffer = nullptr;
 			reinitialize(c);
 
-			Buffer vert_src;
-			fread_all(build_path / "shaders/basic_vert.spv", &vert_src);
-
-			Buffer frag_src;
-			fread_all(build_path / "shaders/basic_frag.spv", &frag_src);
-			CHECK_UNWRAP(auto *example_shader, Platform::try_load_shader(engine()->context, {
-																								.vert_src = vert_src,
-																								.frag_src = frag_src,
-																							}));
-
-			Platform::GraphicsPipelineInfo info{
-				.shader             = example_shader,
-				.descriptor_layouts = Vector({c->camera_layout, c->material_layout}),
-			};
-
-			c->pipeline = Platform::init_pipeline(engine()->context, c->output_framebuffer, info);
-
-			Platform::destroy_shader(engine()->context, example_shader);
-
+			//
+			//			c->pipeline = Platform::init_pipeline(engine()->context, c->output_framebuffer, info);
+			//
 			return c;
 		}
 		void entity_created(void *system, Entity entity) {}
@@ -85,53 +47,51 @@ namespace Vultr
 		static Mat4 view_matrix(const Transform &transform) { return glm::lookAt(transform.position, transform.position + forward(transform), Vec3(0, 1, 0)); }
 		static Mat4 projection_matrix(const Camera &camera, f32 screen_width, f32 screen_height) { return glm::perspective(camera.fov, (f64)screen_width / (f64)screen_height, camera.znear, camera.zfar); }
 
-		static void render(CameraUBO camera_ubo, Component *system, Platform::CmdBuffer *cmd)
+		static void render(Platform::CameraUBO camera_ubo, Component *system, Platform::CmdBuffer *cmd)
 		{
-			Platform::update_descriptor_set(cmd, system->camera_layout, &camera_ubo, 0, 0);
 			bool update_light = false;
 			for (auto [light, transform_component, directional_light] : get_entities<Transform, DirectionalLight>())
 			{
-				DirectionalLightUBO ubo{
+				Platform::DirectionalLightUBO ubo{
+					.direction = Vec4(forward(transform_component), 0),
 					.ambient   = Vec4(163, 226, 253, 1),
 					.diffuse   = Vec4(2000),
-					.direction = Vec4(forward(transform_component), 0),
 					.specular  = 1000,
 					.intensity = 2000,
 					.exists    = true,
 				};
-				Platform::update_descriptor_set(cmd, system->camera_layout, &ubo, 0, 1);
+				Platform::update_default_descriptor_set(cmd, &camera_ubo, &ubo);
 				update_light = true;
 				break;
 			}
 			ASSERT(update_light, "No directional light found!");
-			{
-				MaterialUBO material_ubo{
-					.albedo            = Vec4(1),
-					.ambient_occlusion = 1,
-					.metallic          = 1,
-					.roughness         = 1,
-				};
-				Platform::update_descriptor_set(cmd, system->material_layout, &material_ubo, 0, 0);
-			}
-			Platform::flush_descriptor_set_changes(cmd);
 
-			Platform::bind_pipeline(cmd, system->pipeline);
-			Platform::bind_descriptor_set(cmd, system->pipeline, system->camera_layout, 0, 0);
-			Platform::bind_descriptor_set(cmd, system->pipeline, system->material_layout, 1, 0);
-			for (auto [entity, transform, mesh] : get_entities<Transform, Mesh>())
+			for (auto [entity, transform, mesh, material] : get_entities<Transform, Mesh, Material>())
 			{
-				if check (mesh.source.try_value(), auto render_mesh, auto _)
+				if (!mesh.source.loaded() || !material.source.loaded())
+					continue;
+
+				auto model        = model_matrix(transform);
+				auto *loaded_mesh = mesh.source.value();
+				auto *loaded_mat  = material.source.value();
+
+				if (!system->pipelines.contains(material.source))
 				{
-					auto model = model_matrix(transform);
-
-					Platform::PushConstant push_constant{
-						.color = Vec4(1),
-						.model = model,
-					};
-
-					Platform::push_constants(cmd, system->pipeline, push_constant);
-					Platform::draw_mesh(cmd, render_mesh);
+					Platform::GraphicsPipelineInfo info{.shader = loaded_mat->source.value()};
+					auto *pipeline = Platform::init_pipeline(engine()->context, system->output_framebuffer, info);
+					system->pipelines.set(material.source, pipeline);
 				}
+
+				auto *pipeline = system->pipelines.get(material.source);
+
+				Platform::PushConstant push_constant{
+					.color = Vec4(1),
+					.model = model,
+				};
+
+				Platform::push_constants(cmd, pipeline, push_constant);
+				Platform::bind_material(cmd, pipeline, loaded_mat);
+				Platform::draw_mesh(cmd, loaded_mesh);
 			}
 		}
 
@@ -141,7 +101,7 @@ namespace Vultr
 
 			auto width  = Platform::get_window_width(engine()->window);
 			auto height = Platform::get_window_height(engine()->window);
-			CameraUBO camera_ubo{
+			Platform::CameraUBO camera_ubo{
 				.position  = Vec4(transform.position, 0),
 				.view      = view_matrix(transform),
 				.proj      = projection_matrix(camera, static_cast<f32>(width), static_cast<f32>(height)),
@@ -190,10 +150,11 @@ namespace Vultr
 
 		void destroy(Component *c)
 		{
+			for (auto &[_, pipeline] : c->pipelines)
+			{
+				Platform::destroy_pipeline(engine()->context, pipeline);
+			}
 			Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
-			Platform::destroy_pipeline(engine()->context, c->pipeline);
-			Platform::destroy_descriptor_layout(engine()->context, c->material_layout);
-			Platform::destroy_descriptor_layout(engine()->context, c->camera_layout);
 			v_free(c);
 		}
 	} // namespace RenderSystem

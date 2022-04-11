@@ -95,9 +95,9 @@ namespace Vultr::Platform::Filesystem
 			switch (ent->d_type)
 			{
 				case DT_REG:
-					return DirectoryEntry{.name = ent->d_name, .type = EntryType::FILE, .uuid = ent->d_ino};
+					return DirectoryEntry{.type = EntryType::FILE, .name = ent->d_name, .uuid = ent->d_ino};
 				case DT_DIR:
-					return DirectoryEntry{.name = ent->d_name, .type = EntryType::DIR, .uuid = ent->d_ino};
+					return DirectoryEntry{.type = EntryType::DIR, .name = ent->d_name, .uuid = ent->d_ino};
 				default:
 					continue;
 			}

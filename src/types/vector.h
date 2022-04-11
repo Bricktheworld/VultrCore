@@ -246,6 +246,18 @@ namespace Vultr
 			return false;
 		}
 
+		size_t index_of(const T &other) const
+		{
+			size_t i = 0;
+			for (const auto &element : *this)
+			{
+				if (other == element)
+					return i;
+				i++;
+			}
+			THROW("Vector does not contain element and cannot return index of!");
+		}
+
 		size_t size() const { return m_size; }
 		size_t capacity() const { return m_capacity; }
 		T &last()

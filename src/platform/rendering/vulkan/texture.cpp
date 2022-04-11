@@ -22,6 +22,8 @@ namespace Vultr
 					return VK_FORMAT_R8G8B8A8_SRGB;
 				case Platform::TextureFormat::DEPTH:
 					return Vulkan::get_supported_depth_format(d);
+				default:
+					return VK_FORMAT_R8G8B8_UNORM;
 			}
 		}
 	} // namespace Vulkan
@@ -55,8 +57,8 @@ namespace Vultr
 						  .tiling      = VK_IMAGE_TILING_OPTIMAL,
                 // NOTE(Brandon): We are just marking all of the flags that MIGHT be used, this should probably be something that we should flag depending on if performance is impacted
 						  .usage         = usage_flags | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-						  .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 						  .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
+						  .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             };
 
 			VmaAllocationCreateInfo alloc_info{
@@ -85,8 +87,9 @@ namespace Vultr
 
 			texture->image_view_info = {
 				.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-				.format   = texture->image_info.format,
+				.image    = texture->image,
 				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.format   = texture->image_info.format,
 				.subresourceRange =
 					{
 						.aspectMask     = texture->format != Platform::TextureFormat::DEPTH ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -95,8 +98,6 @@ namespace Vultr
 						.baseArrayLayer = 0,
 						.layerCount     = 1,
 					},
-				.image = texture->image,
-
 			};
 
 			texture->layout = VK_IMAGE_LAYOUT_GENERAL;
@@ -128,12 +129,12 @@ namespace Vultr
 
 			VkImageMemoryBarrier barrier_to_transfer = {
 				.sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask    = 0,
+				.dstAccessMask    = VK_ACCESS_TRANSFER_WRITE_BIT,
 				.oldLayout        = VK_IMAGE_LAYOUT_UNDEFINED,
 				.newLayout        = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				.image            = texture->image,
 				.subresourceRange = range,
-				.srcAccessMask    = 0,
-				.dstAccessMask    = VK_ACCESS_TRANSFER_WRITE_BIT,
 			};
 
 			auto cmd = begin_cmd_buffer(d, &c->cmd_pool);
@@ -157,12 +158,12 @@ namespace Vultr
 
 			VkImageMemoryBarrier barrier_to_readable{
 				.sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask    = VK_ACCESS_TRANSFER_WRITE_BIT,
+				.dstAccessMask    = VK_ACCESS_SHADER_READ_BIT,
 				.oldLayout        = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				.newLayout        = texture->layout,
 				.image            = texture->image,
 				.subresourceRange = range,
-				.srcAccessMask    = VK_ACCESS_TRANSFER_WRITE_BIT,
-				.dstAccessMask    = VK_ACCESS_SHADER_READ_BIT,
 			};
 
 			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_to_readable);
@@ -175,11 +176,10 @@ namespace Vultr
 				.pCommandBuffers    = &cmd,
 			};
 
-			vkResetFences(d->device, 1, &c->cmd_pool.fence);
-			vkQueueSubmit(d->graphics_queue, 1, &submit_info, c->cmd_pool.fence);
+			VK_CHECK(vkResetFences(d->device, 1, &c->cmd_pool.fence));
+			graphics_queue_submit(d, 1, &submit_info, c->cmd_pool.fence);
 
-			// TODO(Brandon): Maybe don't wait here, and instead have a fence.
-			vkWaitForFences(d->device, 1, &c->cmd_pool.fence, VK_TRUE, UINT64_MAX);
+			VK_CHECK(vkWaitForFences(d->device, 1, &c->cmd_pool.fence, VK_TRUE, UINT64_MAX));
 
 			Vulkan::free_buffer(d, &staging_buffer);
 		}

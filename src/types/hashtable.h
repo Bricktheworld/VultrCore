@@ -91,6 +91,16 @@ namespace Vultr
 			if (m_buckets != nullptr)
 				Utils::copy(m_buckets, other.m_buckets, m_capacity + 1);
 		}
+		HashTable &operator=(const HashTable &other)
+		{
+			m_size          = other.m_size;
+			m_capacity      = other.m_capacity;
+			m_deleted_count = other.m_deleted_count;
+			m_buckets       = other.m_capacity == 0 ? nullptr : v_alloc<Bucket>(other.m_capacity + 1);
+			if (m_buckets != nullptr)
+				Utils::copy(m_buckets, other.m_buckets, m_capacity + 1);
+			return *this;
+		}
 		HashTable(HashTable &&other) : m_size(other.m_size), m_capacity(other.m_capacity), m_deleted_count(other.m_deleted_count), m_buckets(other.m_capacity == 0 ? nullptr : v_alloc<Bucket>(other.m_capacity + 1))
 		{
 			if (m_buckets != nullptr)
@@ -103,6 +113,25 @@ namespace Vultr
 			other.m_capacity      = 0;
 			other.m_deleted_count = 0;
 		}
+
+		HashTable &operator=(HashTable &&other)
+		{
+			m_size          = other.m_size;
+			m_capacity      = other.m_capacity;
+			m_deleted_count = other.m_deleted_count;
+			m_buckets       = other.m_capacity == 0 ? nullptr : v_alloc<Bucket>(other.m_capacity + 1);
+			if (m_buckets != nullptr)
+			{
+				Utils::move(m_buckets, other.m_buckets, m_capacity + 1);
+				v_free(other.m_buckets);
+			}
+			other.m_buckets       = nullptr;
+			other.m_size          = 0;
+			other.m_capacity      = 0;
+			other.m_deleted_count = 0;
+			return *this;
+		}
+
 		~HashTable() { clear(); }
 
 		HashTableIterator begin()

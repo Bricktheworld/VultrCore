@@ -303,6 +303,12 @@ namespace Vultr
 			vkDestroyDebugUtilsMessengerEXT(d->instance, d->debug_messenger, nullptr);
 		}
 
+		void graphics_queue_submit(Device *d, u32 submit_count, const VkSubmitInfo *p_submits, VkFence fence)
+		{
+			Platform::Lock lock(d->graphics_queue_mutex);
+			VK_CHECK(vkQueueSubmit(d->graphics_queue, submit_count, p_submits, fence));
+		}
+
 		void wait_idle(Device *d) { vkDeviceWaitIdle(d->device); }
 
 		VkFormat get_supported_depth_format(Device *d)

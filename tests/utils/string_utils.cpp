@@ -80,3 +80,43 @@ TEST(StringUtils, ReplaceAll)
 	auto res = replace_all("big big chungus, big chungus, big chungus", "big", "small");
 	ASSERT_STRCASEEQ((str)res, "small small chungus, small chungus, small chungus");
 }
+
+TEST(StringUtils, Split)
+{
+	auto res = split("something, that, is, delimited", ", ");
+	ASSERT_EQ(res.size(), 4);
+	ASSERT_TRUE(res[0] == "something");
+	ASSERT_TRUE(res[1] == "that");
+	ASSERT_TRUE(res[2] == "is");
+	ASSERT_TRUE(res[3] == "delimited");
+
+	res = split("something, that, is, delimited, ", ", ");
+	ASSERT_EQ(res.size(), 4);
+	ASSERT_TRUE(res[0] == "something");
+	ASSERT_TRUE(res[1] == "that");
+	ASSERT_TRUE(res[2] == "is");
+	ASSERT_TRUE(res[3] == "delimited");
+
+	res = split("something, that, is, delimited, a", ", ");
+	ASSERT_EQ(res.size(), 5);
+	ASSERT_TRUE(res[0] == "something");
+	ASSERT_TRUE(res[1] == "that");
+	ASSERT_TRUE(res[2] == "is");
+	ASSERT_TRUE(res[3] == "delimited");
+	ASSERT_TRUE(res[4] == "a");
+}
+
+TEST(StringUtils, ParseF64)
+{
+	f64 res = parse_f64("0.512");
+	ASSERT_EQ(res, 0.512);
+
+	res = parse_f64("-0.512");
+	ASSERT_EQ(res, -0.512);
+
+	res = parse_f64("1e-10");
+	ASSERT_EQ(res, 1e-10);
+
+	res = parse_f64("-10.125e-10");
+	ASSERT_EQ(res, -10.125e-10);
+}

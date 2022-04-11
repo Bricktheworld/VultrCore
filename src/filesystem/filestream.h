@@ -54,6 +54,7 @@ namespace Vultr
 							return "w+b";
 					}
 			}
+			return nullptr;
 		}
 	};
 
@@ -197,10 +198,10 @@ namespace Vultr
 	}
 
 	template <typename T>
-	requires(is_valid_stream_format<T>) void fwrite_all(const Path &path, const BufferT<T> &buf, StreamWriteMode write_mode) { CHECK(try_write_all<T>(path, buf, write_mode)); }
+	requires(is_valid_stream_format<T>) void fwrite_all(const Path &path, const BufferT<T> &buf, StreamWriteMode write_mode) { CHECK(try_fwrite_all<T>(path, buf, write_mode)); }
 
 	template <typename T>
-	requires(is_valid_stream_format<T>) void fwrite_all(const Path &path, const T *buf, size_t size, StreamWriteMode write_mode) { CHECK(try_write_all<T>(path, buf, size, write_mode)); }
+	requires(is_valid_stream_format<T>) void fwrite_all(const Path &path, const T *buf, size_t size, StreamWriteMode write_mode) { CHECK(try_fwrite_all<T>(path, buf, size, write_mode)); }
 
 	template <typename T>
 	requires(is_valid_stream_format<T>) ErrorOr<void> try_fwrite_all(const Path &path, const BufferT<T> &buf, StreamWriteMode write_mode)

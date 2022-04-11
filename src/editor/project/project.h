@@ -12,6 +12,7 @@ namespace Vultr
 		Path build_dir{};
 		VultrInitApi init{};
 		VultrUpdateApi update{};
+		VultrDestroyApi destroy{};
 	};
 
 	ErrorOr<Project> load_game(const Path &build_dir, const Path &resource_dir);

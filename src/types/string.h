@@ -95,7 +95,7 @@ namespace Vultr
 			return string_hash(c_str(), length());
 		}
 
-		str c_str() const { return storage; }
+		constexpr str c_str() const { return storage; }
 		operator str() { return storage; }
 		constexpr size_t length() const { return size() - 1; }
 		constexpr size_t is_empty() const { return length() == 0; }

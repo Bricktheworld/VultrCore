@@ -1,6 +1,7 @@
 #pragma once
 #include <types/types.h>
 #include <types/hashmap.h>
+#include <types/queue.h>
 #include <types/static_details.h>
 #include <types/string_view.h>
 #include <types/string_hash.h>
@@ -28,12 +29,13 @@ namespace Vultr
 	{
 		u32 id = 0;
 		Path path{};
+		bool is_kill_request = false;
 	};
 
 	template <typename T>
 	requires(is_pointer<T>) struct ResourceAllocator
 	{
-		explicit ResourceAllocator() {}
+		explicit ResourceAllocator() = default;
 		void incr(u32 id, const Path &path)
 		{
 			Platform::Lock lock(mutex);
@@ -70,6 +72,10 @@ namespace Vultr
 			if (info.load_state == ResourceLoadState::LOADED)
 			{
 				free_queue.push(info.data);
+				if (free_queue_listener != nullptr)
+				{
+					free_queue_listener->push(id);
+				}
 			}
 		}
 
@@ -98,6 +104,8 @@ namespace Vultr
 			while (true)
 			{
 				u32 res = load_queue.pop_wait();
+				if (res == U32Max)
+					return {.is_kill_request = true};
 
 				Platform::Lock lock(mutex);
 
@@ -105,7 +113,7 @@ namespace Vultr
 					continue;
 
 				resources.get(res).load_state = ResourceLoadState::LOADING;
-				return {.id = res, .path = resources.get(res).path};
+				return {.id = res, .path = resources.get(res).path, .is_kill_request = false};
 			}
 		}
 
@@ -127,14 +135,101 @@ namespace Vultr
 			return Success;
 		}
 
+		void kill_loading_threads()
+		{
+			load_queue.clear();
+			load_queue.push(U32Max);
+			while (!load_queue.empty())
+			{
+			}
+		}
+		void kill_freeing_threads()
+		{
+			for (auto &[id, info] : resources)
+			{
+				info.count = 1;
+				decr(id);
+			}
+			free_queue.push((T)-1);
+			while (!free_queue.empty())
+			{
+			}
+		}
+
 		Hashmap<u32, ResourceInfo<T>> resources{};
 		Queue<u32, 1024> load_queue{};
 		Queue<T, 1024> free_queue{};
+		Queue<u32, 1024> *free_queue_listener = nullptr;
 		Platform::Mutex mutex{};
 	};
 
 	template <typename T>
 	ResourceAllocator<T> *resource_allocator();
+
+	template <typename T>
+	requires(is_pointer<T>) struct Resource;
+
+	struct ResourceId
+	{
+		explicit consteval ResourceId(StringHash hash) : id(hash.value()) {}
+		explicit constexpr ResourceId(u32 id) : id(id) {}
+		constexpr ResourceId(const ResourceId &other) : id(other.id) {}
+		ResourceId &operator=(const ResourceId &other)
+		{
+			id = other.id;
+			return *this;
+		}
+
+		template <typename T>
+		ResourceId(const Resource<T> &other);
+		template <typename T>
+		ResourceId &operator=(const Resource<T> &other);
+
+		constexpr bool operator==(const ResourceId &other) const { return id == other.id; }
+		constexpr operator u32() const { return id; }
+
+		template <typename T>
+		bool loaded() const
+		{
+			return id && resource_allocator<T>()->is_loaded(id);
+		}
+
+		template <typename T>
+		ErrorOr<T> try_value() const
+		{
+			return resource_allocator<T>()->try_get_loaded_resource(id);
+		}
+
+		template <typename T>
+		T value() const
+		{
+			CHECK_UNWRAP(T res, resource_allocator<T>()->try_get_loaded_resource(id));
+			return res;
+		}
+
+		template <typename T>
+		T value_or(T other) const
+		{
+			if check (try_value<T>(), auto value, auto _)
+			{
+				return value;
+			}
+			else
+			{
+				return other;
+			}
+		}
+
+		u32 id;
+	};
+
+	template <>
+	struct Traits<ResourceId> : GenericTraits<ResourceId>
+	{
+		static constexpr u32 hash(const ResourceId value) { return value.id; }
+		static constexpr bool equals(const ResourceId a, const ResourceId b) { return a == b; }
+		static constexpr bool is_trivial() { return false; }
+	};
 
 	template <typename T>
 	requires(is_pointer<T>) struct Resource
@@ -197,6 +292,9 @@ namespace Vultr
 			return *this;
 		}
 
+		bool operator==(const Resource &other) const { return this->id == other.id; }
+		bool operator==(const ResourceId &other) const { return this->id == other.id; }
+
 		bool loaded() const { return id.has_value() && resource_allocator<T>()->is_loaded(id.value()); }
 
 		ErrorOr<T> try_value() const
@@ -205,6 +303,12 @@ namespace Vultr
 				return Error("Invalid empty resource!");
 
 			return resource_allocator<T>()->try_get_loaded_resource(id.value());
+		}
+
+		T value() const
+		{
+			CHECK_UNWRAP(T res, resource_allocator<T>()->try_get_loaded_resource(id.value()));
+			return res;
 		}
 
 		T value_or(T other) const
@@ -219,8 +323,33 @@ namespace Vultr
 			}
 		}
 
+		constexpr operator ResourceId() { return ResourceId(id.value_or(0)); }
+
 	  private:
 		Option<u32> id = None;
+
+		friend ResourceId;
+		friend Traits<Resource<T>>;
+	};
+
+	template <typename T>
+	ResourceId::ResourceId(const Resource<T> &other) : id(other.id.value())
+	{
+	}
+
+	template <typename T>
+	ResourceId &ResourceId::operator=(const Resource<T> &other)
+	{
+		id = other.id.value();
+		return *this;
+	}
+
+	template <typename T>
+	struct Traits<Resource<T>> : GenericTraits<Resource<T>>
+	{
+		static constexpr u32 hash(const Resource<T> value) { return value.id.value_or(0); }
+		static constexpr bool equals(const Resource<T> a, const Resource<T> b) { return a == b; }
+		static constexpr bool is_trivial() { return false; }
 	};
 
 } // namespace Vultr

@@ -16,20 +16,43 @@ namespace Vultr
 			VkPhysicalDevice physical_device = nullptr;
 			VkPhysicalDeviceProperties properties{};
 
-			VkDevice device                          = nullptr;
-			VkSurfaceKHR surface                     = nullptr;
+			VkDevice device        = nullptr;
+			VkSurfaceKHR surface   = nullptr;
 
-			VkQueue graphics_queue                   = nullptr;
+			VkQueue graphics_queue = nullptr;
+			Platform::Mutex graphics_queue_mutex{};
 			VkQueue present_queue                    = nullptr;
 
 			VkDebugUtilsMessengerEXT debug_messenger = nullptr;
 
 			VmaAllocator allocator                   = nullptr;
+
+			Device()                                 = default;
+			Device(const Device &other)
+				: instance(other.instance), physical_device(other.physical_device), properties(other.properties), device(other.device), surface(other.surface), graphics_queue(other.graphics_queue),
+				  present_queue(other.present_queue), debug_messenger(other.debug_messenger), allocator(other.allocator)
+			{
+			}
+			Device &operator=(const Device &other)
+			{
+				instance        = other.instance;
+				physical_device = other.physical_device;
+				properties      = other.properties;
+				device          = other.device;
+				surface         = other.surface;
+				graphics_queue  = other.graphics_queue;
+				present_queue   = other.present_queue;
+				debug_messenger = other.debug_messenger;
+				allocator       = other.allocator;
+				return *this;
+			}
 		};
 
 		Device init_device(const Platform::Window *window, bool debug, PFN_vkDebugUtilsMessengerCallbackEXT debug_cb);
 		VkFormat get_supported_depth_format(Device *d);
 		void destroy_device(Device *d);
+
+		void graphics_queue_submit(Device *d, u32 submit_count, const VkSubmitInfo *p_submits, VkFence fence);
 
 		// void map_memory(Device *d, void *)
 

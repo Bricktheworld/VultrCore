@@ -17,6 +17,7 @@ namespace Vultr
 
 		TRY_UNWRAP(project.init, Platform::dl_load_symbol<VultrInitApi>(&project.dll, VULTR_INIT_SYMBOL));
 		TRY_UNWRAP(project.update, Platform::dl_load_symbol<VultrUpdateApi>(&project.dll, VULTR_UPDATE_SYMBOL));
+		TRY_UNWRAP(project.destroy, Platform::dl_load_symbol<VultrDestroyApi>(&project.dll, VULTR_DESTROY_SYMBOL));
 
 		return project;
 	}
@@ -44,13 +45,31 @@ namespace Vultr
 					Platform::free_imported_mesh(&mesh);
 				}
 			}
-			else if (extension == ".png")
+			//			else if (extension == ".png")
+			//			{
+			//			}
+			else if (extension == ".glsl")
 			{
-				return Success;
+				auto vertex_out   = out_dir / (local_src.basename() + ".vert_spv");
+				auto fragment_out = out_dir / (local_src.basename() + ".frag_spv");
+				if (needs_reimport(full_src, vertex_out) || needs_reimport(full_src, fragment_out))
+				{
+					String src{};
+					TRY(try_fread_all(full_src, &src));
+					TRY_UNWRAP(auto compiled, Platform::try_compile_shader(src));
+					TRY(try_fwrite_all(vertex_out, compiled.vert_src, StreamWriteMode::OVERWRITE));
+					TRY(try_fwrite_all(fragment_out, compiled.frag_src, StreamWriteMode::OVERWRITE));
+				}
 			}
 			else
 			{
-				return Error("Invalid extension " + extension);
+				auto out = out_dir / local_src.basename();
+				if (needs_reimport(full_src, out))
+				{
+					Buffer src{};
+					TRY(try_fread_all(full_src, &src));
+					TRY(try_fwrite_all(out, src, StreamWriteMode::OVERWRITE));
+				}
 			}
 			return Success;
 		}

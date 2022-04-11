@@ -181,6 +181,25 @@ namespace Vultr
 		return positions;
 	}
 
+	Vector<StringView> split(StringView string, StringView delimiter)
+	{
+		Vector<StringView> split{};
+		str current = string.c_str();
+		while (current < string.c_str() + string.length())
+		{
+			auto *res = static_cast<char *>(memmem(current, string.length() - (current - string.c_str()), delimiter.c_str(), delimiter.length()));
+			if (res == nullptr)
+			{
+				split.push_back({current, string.length() - (current - string.c_str())});
+				break;
+			}
+			split.push_back({current, (size_t)(res - current)});
+			current = res + delimiter.length();
+		}
+
+		return split;
+	}
+
 	String replace_all(StringView haystack, StringView needle, StringView replacement)
 	{
 		if (haystack.is_empty())
@@ -200,5 +219,60 @@ namespace Vultr
 		}
 		replaced_string += haystack.substr(last_position, haystack.length());
 		return replaced_string;
+	}
+
+	f64 parse_f64(StringView string)
+	{
+		f64 result        = 0;
+		f64 fact          = 1;
+		s32 exponent      = 0;
+		s32 exponent_fact = 1;
+		size_t i          = 0;
+		if (string[i] == '-')
+		{
+			i++;
+			fact = -1;
+		}
+
+		bool point_seen = false;
+		bool e_seen     = false;
+		for (; i < string.length(); i++)
+		{
+			if (string[i] == '.')
+			{
+				ASSERT(!e_seen, "Cannot have a decimal in the e exponent!");
+				point_seen = true;
+				continue;
+			}
+
+			if (string[i] == 'e')
+			{
+				e_seen = true;
+				continue;
+			}
+
+			if (e_seen)
+			{
+				if (string[i] == '-')
+				{
+					exponent_fact = -1;
+				}
+				else
+				{
+					s32 d = string[i] - '0';
+					ASSERT(d >= 0 && d <= 9, "Incorrect format, unknown character found!");
+					exponent = exponent * 10 + d;
+				}
+			}
+			else
+			{
+				s32 d = string[i] - '0';
+				ASSERT(d >= 0 && d <= 9, "Incorrect format, unknown character found!");
+				if (point_seen)
+					fact /= 10.0f;
+				result = result * 10.0f + (f64)d;
+			}
+		}
+		return result * fact * pow(10, exponent * exponent_fact);
 	}
 } // namespace Vultr

@@ -36,7 +36,7 @@ namespace Vultr
 		return pair_int_hash(first, last);
 	}
 
-	inline u32 ptr_hash(void *ptr) { return u64_hash((u64)ptr); }
+	inline u32 ptr_hash(const void *ptr) { return u64_hash((u64)ptr); }
 
 	template <u32 n>
 	inline consteval u32 string_hash(const char (&characters)[n])

@@ -29,9 +29,10 @@ namespace Vultr
 	void init_resource_allocators();
 	void destroy_game_memory(GameMemory *m);
 
-	constexpr const char *USE_GAME_MEMORY_SYMBOL = "vultr_init";
+	constexpr const char *USE_GAME_MEMORY_SYMBOL = "use_game_memory";
 	constexpr const char *VULTR_INIT_SYMBOL      = "vultr_init";
 	constexpr const char *VULTR_UPDATE_SYMBOL    = "vultr_update";
+	constexpr const char *VULTR_DESTROY_SYMBOL   = "vultr_destroy";
 
 } // namespace Vultr
 

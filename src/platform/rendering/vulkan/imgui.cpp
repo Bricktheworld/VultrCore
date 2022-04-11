@@ -85,6 +85,8 @@ namespace Vultr
 				ImGui::UpdatePlatformWindows();
 				ImGui::RenderPlatformWindowsDefault();
 			}
+			auto *d = Vulkan::get_device(cmd->render_context);
+			Platform::Lock lock(d->graphics_queue_mutex);
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd->cmd_buffer);
 		}
 

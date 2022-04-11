@@ -10,7 +10,7 @@ namespace Vultr
 	{
 	  public:
 		Bitfield() = default;
-		explicit Bitfield(u64 data) : m_elements({data}){};
+		Bitfield(u64 data) : m_elements({data}){};
 		~Bitfield() = default;
 
 		void set(size_t index, bool val)

@@ -5,34 +5,26 @@ namespace Vultr
 {
 	namespace Vulkan
 	{
-		struct DescriptorSet
-		{
-			struct MappedBuffer
-			{
-				Vulkan::GpuBuffer buffer{};
-				void *mapped = nullptr;
-			};
-			const Platform::DescriptorLayout *layout = nullptr;
-			VkDescriptorSet vk_set                   = nullptr;
-			Hashmap<u32, MappedBuffer> binding_buffers{};
-			Hashmap<u32, Option<Platform::Texture>> binding_samplers{};
-			bool updated = false;
-		};
-
 		VkDescriptorPool init_descriptor_pool(Device *d);
 		void destroy_descriptor_pool(Device *d, VkDescriptorPool pool);
-
-		DescriptorSet init_descriptor_set(Device *d, VkDescriptorPool pool, Platform::DescriptorLayout *layout);
-		void destroy_descriptor_set(Device *d, DescriptorSet *buffer);
+		size_t pad_size(Device *d, size_t size);
+		struct UniformBufferBinding
+		{
+			Vulkan::GpuBuffer buffer{};
+			void *mapped = nullptr;
+		};
 	} // namespace Vulkan
 
 	namespace Platform
 	{
-		struct DescriptorLayout
+		struct DescriptorSet
 		{
-			Vector<DescriptorSetBinding> bindings{};
-			u32 max_objects                 = 0;
-			VkDescriptorSetLayout vk_layout = nullptr;
+			Shader *shader = nullptr;
+			Vulkan::UniformBufferBinding uniform_buffer_binding{};
+			Vector<Option<ResourceId>> sampler_bindings{};
+
+			Vector<VkDescriptorSet> vk_frame_descriptor_sets{};
+			Bitfield<64> updated = 0;
 		};
 	} // namespace Platform
 

@@ -12,8 +12,15 @@ namespace Vultr
 		struct Frame
 		{
 			CommandPool cmd_pool{};
-			VkDescriptorPool descriptor_pool{};
-			Hashmap<Platform::DescriptorLayout *, DescriptorSet> descriptor_sets{};
+			VkDescriptorPool default_uniform_descriptor_pool{};
+			VkDescriptorSet default_uniform_descriptor{};
+		};
+
+		struct DefaultDescriptorBinding
+		{
+			Vulkan::GpuBuffer buffer{};
+			void *mapped         = nullptr;
+			Bitfield<64> updated = 0;
 		};
 
 		struct SwapChain
@@ -37,6 +44,10 @@ namespace Vultr
 			Vector<Frame> frames{};
 
 			bool framebuffer_was_resized = false;
+
+			VkDescriptorSetLayout default_descriptor_set_layout{};
+			DefaultDescriptorBinding camera_binding{};
+			DefaultDescriptorBinding directional_light_binding{};
 		};
 
 		SwapChain init_swapchain(const Device &device, const Platform::Window *window);
@@ -45,7 +56,6 @@ namespace Vultr
 		ErrorOr<void> submit_swapchain(SwapChain *sc, u32 image_index, u32 command_buffer_count, VkCommandBuffer *command_buffers);
 		ErrorOr<void> queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer, VkFence fence = VK_NULL_HANDLE);
 		ErrorOr<void> wait_queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer);
-		void push_descriptor_set_layout(SwapChain *sc, Platform::DescriptorLayout *layout);
 		void destroy_swapchain(SwapChain *sc);
 	}; // namespace Vulkan
 } // namespace Vultr

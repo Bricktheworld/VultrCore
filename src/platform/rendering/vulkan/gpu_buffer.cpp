@@ -51,11 +51,10 @@ namespace Vultr
 				.pCommandBuffers    = &cmd,
 			};
 
-			vkResetFences(d->device, 1, &c->cmd_pool.fence);
-			vkQueueSubmit(d->graphics_queue, 1, &submit_info, c->cmd_pool.fence);
+			VK_CHECK(vkResetFences(d->device, 1, &c->cmd_pool.fence));
+			graphics_queue_submit(d, 1, &submit_info, c->cmd_pool.fence);
 
-			// TODO(Brandon): Maybe don't wait here, and instead have a fence.
-			vkWaitForFences(d->device, 1, &c->cmd_pool.fence, VK_TRUE, UINT64_MAX);
+			VK_CHECK(vkWaitForFences(d->device, 1, &c->cmd_pool.fence, VK_TRUE, UINT64_MAX));
 		}
 
 		void *map_buffer(Device *d, GpuBuffer *buffer)

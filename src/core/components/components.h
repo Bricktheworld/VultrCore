@@ -12,6 +12,7 @@ namespace Vultr
 	struct ReflTraits<Material> : public GenericTraits<Material>
 	{
 		static consteval StringView type_name() { return "Material"; }
+		static consteval u32 type_id() { return string_hash(type_name(), type_name().length()); }
 	};
 
 	template <>
@@ -27,12 +28,14 @@ namespace Vultr
 				},
 			});
 		}
+		static consteval u32 component_id() { return ReflTraits<Material>::type_id(); }
 	};
 
 	template <>
 	struct ReflTraits<Transform> : public GenericTraits<Transform>
 	{
 		static consteval StringView type_name() { return "Transform"; }
+		static consteval u32 type_id() { return string_hash(type_name(), type_name().length()); }
 	};
 
 	template <>
@@ -58,12 +61,14 @@ namespace Vultr
 				},
 			});
 		}
+		static consteval u32 component_id() { return ReflTraits<Transform>::type_id(); }
 	};
 
 	template <>
 	struct ReflTraits<Mesh> : public GenericTraits<Mesh>
 	{
 		static consteval StringView type_name() { return "Mesh"; }
+		static consteval u32 type_id() { return string_hash(type_name(), type_name().length()); }
 	};
 
 	template <>
@@ -79,12 +84,14 @@ namespace Vultr
 				},
 			});
 		}
+		static consteval u32 component_id() { return ReflTraits<Transform>::type_id(); }
 	};
 
 	template <>
 	struct ReflTraits<Camera> : public GenericTraits<Camera>
 	{
 		static consteval StringView type_name() { return "Camera"; }
+		static consteval u32 type_id() { return string_hash(type_name(), type_name().length()); }
 	};
 
 	template <>
@@ -140,12 +147,14 @@ namespace Vultr
 				},
 			});
 		}
+		static consteval u32 component_id() { return ReflTraits<Transform>::type_id(); }
 	};
 
 	template <>
 	struct ReflTraits<DirectionalLight> : public GenericTraits<DirectionalLight>
 	{
 		static consteval StringView type_name() { return "DirectionalLight"; }
+		static consteval u32 type_id() { return string_hash(type_name(), type_name().length()); }
 	};
 
 	template <>
@@ -176,5 +185,6 @@ namespace Vultr
 				},
 			});
 		}
+		static consteval u32 component_id() { return ReflTraits<Transform>::type_id(); }
 	};
 } // namespace Vultr

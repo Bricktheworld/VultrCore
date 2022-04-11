@@ -7,7 +7,7 @@ namespace Vultr
 {
 	struct Material
 	{
-		Resource<Platform::Shader *> source{};
+		Resource<Platform::Material *> source{};
 	};
 
 } // namespace Vultr

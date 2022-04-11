@@ -12,7 +12,6 @@ namespace Vultr
 	{
 	  public:
 		using ValueType = T;
-		ErrorOr(const NoneT success) : m_is_error(false) {}
 		ErrorOr(const Error err) : m_is_error(true), m_error(err) {}
 		ErrorOr(T value)
 		{
@@ -69,7 +68,7 @@ namespace Vultr
 	{
 	  public:
 		ErrorOr() { m_is_error = false; }
-		ErrorOr(const NoneT none) : m_is_error(false) {}
+		ErrorOr(const NoneT success) : m_is_error(false) {}
 		ErrorOr(const Error err) : m_is_error(true), m_error(err) {}
 		~ErrorOr() = default;
 

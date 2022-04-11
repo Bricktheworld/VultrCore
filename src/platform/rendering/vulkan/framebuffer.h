@@ -16,6 +16,8 @@ namespace Vultr
 
 			VkFramebuffer vk_framebuffer = nullptr;
 			VkFramebufferCreateInfo vk_fb_info{};
+
+			Hashmap<u32, GraphicsPipeline *> pipelines{};
 		};
 	} // namespace Platform
 	namespace Vulkan

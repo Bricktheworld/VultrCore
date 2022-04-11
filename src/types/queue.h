@@ -2,6 +2,7 @@
 #include "types.h"
 #include "error_or.h"
 #include <platform/platform.h>
+#include <utils/transfer.h>
 
 namespace Vultr
 {
@@ -10,6 +11,53 @@ namespace Vultr
 	{
 		Queue()  = default;
 		~Queue() = default;
+
+		Queue(const Queue &other)
+		{
+			clear();
+			memcpy(storage(), other.storage(), capacity * sizeof(T));
+			m_front = other.m_front;
+			m_rear  = other.m_rear;
+
+			if (!empty())
+				queue_cond.notify_one();
+		}
+
+		Queue(Queue &&other)
+		{
+			clear();
+			memmove(storage(), other.storage(), capacity * sizeof(T));
+			m_front = other.m_front;
+			m_rear  = other.m_rear;
+
+			if (!empty())
+				queue_cond.notify_one();
+		}
+
+		// TODO(Brandon): Fix these move operators because they are not thread safe and they are not correct.
+		Queue &operator=(const Queue &other)
+		{
+			clear();
+			memcpy(storage(), other.storage(), capacity * sizeof(T));
+			m_front = other.m_front;
+			m_rear  = other.m_rear;
+
+			if (!empty())
+				queue_cond.notify_one();
+			return *this;
+		}
+
+		Queue &operator=(Queue &&other)
+		{
+			clear();
+			memmove(storage(), other.storage(), capacity * sizeof(T));
+			m_front = other.m_front;
+			m_rear  = other.m_rear;
+
+			if (!empty())
+				queue_cond.notify_one();
+			return *this;
+		}
 
 		bool full() const { return (m_front == 0 && m_rear == capacity - 1) || (m_rear == (m_front - 1) % (capacity - 1)); }
 		bool empty() const { return m_front == -1; }

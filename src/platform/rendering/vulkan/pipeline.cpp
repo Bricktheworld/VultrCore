@@ -1,5 +1,6 @@
 #include "pipeline.h"
 #include "framebuffer.h"
+#include "texture.h"
 
 namespace Vultr
 {
@@ -51,6 +52,7 @@ namespace Vultr
 			using namespace Vulkan;
 
 			auto *d                                  = Vulkan::get_device(c);
+			auto *sc                                 = Vulkan::get_swapchain(c);
 			auto *pipeline                           = v_alloc<GraphicsPipeline>();
 			pipeline->layout                         = info;
 
@@ -110,7 +112,7 @@ namespace Vultr
 				.depthClampEnable        = VK_FALSE,
 				.rasterizerDiscardEnable = VK_FALSE,
 				.polygonMode             = VK_POLYGON_MODE_FILL,
-				.cullMode                = VK_CULL_MODE_NONE,
+				.cullMode                = VK_CULL_MODE_BACK_BIT,
 				.frontFace               = VK_FRONT_FACE_CLOCKWISE,
 				.depthBiasEnable         = VK_FALSE,
 				.depthBiasConstantFactor = 0.0f,
@@ -158,23 +160,16 @@ namespace Vultr
 			};
 
 			VkPushConstantRange push_constant_range{
+				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				.offset     = 0,
 				.size       = sizeof(PushConstant),
-				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 			};
 
-			VkDescriptorSetLayout layouts[pipeline->layout.descriptor_layouts.size()];
-
-			u32 j = 0;
-			for (auto *descriptor_layout : pipeline->layout.descriptor_layouts)
-			{
-				layouts[j] = descriptor_layout->vk_layout;
-				j++;
-			}
+			VkDescriptorSetLayout layouts[2] = {sc->default_descriptor_set_layout, pipeline->layout.shader->vk_custom_layout};
 
 			VkPipelineLayoutCreateInfo pipeline_layout_info{
 				.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-				.setLayoutCount         = static_cast<u32>(pipeline->layout.descriptor_layouts.size()),
+				.setLayoutCount         = 2,
 				.pSetLayouts            = layouts,
 				.pushConstantRangeCount = 1,
 				.pPushConstantRanges    = &push_constant_range,
@@ -230,7 +225,68 @@ namespace Vultr
 		void bind_pipeline(CmdBuffer *cmd, GraphicsPipeline *pipeline)
 		{
 			ASSERT(pipeline != nullptr && pipeline->vk_pipeline != nullptr, "Cannot bind nullptr pipeline!");
+
+			Vector<VkWriteDescriptorSet> write_sets{};
+			Vector<VkDescriptorBufferInfo> ubo_info{};
+			Vector<VkDescriptorImageInfo> tex_info{};
+
+			auto *shader = pipeline->layout.shader;
+			auto *c      = cmd->render_context;
+			auto *d      = Vulkan::get_device(c);
+			Platform::Lock lock(shader->mutex);
+			for (auto &set : shader->allocated_descriptor_sets)
+			{
+				if (set->updated.at(cmd->image_index))
+				{
+					set->updated.set(cmd->image_index, false);
+					auto *vk_set = set->vk_frame_descriptor_sets[cmd->image_index];
+
+					auto &info   = ubo_info.push_back({
+						  .buffer = set->uniform_buffer_binding.buffer.buffer,
+						  .offset = 0,
+						  .range  = pad_size(d, set->shader->uniform_size),
+                    });
+					write_sets.push_back({
+						.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+						.pNext           = nullptr,
+						.dstSet          = vk_set,
+						.dstBinding      = 0,
+						.descriptorCount = 1,
+						.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+						.pBufferInfo     = &info,
+					});
+
+					u32 i = 1;
+					for (auto &sampler : set->sampler_bindings)
+					{
+						if (!sampler.has_value() || !sampler.value().loaded<Platform::Texture *>())
+							continue;
+
+						auto *texture = sampler.value().value<Platform::Texture *>();
+
+						auto &info    = tex_info.push_back({
+							   .sampler     = texture->sampler,
+							   .imageView   = texture->image_view,
+							   .imageLayout = texture->layout,
+                        });
+						write_sets.push_back({
+							.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+							.pNext           = nullptr,
+							.dstSet          = vk_set,
+							.dstBinding      = i,
+							.descriptorCount = 1,
+							.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+							.pImageInfo      = &info,
+						});
+						i++;
+					}
+				}
+			}
+
+			vkUpdateDescriptorSets(d->device, write_sets.size(), write_sets.empty() ? nullptr : &write_sets[0], 0, nullptr);
+
 			vkCmdBindPipeline(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_pipeline);
+			vkCmdBindDescriptorSets(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_layout, 0, 1, &cmd->frame->default_uniform_descriptor, 0, nullptr);
 		}
 	} // namespace Platform
 

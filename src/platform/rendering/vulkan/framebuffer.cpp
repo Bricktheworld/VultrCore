@@ -15,6 +15,8 @@ namespace Vultr
 					return VK_ATTACHMENT_LOAD_OP_CLEAR;
 				case LoadOp::LOAD:
 					return VK_ATTACHMENT_LOAD_OP_LOAD;
+				default:
+					return VK_ATTACHMENT_LOAD_OP_CLEAR;
 			}
 		}
 
@@ -26,6 +28,8 @@ namespace Vultr
 					return VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				case StoreOp::STORE:
 					return VK_ATTACHMENT_STORE_OP_STORE;
+				default:
+					return VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			}
 		}
 
@@ -146,6 +150,21 @@ namespace Vultr
 
 		u32 get_width(Framebuffer *framebuffer) { return framebuffer->width; }
 		u32 get_height(Framebuffer *framebuffer) { return framebuffer->height; }
+
+		void attach_pipeline(RenderContext *c, Framebuffer *framebuffer, const GraphicsPipelineInfo &info, u32 id)
+		{
+			ASSERT(!framebuffer->pipelines.contains(id), "Framebuffer already has pipeline attached!");
+			auto *pipeline = init_pipeline(c, framebuffer, info);
+			framebuffer->pipelines.set(id, pipeline);
+		}
+
+		void remove_pipeline(RenderContext *c, Framebuffer *framebuffer, u32 id)
+		{
+			ASSERT(framebuffer->pipelines.contains(id), "Framebuffer does not have pipeline attached!");
+			auto *pipeline = framebuffer->pipelines.get(id);
+			destroy_pipeline(c, pipeline);
+			framebuffer->pipelines.remove(id);
+		}
 	} // namespace Platform
 
 	namespace Vulkan

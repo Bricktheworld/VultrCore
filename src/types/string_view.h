@@ -26,9 +26,14 @@ namespace Vultr
 		constexpr StringView(str ref, size_t len) : ref(ref), len(len) {}
 
 		constexpr bool is_empty() const { return len == 0; }
-		operator str() const { return ref; }
+		constexpr operator str() const { return ref; }
 
-		constexpr bool operator==(const StringView &other) const { return *this == other.ref; }
+		constexpr bool operator==(const StringView &other) const
+		{
+			if (length() != other.length())
+				return false;
+			return *this == other.ref;
+		}
 		constexpr bool operator==(str other) const
 		{
 			if (other == nullptr && ref == nullptr)
@@ -40,7 +45,17 @@ namespace Vultr
 			if (other == nullptr)
 				return false;
 
-			return strcmp(other, ref) == 0;
+			for (size_t i = 0; i < length(); i++)
+			{
+				ASSERT(ref[i] != '\0', "StringView has incorrect length set!");
+
+				if (other[i] == '\0')
+					return false;
+
+				if (other[i] != ref[i])
+					return false;
+			}
+			return true;
 		}
 
 		constexpr char operator[](size_t index) const

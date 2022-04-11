@@ -3,6 +3,7 @@
 #include <platform/rendering.h>
 #include <core/components/camera.h>
 #include <core/components/transform.h>
+#include <types/queue.h>
 
 namespace Vultr
 {
@@ -10,13 +11,11 @@ namespace Vultr
 	{
 		struct Component
 		{
-			Platform::DescriptorLayout *camera_layout   = nullptr;
-			Platform::DescriptorLayout *material_layout = nullptr;
-			Platform::Framebuffer *output_framebuffer   = nullptr;
-			Platform::GraphicsPipeline *pipeline        = nullptr;
+			Platform::Framebuffer *output_framebuffer = nullptr;
+			Hashmap<ResourceId, Platform::GraphicsPipeline *> pipelines{};
 		};
 
-		Component *init(const Path &build_path);
+		Component *init();
 		void entity_created(void *system, Entity entity);
 		void entity_destroyed(void *system, Entity entity);
 		void update(const Camera &camera, const Transform &transform, Platform::CmdBuffer *cmd_buffer, Component *system);

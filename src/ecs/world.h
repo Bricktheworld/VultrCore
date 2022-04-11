@@ -102,6 +102,7 @@ namespace Vultr
 			{
 				size_t last_index = arr->m_size - 1;
 
+				arr->m_array[removed_index].~T();
 				Utils::move(arr->m_array + removed_index, arr->m_array + last_index, 1);
 
 				Entity last_entity = arr->m_index_to_entity.get(last_index);
@@ -162,7 +163,7 @@ namespace Vultr
 		}
 
 		template <typename T>
-		requires(ComponentTraits<T>::component_id &&ComponentTraits<T>::members) void register_component()
+		void register_component()
 		{
 			constexpr u32 type_id = ComponentTraits<T>::component_id();
 			ASSERT(!type_to_index.contains(type_id), "Component already registered!");

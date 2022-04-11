@@ -40,7 +40,6 @@ namespace Vultr
 			}
 
 			THROW("No good swap chain format found!");
-			return available_formats[0];
 		}
 
 		static VkPresentModeKHR pick_present_mode(const Vector<VkPresentModeKHR> &available_modes)
@@ -217,11 +216,74 @@ namespace Vultr
 
 		static void init_frames(SwapChain *sc)
 		{
+			auto *d = Vulkan::get_device(sc);
+			// TODO(Brandon): Don't hard code this stuff, this is very hacky.
+			VkDescriptorSetLayoutBinding layout_bindings[] = {
+				{
+					.binding         = 0,
+					.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.descriptorCount = 1,
+					.stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
+				},
+				{
+					.binding         = 1,
+					.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.descriptorCount = 1,
+					.stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
+				},
+			};
+
+			VkDescriptorSetLayoutCreateInfo layout_info = {
+				.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+				.pNext        = nullptr,
+				.flags        = 0,
+				.bindingCount = static_cast<u32>(2),
+				.pBindings    = layout_bindings,
+			};
+			VK_CHECK(vkCreateDescriptorSetLayout(d->device, &layout_info, nullptr, &sc->default_descriptor_set_layout));
+
+			{
+				auto padded_size   = pad_size(d, sizeof(Platform::CameraUBO));
+				auto buffer        = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+				void *mapped       = map_buffer(d, &buffer);
+				sc->camera_binding = {.buffer = buffer, .mapped = mapped, .updated = 0};
+			}
+			{
+				auto padded_size = pad_size(d, sizeof(Platform::DirectionalLightUBO));
+				auto buffer      = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+				void *mapped     = map_buffer(d, &buffer);
+				sc->directional_light_binding = {.buffer = buffer, .mapped = mapped, .updated = 0};
+			}
+
 			for (u32 i = 0; i < sc->images.size(); i++)
 			{
+				VkDescriptorPoolSize pool_sizes[] = {{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 2}};
+
+				VkDescriptorPoolCreateInfo pool_info{
+					.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+					.flags         = 0,
+					.maxSets       = 1,
+					.poolSizeCount = 2,
+					.pPoolSizes    = pool_sizes,
+				};
+				VkDescriptorPool pool;
+				VK_CHECK(vkCreateDescriptorPool(d->device, &pool_info, nullptr, &pool));
+
+				VkDescriptorSetAllocateInfo info{
+					.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+					.pNext              = nullptr,
+					.descriptorPool     = pool,
+					.descriptorSetCount = 1,
+					.pSetLayouts        = &sc->default_descriptor_set_layout,
+				};
+
+				VkDescriptorSet vk_set;
+				VK_CHECK(vkAllocateDescriptorSets(d->device, &info, &vk_set));
+
 				sc->frames.push_back({
-					.cmd_pool        = init_cmd_pool(get_device(sc)),
-					.descriptor_pool = init_descriptor_pool(get_device(sc)),
+					.cmd_pool                        = init_cmd_pool(get_device(sc)),
+					.default_uniform_descriptor_pool = pool,
+					.default_uniform_descriptor      = vk_set,
 				});
 			}
 		}
@@ -290,18 +352,17 @@ namespace Vultr
 				vkDestroyFence(d->device, sc->in_flight_fences[i], nullptr);
 			}
 
-			for (u32 i = 0; i < sc->images.size(); i++)
+			for (auto &frame : sc->frames)
 			{
-				auto *frame = &sc->frames[i];
-				for (auto [layout, descriptor_set] : frame->descriptor_sets)
-				{
-					destroy_descriptor_set(d, &descriptor_set);
-				}
-				frame->descriptor_sets.clear();
-
-				destroy_descriptor_pool(d, frame->descriptor_pool);
-				destroy_cmd_pool(d, &frame->cmd_pool);
+				vkDestroyDescriptorPool(d->device, frame.default_uniform_descriptor_pool, nullptr);
+				destroy_cmd_pool(d, &frame.cmd_pool);
 			}
+
+			vkDestroyDescriptorSetLayout(d->device, sc->default_descriptor_set_layout, nullptr);
+			unmap_buffer(d, &sc->camera_binding.buffer);
+			free_buffer(d, &sc->camera_binding.buffer);
+			unmap_buffer(d, &sc->directional_light_binding.buffer);
+			free_buffer(d, &sc->directional_light_binding.buffer);
 
 			internal_destroy_swapchain(sc);
 
@@ -376,8 +437,8 @@ namespace Vultr
 				.signalSemaphoreCount = 1,
 				.pSignalSemaphores    = signal_semaphores,
 			};
-			vkResetFences(d->device, 1, &sc->in_flight_fences[sc->current_frame]);
-			VK_CHECK(vkQueueSubmit(d->graphics_queue, 1, &submit_info, sc->in_flight_fences[sc->current_frame]));
+			VK_CHECK(vkResetFences(d->device, 1, &sc->in_flight_fences[sc->current_frame]));
+			graphics_queue_submit(d, 1, &submit_info, sc->in_flight_fences[sc->current_frame]);
 
 			VkPresentInfoKHR present_info{
 				.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -416,13 +477,14 @@ namespace Vultr
 
 			if (fence != nullptr)
 				vkResetFences(d->device, 1, &fence);
+			Platform::Lock lock(d->graphics_queue_mutex);
 			VK_TRY(vkQueueSubmit(d->graphics_queue, 1, &submit_info, fence));
 			return Success;
 		}
 
 		ErrorOr<void> wait_queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer)
 		{
-			CHECK(queue_cmd_buffer(sc, command_buffer));
+			TRY(queue_cmd_buffer(sc, command_buffer));
 			vkQueueWaitIdle(sc->device.graphics_queue);
 			return Success;
 		}
@@ -430,15 +492,61 @@ namespace Vultr
 	namespace Platform
 	{
 		void framebuffer_resize_callback(const Platform::Window *window, Platform::RenderContext *c, u32 width, u32 height) { c->swap_chain.framebuffer_was_resized = true; }
-		void register_descriptor_layout(RenderContext *c, DescriptorLayout *layout)
+
+		static void update_descriptor_set(CmdBuffer *cmd, Vulkan::DefaultDescriptorBinding *binding, void *data, size_t size)
 		{
-			auto *sc = Vulkan::get_swapchain(c);
-			for (auto &frame : sc->frames)
+			auto *d     = Vulkan::get_device(cmd->render_context);
+			auto *sc    = Vulkan::get_swapchain(cmd->render_context);
+			void *start = binding->mapped;
+
+			if (memcmp(data, start, size) != 0)
 			{
-				ASSERT(!frame.descriptor_sets.contains(layout), "Already bound descriptor layout!");
-				auto descriptor_buffer = Vulkan::init_descriptor_set(Vulkan::get_device(c), frame.descriptor_pool, layout);
-				frame.descriptor_sets.set(layout, descriptor_buffer);
+				binding->updated = 0b111;
+				memcpy(start, data, size);
 			}
+
+			if (binding->updated.at(cmd->image_index))
+			{
+				VkDescriptorBufferInfo camera_info{
+					.buffer = sc->camera_binding.buffer.buffer,
+					.offset = 0,
+					.range  = pad_size(d, sizeof(Platform::CameraUBO)),
+				};
+				auto set = cmd->frame->default_uniform_descriptor;
+				VkWriteDescriptorSet write_sets[2];
+				write_sets[0] = {
+					.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					.pNext           = nullptr,
+					.dstSet          = set,
+					.dstBinding      = 0,
+					.descriptorCount = 1,
+					.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.pBufferInfo     = &camera_info,
+				};
+				VkDescriptorBufferInfo directional_light_info{
+					.buffer = sc->directional_light_binding.buffer.buffer,
+					.offset = 0,
+					.range  = pad_size(d, sizeof(Platform::DirectionalLightUBO)),
+				};
+				write_sets[1] = {
+					.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					.pNext           = nullptr,
+					.dstSet          = set,
+					.dstBinding      = 1,
+					.descriptorCount = 1,
+					.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.pBufferInfo     = &directional_light_info,
+				};
+				vkUpdateDescriptorSets(d->device, 2, write_sets, 0, nullptr);
+				binding->updated.set(cmd->image_index, false);
+			}
+		}
+
+		void update_default_descriptor_set(CmdBuffer *cmd, CameraUBO *camera_ubo, DirectionalLightUBO *directional_light_ubo)
+		{
+			auto *sc = Vulkan::get_swapchain(cmd->render_context);
+			update_descriptor_set(cmd, &sc->camera_binding, camera_ubo, sizeof(CameraUBO));
+			update_descriptor_set(cmd, &sc->directional_light_binding, directional_light_ubo, sizeof(DirectionalLightUBO));
 		}
 	} // namespace Platform
 } // namespace Vultr

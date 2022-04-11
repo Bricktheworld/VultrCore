@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <filesystem/filesystem.h>
 #include <imgui/imgui.h>
+#include <core/resource_allocator/resource_allocator.h>
 
 namespace Vultr
 {
@@ -21,7 +22,7 @@ namespace Vultr
 		UploadContext *init_upload_context(RenderContext *c);
 		void destroy_upload_context(UploadContext *upload_context);
 
-		struct __attribute__((packed)) Vertex
+		struct Vertex
 		{
 			Vec3 position;
 			Vec3 normal;
@@ -160,8 +161,26 @@ namespace Vultr
 			Buffer frag_src{};
 		};
 
+		struct DescriptorSet;
+
+		DescriptorSet *alloc_descriptor_set(UploadContext *c, Shader *shader);
+		void free_descriptor_set(UploadContext *c, DescriptorSet *set);
+
+		static constexpr u64 MAX_MATERIAL_SIZE = Kilobyte(2);
+
+		struct Material
+		{
+			byte uniform_data[MAX_MATERIAL_SIZE]{};
+			Vector<Resource<Platform::Texture *>> samplers{};
+			Resource<Platform::Shader *> source{};
+			DescriptorSet *descriptor = nullptr;
+		};
+
+		ErrorOr<CompiledShaderSrc> try_compile_shader(StringView src);
 		ErrorOr<Shader *> try_load_shader(RenderContext *c, const CompiledShaderSrc &compiled_shader);
 		void destroy_shader(RenderContext *c, Shader *shader);
+		ErrorOr<Material *> try_load_material(UploadContext *c, const Resource<Shader *> &shader, const StringView &src);
+		void destroy_material(UploadContext *c, Material *mat);
 
 		struct VertexBuffer;
 		struct IndexBuffer;
@@ -272,56 +291,29 @@ namespace Vultr
 			v_free(mesh);
 		}
 
+		struct CameraUBO
+		{
+			Vec4 position{};
+			Mat4 view{};
+			Mat4 proj{};
+			Mat4 view_proj{};
+		};
+
+		struct DirectionalLightUBO
+		{
+			Vec4 direction{};
+			Vec4 ambient{};
+			Vec4 diffuse{};
+			f32 specular;
+			f32 intensity;
+			s32 exists = false;
+		};
+
 		struct PushConstant
 		{
 			Vec4 color{};
 			Mat4 model{};
 		};
-
-		enum struct DescriptorSetBindingType
-		{
-			UNIFORM_BUFFER,
-			TEXTURE
-		};
-
-		struct DescriptorSetBinding
-		{
-			DescriptorSetBindingType type = DescriptorSetBindingType::UNIFORM_BUFFER;
-			u32 size                      = 0;
-		};
-
-		struct DescriptorLayout;
-
-		template <size_t size, DescriptorSetBindingType type>
-		struct BindingT
-		{
-			static constexpr DescriptorSetBinding get_binding()
-			{
-				return {
-					.type = type,
-					.size = size,
-				};
-			}
-		};
-
-		template <typename T>
-		struct UboBinding : BindingT<sizeof(T), DescriptorSetBindingType::UNIFORM_BUFFER>
-		{
-		};
-
-		struct TextureBinding : BindingT<0, DescriptorSetBindingType::TEXTURE>
-		{
-		};
-
-		DescriptorLayout *init_descriptor_layout(RenderContext *c, const Vector<DescriptorSetBinding> &bindings, u32 max_objects);
-
-		template <typename... T>
-		DescriptorLayout *init_descriptor_layout(RenderContext *c, u32 max_objects)
-		{
-			return init_descriptor_layout(c, Vector<DescriptorSetBinding>({T::get_binding()...}), max_objects);
-		}
-		void destroy_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
-		void register_descriptor_layout(RenderContext *c, DescriptorLayout *layout);
 
 		enum struct DepthTest
 		{
@@ -339,7 +331,6 @@ namespace Vultr
 		{
 			Shader *shader                = nullptr;
 			VertexDescription description = get_vertex_description<Vertex>();
-			Vector<DescriptorLayout *> descriptor_layouts{};
 			// TODO(Brandon): Make this actually used.
 			Option<DepthTest> depth_test = None;
 		};
@@ -348,6 +339,9 @@ namespace Vultr
 		GraphicsPipeline *init_pipeline(RenderContext *c, const GraphicsPipelineInfo &info);
 		GraphicsPipeline *init_pipeline(RenderContext *c, Framebuffer *framebuffer, const GraphicsPipelineInfo &info);
 		void destroy_pipeline(RenderContext *c, GraphicsPipeline *pipeline);
+		void attach_pipeline(RenderContext *c, Framebuffer *framebuffer, const GraphicsPipelineInfo &info, u32 id);
+		bool has_pipeline(Framebuffer *framebuffer, u32 id);
+		void remove_pipeline(RenderContext *c, Framebuffer *framebuffer, u32 id);
 
 		struct CmdBuffer;
 
@@ -362,10 +356,11 @@ namespace Vultr
 		void bind_index_buffer(CmdBuffer *cmd, IndexBuffer *ibo);
 		void draw_indexed(CmdBuffer *cmd, u32 index_count, u32 instance_count = 1, u32 first_index = 0, s32 vertex_offset = 0, u32 first_instance_id = 0);
 		void push_constants(CmdBuffer *cmd, GraphicsPipeline *pipeline, const PushConstant &constant);
-		void update_descriptor_set(CmdBuffer *cmd, DescriptorLayout *layout, void *data, u32 index, u32 binding);
-		void update_descriptor_set(CmdBuffer *cmd, DescriptorLayout *layout, Texture *texture, u32 binding);
-		void flush_descriptor_set_changes(CmdBuffer *cmd);
-		void bind_descriptor_set(CmdBuffer *cmd, GraphicsPipeline *pipeline, DescriptorLayout *layout, u32 set, u32 index);
+		void update_descriptor_set(DescriptorSet *set, void *data);
+		void update_descriptor_set(DescriptorSet *set, const Resource<Texture *> &texture, u32 binding);
+		void update_default_descriptor_set(CmdBuffer *cmd, CameraUBO *camera_ubo, DirectionalLightUBO *directional_light_ubo);
+		void bind_descriptor_set(CmdBuffer *cmd, GraphicsPipeline *pipeline, DescriptorSet *set);
+		void bind_material(CmdBuffer *cmd, GraphicsPipeline *pipeline, Material *material);
 
 		inline void bind_mesh(CmdBuffer *cmd, Mesh *mesh)
 		{
