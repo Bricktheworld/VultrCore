@@ -13,4 +13,3 @@ cmake-build-debug/
 .vs/
 out/
 .vimspector.json
-vendor/libs/LINUX/libshaderc_combined.a
