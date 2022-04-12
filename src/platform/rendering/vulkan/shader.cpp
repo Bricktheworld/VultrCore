@@ -67,78 +67,78 @@ namespace Vultr
 			return compiled_src;
 		}
 
-		static u32 get_uniform_type_size(Vulkan::UniformType type)
+		static u32 get_uniform_type_size(UniformType type)
 		{
 			switch (type)
 			{
-				case Vulkan::UniformType::Vec2:
+				case UniformType::Vec2:
 					return sizeof(f32) * 2;
-				case Vulkan::UniformType::Vec3:
+				case UniformType::Vec3:
 					return sizeof(f32) * 3;
-				case Vulkan::UniformType::Vec4:
+				case UniformType::Vec4:
 					return sizeof(f32) * 4;
-				case Vulkan::UniformType::Mat3:
+				case UniformType::Mat3:
 					return sizeof(f32) * 3 * 3;
-				case Vulkan::UniformType::Mat4:
+				case UniformType::Mat4:
 					return sizeof(f32) * 4 * 4;
-				case Vulkan::UniformType::f32:
+				case UniformType::f32:
 					return sizeof(f32);
-				case Vulkan::UniformType::f64:
+				case UniformType::f64:
 					return sizeof(f64);
-				case Vulkan::UniformType::s8:
+				case UniformType::s8:
 					return sizeof(s8);
-				case Vulkan::UniformType::s16:
+				case UniformType::s16:
 					return sizeof(s16);
-				case Vulkan::UniformType::s32:
+				case UniformType::s32:
 					return sizeof(s32);
-				case Vulkan::UniformType::s64:
+				case UniformType::s64:
 					return sizeof(s64);
-				case Vulkan::UniformType::u8:
+				case UniformType::u8:
 					return sizeof(u8);
-				case Vulkan::UniformType::u16:
+				case UniformType::u16:
 					return sizeof(u16);
-				case Vulkan::UniformType::u32:
+				case UniformType::u32:
 					return sizeof(u32);
-				case Vulkan::UniformType::u64:
+				case UniformType::u64:
 					return sizeof(u64);
 				default:
 					return 0;
 			}
 		}
 
-		static u32 get_uniform_type_alignment(Vulkan::UniformType type)
+		static u32 get_uniform_type_alignment(UniformType type)
 		{
 			switch (type)
 			{
-				case Vulkan::UniformType::Vec2:
+				case UniformType::Vec2:
 					return sizeof(f32) * 2;
-				case Vulkan::UniformType::Vec3:
+				case UniformType::Vec3:
 					return sizeof(f32) * 3;
-				case Vulkan::UniformType::Vec4:
+				case UniformType::Vec4:
 					return sizeof(f32) * 4;
-				case Vulkan::UniformType::Mat3:
+				case UniformType::Mat3:
 					return sizeof(f32) * 3 * 3;
-				case Vulkan::UniformType::Mat4:
+				case UniformType::Mat4:
 					return sizeof(f32) * 4 * 4;
-				case Vulkan::UniformType::f32:
+				case UniformType::f32:
 					return sizeof(f32);
-				case Vulkan::UniformType::f64:
+				case UniformType::f64:
 					return sizeof(f64);
-				case Vulkan::UniformType::s8:
+				case UniformType::s8:
 					return sizeof(s8);
-				case Vulkan::UniformType::s16:
+				case UniformType::s16:
 					return sizeof(s16);
-				case Vulkan::UniformType::s32:
+				case UniformType::s32:
 					return sizeof(s32);
-				case Vulkan::UniformType::s64:
+				case UniformType::s64:
 					return sizeof(s64);
-				case Vulkan::UniformType::u8:
+				case UniformType::u8:
 					return sizeof(u8);
-				case Vulkan::UniformType::u16:
+				case UniformType::u16:
 					return sizeof(u16);
-				case Vulkan::UniformType::u32:
+				case UniformType::u32:
 					return sizeof(u32);
-				case Vulkan::UniformType::u64:
+				case UniformType::u64:
 					return sizeof(u64);
 				default:
 					return 0;
@@ -158,9 +158,9 @@ namespace Vultr
 			return next + alignment - remainder;
 		}
 
-		static u32 get_uniform_member_offset(Vulkan::UniformType type, u32 next) { return align(next, get_uniform_type_alignment(type)); }
+		static u32 get_uniform_member_offset(UniformType type, u32 next) { return align(next, get_uniform_type_alignment(type)); }
 
-		static ErrorOr<Vulkan::UniformType> get_uniform_type(const SpvReflectTypeDescription &member)
+		static ErrorOr<UniformType> get_uniform_type(const SpvReflectTypeDescription &member)
 		{
 			switch (member.op)
 			{
@@ -169,11 +169,11 @@ namespace Vultr
 					switch (member.traits.numeric.vector.component_count)
 					{
 						case 2:
-							return Vulkan::UniformType::Vec2;
+							return UniformType::Vec2;
 						case 3:
-							return Vulkan::UniformType::Vec3;
+							return UniformType::Vec3;
 						case 4:
-							return Vulkan::UniformType::Vec4;
+							return UniformType::Vec4;
 						default:
 							return Error("Unsupported vector size!");
 					}
@@ -186,11 +186,11 @@ namespace Vultr
 					{
 						case 3:
 						{
-							return Vulkan::UniformType::Mat3;
+							return UniformType::Mat3;
 						}
 						case 4:
 						{
-							return Vulkan::UniformType::Mat4;
+							return UniformType::Mat4;
 						}
 						default:
 							return Error("Unsupported matrix size!");
@@ -201,9 +201,9 @@ namespace Vultr
 					switch (member.traits.numeric.scalar.width)
 					{
 						case 32:
-							return Vulkan::UniformType::f32;
+							return UniformType::f32;
 						case 64:
-							return Vulkan::UniformType::f64;
+							return UniformType::f64;
 						default:
 							return Error("Unsupported float size!");
 					}
@@ -215,13 +215,13 @@ namespace Vultr
 						switch (member.traits.numeric.scalar.width)
 						{
 							case 8:
-								return Vulkan::UniformType::s8;
+								return UniformType::s8;
 							case 16:
-								return Vulkan::UniformType::s16;
+								return UniformType::s16;
 							case 32:
-								return Vulkan::UniformType::s32;
+								return UniformType::s32;
 							case 64:
-								return Vulkan::UniformType::s64;
+								return UniformType::s64;
 							default:
 								return Error("Unsupported int size!");
 						}
@@ -231,13 +231,13 @@ namespace Vultr
 						switch (member.traits.numeric.scalar.width)
 						{
 							case 8:
-								return Vulkan::UniformType::u8;
+								return UniformType::u8;
 							case 16:
-								return Vulkan::UniformType::u16;
+								return UniformType::u16;
 							case 32:
-								return Vulkan::UniformType::u32;
+								return UniformType::u32;
 							case 64:
-								return Vulkan::UniformType::u64;
+								return UniformType::u64;
 							default:
 								return Error("Unsupported unsigned int size!");
 						}
@@ -303,7 +303,7 @@ namespace Vultr
 				{
 					auto member            = type_description->members[i];
 					StringView member_name = member.struct_member_name;
-					TRY_UNWRAP(Vulkan::UniformType member_type, get_uniform_type(member));
+					TRY_UNWRAP(UniformType member_type, get_uniform_type(member));
 					shader->uniform_member_names.set(member_name, i);
 					shader->uniform_members[i] = {
 						.type    = member_type,
@@ -451,34 +451,34 @@ namespace Vultr
 				auto offset      = member_info.offset;
 				switch (member_info.type)
 				{
-					case Vulkan::UniformType::Vec2:
+					case UniformType::Vec2:
 						TRY(read_floats(values, 2, offset, mat));
 						break;
-					case Vulkan::UniformType::Vec3:
+					case UniformType::Vec3:
 						TRY(read_floats(values, 3, offset, mat));
 						break;
-					case Vulkan::UniformType::Vec4:
+					case UniformType::Vec4:
 						TRY(read_floats(values, 4, offset, mat));
 						break;
-					case Vulkan::UniformType::Mat3:
+					case UniformType::Mat3:
 						TRY(read_floats(values, 3 * 3, offset, mat));
 						break;
-					case Vulkan::UniformType::Mat4:
+					case UniformType::Mat4:
 						TRY(read_floats(values, 4 * 4, offset, mat));
 						break;
-					case Vulkan::UniformType::f32:
-					case Vulkan::UniformType::f64:
+					case UniformType::f32:
+					case UniformType::f64:
 						TRY(read_floats(values, 1, offset, mat));
 						break;
-					case Vulkan::UniformType::s8:
-					case Vulkan::UniformType::s16:
-					case Vulkan::UniformType::s32:
-					case Vulkan::UniformType::s64:
+					case UniformType::s8:
+					case UniformType::s16:
+					case UniformType::s32:
+					case UniformType::s64:
 						THROW("Not implemented!");
-					case Vulkan::UniformType::u8:
-					case Vulkan::UniformType::u16:
-					case Vulkan::UniformType::u32:
-					case Vulkan::UniformType::u64:
+					case UniformType::u8:
+					case UniformType::u16:
+					case UniformType::u32:
+					case UniformType::u64:
 						THROW("Not implemented!");
 				}
 			}
@@ -498,6 +498,10 @@ namespace Vultr
 
 			return mat;
 		}
+
+		Hashmap<String, u32> *get_uniform_bindings(Shader *shader) { return &shader->uniform_member_names; }
+		Vector<UniformMember> *get_uniform_members(Shader *shader) { return &shader->uniform_members; }
+		Hashmap<String, u32> *get_sampler_bindings(Shader *shader) { return &shader->sampler_bindings; }
 
 		void bind_material(CmdBuffer *cmd, GraphicsPipeline *pipeline, Material *mat)
 		{

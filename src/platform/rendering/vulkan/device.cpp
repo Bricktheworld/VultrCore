@@ -248,7 +248,7 @@ namespace Vultr
 				.applicationVersion = VK_MAKE_VERSION(1, 0, 0),
 				.pEngineName        = "Vultr Game Engine",
 				.engineVersion      = VK_MAKE_VERSION(1, 0, 0),
-				.apiVersion         = VK_API_VERSION_1_0,
+				.apiVersion         = VK_API_VERSION_1_1,
 			};
 
 			VkInstanceCreateInfo instance_create_info{

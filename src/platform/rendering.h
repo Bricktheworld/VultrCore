@@ -115,6 +115,8 @@ namespace Vultr
 		void fill_texture(UploadContext *c, Texture *texture, byte *data);
 		ErrorOr<Texture *> load_texture_file(UploadContext *c, const Path &path, TextureFormat format = TextureFormat::SRGBA8);
 		ErrorOr<Texture *> load_texture_memory(UploadContext *c, byte *data, u64 size, TextureFormat format = TextureFormat::SRGBA8);
+		Texture *init_white_texture(UploadContext *c);
+		Texture *init_black_texture(UploadContext *c);
 
 		u32 get_width(Texture *texture);
 		u32 get_height(Texture *texture);
@@ -154,6 +156,35 @@ namespace Vultr
 		void destroy_framebuffer(RenderContext *c, Framebuffer *framebuffer);
 
 		struct Shader;
+		enum struct UniformType
+		{
+			Vec2,
+			Vec3,
+			Vec4,
+			Mat3,
+			Mat4,
+			f32,
+			f64,
+			s8,
+			s16,
+			s32,
+			s64,
+			u8,
+			u16,
+			u32,
+			u64,
+		};
+
+		struct UniformMember
+		{
+			UniformType type = UniformType::Vec3;
+			u32 binding      = 0;
+			u32 offset       = 0;
+		};
+
+		Hashmap<String, u32> *get_uniform_bindings(Shader *shader);
+		Vector<UniformMember> *get_uniform_members(Shader *shader);
+		Hashmap<String, u32> *get_sampler_bindings(Shader *shader);
 
 		struct CompiledShaderSrc
 		{

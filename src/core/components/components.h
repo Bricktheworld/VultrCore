@@ -4,6 +4,7 @@
 #include "transform.h"
 #include "camera.h"
 #include "directional_light.h"
+#include <vultr_resource_allocator.h>
 
 #include <utils/traits.h>
 namespace Vultr
@@ -20,13 +21,88 @@ namespace Vultr
 	{
 		static Vector<ComponentMember> members(Material *component)
 		{
-			return Vector({
+			Vector<ComponentMember> members = Vector({
 				ComponentMember{
 					.name = "source",
-					.type = PrimitiveType::OPTIONAL_PATH,
+					.type = PrimitiveType::RESOURCE,
 					.addr = &component->source,
 				},
 			});
+			if (!component->source.loaded())
+				return members;
+
+			Platform::Material *mat  = component->source.value();
+			Platform::Shader *shader = mat->source.value();
+
+			auto *uniform_bindings   = Platform::get_uniform_bindings(shader);
+			auto *uniform_members    = Platform::get_uniform_members(shader);
+			auto *sampler_bindings   = Platform::get_sampler_bindings(shader);
+
+			for (auto &[name, binding] : *uniform_bindings)
+			{
+				auto &uniform_info = (*uniform_members)[binding];
+				PrimitiveType primitive_type;
+				switch (uniform_info.type)
+				{
+					case Platform::UniformType::Vec2:
+						primitive_type = PrimitiveType::VEC2;
+						break;
+					case Platform::UniformType::Vec3:
+						primitive_type = PrimitiveType::VEC3;
+						break;
+					case Platform::UniformType::Vec4:
+						primitive_type = PrimitiveType::COLOR;
+						break;
+					case Platform::UniformType::Mat3:
+					case Platform::UniformType::Mat4:
+						THROW("Not implemented!");
+					case Platform::UniformType::f32:
+						primitive_type = PrimitiveType::F32;
+						break;
+					case Platform::UniformType::f64:
+						primitive_type = PrimitiveType::F64;
+						break;
+					case Platform::UniformType::s8:
+						primitive_type = PrimitiveType::S8;
+						break;
+					case Platform::UniformType::s16:
+						primitive_type = PrimitiveType::S16;
+						break;
+					case Platform::UniformType::s32:
+						primitive_type = PrimitiveType::S32;
+						break;
+					case Platform::UniformType::s64:
+						primitive_type = PrimitiveType::S64;
+						break;
+					case Platform::UniformType::u8:
+						primitive_type = PrimitiveType::U8;
+						break;
+					case Platform::UniformType::u16:
+						primitive_type = PrimitiveType::U16;
+						break;
+					case Platform::UniformType::u32:
+						primitive_type = PrimitiveType::U32;
+						break;
+					case Platform::UniformType::u64:
+						primitive_type = PrimitiveType::U64;
+						break;
+				}
+				members.push_back(ComponentMember{
+					.name = name,
+					.type = primitive_type,
+					.addr = &mat->uniform_data[uniform_info.offset],
+				});
+			}
+
+			for (auto &[name, binding] : *sampler_bindings)
+			{
+				members.push_back(ComponentMember{
+					.name = name,
+					.type = PrimitiveType::RESOURCE,
+					.addr = &mat->samplers[binding - 1],
+				});
+			}
+			return members;
 		}
 		static consteval u32 component_id() { return ReflTraits<Material>::type_id(); }
 	};

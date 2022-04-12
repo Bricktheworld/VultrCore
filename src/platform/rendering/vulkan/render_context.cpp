@@ -33,8 +33,13 @@ namespace Vultr
 			PRODUCTION_ASSERT(c != nullptr, "Failed to allocate render context!");
 			new (c) RenderContext();
 
-			auto device   = Vulkan::init_device(window, debug, Vulkan::debug_cb);
-			c->swap_chain = Vulkan::init_swapchain(device, window);
+			auto device          = Vulkan::init_device(window, debug, Vulkan::debug_cb);
+			c->swap_chain        = Vulkan::init_swapchain(device, window);
+
+			auto *upload_context = init_upload_context(c);
+			c->white_texture     = Platform::init_white_texture(upload_context);
+			c->black_texture     = Platform::init_black_texture(upload_context);
+			destroy_upload_context(upload_context);
 			return c;
 		}
 
@@ -71,9 +76,9 @@ namespace Vultr
 		{
 			VkViewport viewport{
 				.x        = 0,
-				.y        = 0,
+				.y        = static_cast<f32>(height),
 				.width    = static_cast<f32>(width),
-				.height   = static_cast<f32>(height),
+				.height   = -static_cast<f32>(height),
 				.minDepth = 0.0f,
 				.maxDepth = 1.0f,
 			};
@@ -143,6 +148,8 @@ namespace Vultr
 		{
 			// Make sure don't destroy anything that is in use.
 			wait_idle(c);
+			destroy_texture(c, c->black_texture);
+			destroy_texture(c, c->white_texture);
 			destroy_swapchain(Vulkan::get_swapchain(c));
 		}
 	} // namespace Platform

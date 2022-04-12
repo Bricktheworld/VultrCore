@@ -2,9 +2,6 @@
 #include <vultr.h>
 #include <platform/rendering.h>
 
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/transform.hpp>
-
 namespace Vultr
 {
 	namespace RenderSystem
@@ -29,23 +26,10 @@ namespace Vultr
 			c->output_framebuffer = nullptr;
 			reinitialize(c);
 
-			//
-			//			c->pipeline = Platform::init_pipeline(engine()->context, c->output_framebuffer, info);
-			//
 			return c;
 		}
 		void entity_created(void *system, Entity entity) {}
 		void entity_destroyed(void *system, Entity entity) {}
-
-		static Mat4 model_matrix(const Transform &transform)
-		{
-			Mat4 scaling_matrix   = glm::scale(transform.scale);
-			Mat4 rotation_matrix  = glm::toMat4(transform.rotation);
-			Mat4 translate_matrix = glm::translate(transform.position);
-			return translate_matrix * rotation_matrix * scaling_matrix;
-		}
-		static Mat4 view_matrix(const Transform &transform) { return glm::lookAt(transform.position, transform.position + forward(transform), Vec3(0, 1, 0)); }
-		static Mat4 projection_matrix(const Camera &camera, f32 screen_width, f32 screen_height) { return glm::perspective(camera.fov, (f64)screen_width / (f64)screen_height, camera.znear, camera.zfar); }
 
 		static void render(Platform::CameraUBO camera_ubo, Component *system, Platform::CmdBuffer *cmd)
 		{
@@ -54,10 +38,10 @@ namespace Vultr
 			{
 				Platform::DirectionalLightUBO ubo{
 					.direction = Vec4(forward(transform_component), 0),
-					.ambient   = Vec4(163, 226, 253, 1),
-					.diffuse   = Vec4(2000),
-					.specular  = 1000,
-					.intensity = 2000,
+					.ambient   = directional_light.ambient,
+					.diffuse   = directional_light.diffuse,
+					.specular  = directional_light.specular,
+					.intensity = directional_light.intensity,
 					.exists    = true,
 				};
 				Platform::update_default_descriptor_set(cmd, &camera_ubo, &ubo);

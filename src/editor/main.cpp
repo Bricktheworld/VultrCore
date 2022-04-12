@@ -79,6 +79,7 @@ static Vultr::ErrorOr<void> load_next_shader(Vultr::Platform::UploadContext *c, 
 		printf("Freeing unnecessary load!\n");
 		Vultr::Platform::destroy_shader(Vultr::engine()->context, shader);
 	}
+	return Vultr::Success;
 }
 
 static void material_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::Path &resource_dir)
@@ -296,6 +297,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			resource_allocator<Platform::Texture *>()->kill_freeing_threads();
 
 			Platform::destroy_imgui(engine()->context, runtime.imgui_c);
+			Platform::destroy_upload_context(runtime.upload_context);
 			RenderSystem::destroy(runtime.render_system);
 			Platform::close_window(engine()->window);
 		}

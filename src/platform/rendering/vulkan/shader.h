@@ -7,34 +7,6 @@
 
 namespace Vultr
 {
-	namespace Vulkan
-	{
-		enum struct UniformType
-		{
-			Vec2,
-			Vec3,
-			Vec4,
-			Mat3,
-			Mat4,
-			f32,
-			f64,
-			s8,
-			s16,
-			s32,
-			s64,
-			u8,
-			u16,
-			u32,
-			u64,
-		};
-
-		struct UniformMember
-		{
-			UniformType type = UniformType::Vec3;
-			u32 binding      = 0;
-			u32 offset       = 0;
-		};
-	} // namespace Vulkan
 #define MAX_DESCRIPTOR_SETS 128
 	namespace Platform
 	{
@@ -43,7 +15,7 @@ namespace Vultr
 			VkShaderModule vert_module = nullptr;
 			VkShaderModule frag_module = nullptr;
 
-			Vector<Vulkan::UniformMember> uniform_members{};
+			Vector<UniformMember> uniform_members{};
 			u32 uniform_size = 0;
 			Hashmap<String, u32> uniform_member_names{};
 			Hashmap<String, u32> sampler_bindings{};

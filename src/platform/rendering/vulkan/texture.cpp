@@ -111,13 +111,54 @@ namespace Vultr
 		Texture *init_texture(RenderContext *c, u32 width, u32 height, TextureFormat format) { return init_texture(Vulkan::get_device(c), width, height, format); }
 		Texture *init_texture(UploadContext *c, u32 width, u32 height, TextureFormat format) { return init_texture(Vulkan::get_device(c), width, height, format); }
 
+		Texture *init_white_texture(UploadContext *c)
+		{
+			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8);
+			byte data[4]  = {1};
+			fill_texture(c, texture, data);
+			return texture;
+		}
+
+		Texture *init_black_texture(UploadContext *c)
+		{
+			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8);
+			byte data[4]  = {0};
+			fill_texture(c, texture, data);
+			return texture;
+		}
+
 		void fill_texture(UploadContext *c, Texture *texture, byte *data)
 		{
-			auto *d             = Vulkan::get_device(c);
+			auto *d = Vulkan::get_device(c);
+			size_t size;
+			switch (texture->format)
+			{
+				case TextureFormat::RGB8:
+					size = 3 * 2;
+					break;
+				case TextureFormat::RGB16:
+					size = 3;
+					break;
+				case TextureFormat::RGBA8:
+					size = 4;
+					break;
+				case TextureFormat::RGBA16:
+					size = 4 * 2;
+					break;
+				case TextureFormat::SRGB8:
+					size = 3;
+					break;
+				case TextureFormat::SRGBA8:
+					size = 4;
+					break;
+				case TextureFormat::DEPTH:
+					size = 1;
+					break;
+			}
 
-			auto staging_buffer = alloc_buffer(d, texture->width * texture->height * 4, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+			auto staging_buffer = alloc_buffer(d, texture->width * texture->height * size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
-			fill_buffer(d, &staging_buffer, data, texture->width * texture->height * 4);
+			fill_buffer(d, &staging_buffer, data, texture->width * texture->height * size);
 
 			VkImageSubresourceRange range{
 				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,

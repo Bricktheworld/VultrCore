@@ -1,6 +1,8 @@
 #include "windows.h"
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <ImGuizmo/ImGuizmo.h>
+#include <math/decompose_transform.h>
 
 namespace Vultr
 {
@@ -23,17 +25,16 @@ namespace Vultr
 				transform.position += right(transform) * delta;
 			if (Platform::key_down(engine()->window, Platform::Input::KEY_A))
 				transform.position -= right(transform) * delta;
-			// TODO(Brandon): Fix this in the coordinate system.
 			if (Platform::key_down(engine()->window, Platform::Input::KEY_E))
-				transform.position -= Vec3(0, 1, 0) * delta;
-			if (Platform::key_down(engine()->window, Platform::Input::KEY_Q))
 				transform.position += Vec3(0, 1, 0) * delta;
+			if (Platform::key_down(engine()->window, Platform::Input::KEY_Q))
+				transform.position -= Vec3(0, 1, 0) * delta;
 
 			auto mouse_delta    = Platform::get_mouse_delta(engine()->window);
 
 			f64 aspect_ratio    = (f64)Platform::get_window_width(engine()->window) / (f64)Platform::get_window_width(engine()->window);
 			Quat rotation_horiz = glm::angleAxis(f32(sens * dt * -mouse_delta.x * aspect_ratio), Vec3(0, 1, 0));
-			Quat rotation_vert  = glm::angleAxis(f32(sens * dt * mouse_delta.y), right(transform));
+			Quat rotation_vert  = glm::angleAxis(f32(sens * dt * -mouse_delta.y), right(transform));
 			transform.rotation  = rotation_horiz * rotation_vert * transform.rotation;
 		}
 		else
@@ -42,12 +43,59 @@ namespace Vultr
 		}
 	}
 
-	void scene_window_draw(EditorRuntime *runtime)
+	void scene_window_draw(EditorWindowState *state, EditorRuntime *runtime)
 	{
 		ImGui::Begin("Game");
 		ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
 		auto output_texture        = Platform::imgui_get_texture_id(Platform::get_attachment_texture(runtime->render_system->output_framebuffer, 0));
 		ImGui::Image(output_texture, viewport_panel_size);
+
+		if (Platform::mouse_down(engine()->window, Platform::Input::MOUSE_RIGHT))
+		{
+			if (Platform::key_down(engine()->window, Platform::Input::KEY_Q))
+			{
+				state->current_operation = ImGuizmo::OPERATION::TRANSLATE;
+			}
+			else if (Platform::key_down(engine()->window, Platform::Input::KEY_W))
+			{
+				state->current_operation = ImGuizmo::OPERATION::ROTATE;
+			}
+			else if (Platform::key_down(engine()->window, Platform::Input::KEY_E))
+			{
+				state->current_operation = ImGuizmo::OPERATION::SCALE;
+			}
+		}
+
+		ImGuizmo::SetOrthographic(false);
+		ImGuizmo::SetDrawlist();
+
+		f32 window_width  = (f32)ImGui::GetWindowWidth();
+		f32 window_height = (f32)ImGui::GetWindowHeight();
+		ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, window_width, window_height);
+
+		if (state->selected_entity.has_value())
+		{
+			auto &transform    = get_component<Transform>(state->selected_entity.value());
+			auto transform_mat = model_matrix(transform);
+			auto view_mat      = view_matrix(state->editor_camera_transform);
+			auto camera_proj   = projection_matrix(state->editor_camera, window_width, window_height);
+
+			ImGuizmo::Manipulate(glm::value_ptr(view_mat), glm::value_ptr(camera_proj), (ImGuizmo::OPERATION)state->current_operation, ImGuizmo::LOCAL, glm::value_ptr(transform_mat), nullptr, nullptr);
+
+			if (ImGuizmo::IsUsing())
+			{
+				Vec3 translation;
+				Vec3 rotation;
+				Vec3 scale;
+				Math::decompose_transform(transform_mat, translation, rotation, scale);
+
+				Vec3 deltaRotation = rotation - glm::eulerAngles(transform.rotation);
+				transform.position = translation;
+				transform.rotation = Quat(rotation);
+				transform.scale    = scale;
+			}
+		}
+
 		ImGui::End();
 	}
 	void entity_hierarchy_window_draw(EditorWindowState *state)
@@ -79,34 +127,34 @@ namespace Vultr
 						switch (member.type)
 						{
 							case PrimitiveType::U8:
-								ImGui::DragScalar(member.name, ImGuiDataType_U8, member.addr);
+								ImGui::DragScalar(member.name, ImGuiDataType_U8, member.addr, 1);
 								break;
 							case PrimitiveType::U16:
-								ImGui::DragScalar(member.name, ImGuiDataType_U16, member.addr);
+								ImGui::DragScalar(member.name, ImGuiDataType_U16, member.addr, 1);
 								break;
 							case PrimitiveType::U32:
-								ImGui::DragScalar(member.name, ImGuiDataType_U32, member.addr);
+								ImGui::DragScalar(member.name, ImGuiDataType_U32, member.addr, 1);
 								break;
 							case PrimitiveType::U64:
-								ImGui::DragScalar(member.name, ImGuiDataType_U64, member.addr);
+								ImGui::DragScalar(member.name, ImGuiDataType_U64, member.addr, 1);
 								break;
 							case PrimitiveType::S8:
-								ImGui::DragScalar(member.name, ImGuiDataType_S8, member.addr);
+								ImGui::DragScalar(member.name, ImGuiDataType_S8, member.addr, 1);
 								break;
 							case PrimitiveType::S16:
-								ImGui::DragScalar(member.name, ImGuiDataType_S16, member.addr);
+								ImGui::DragScalar(member.name, ImGuiDataType_S16, member.addr, 1);
 								break;
 							case PrimitiveType::S32:
-								ImGui::DragScalar(member.name, ImGuiDataType_S32, member.addr);
+								ImGui::DragScalar(member.name, ImGuiDataType_S32, member.addr, 1);
 								break;
 							case PrimitiveType::S64:
-								ImGui::DragScalar(member.name, ImGuiDataType_S64, member.addr);
+								ImGui::DragScalar(member.name, ImGuiDataType_S64, member.addr, 1);
 								break;
 							case PrimitiveType::F32:
-								ImGui::DragScalar(member.name, ImGuiDataType_Float, member.addr);
+								ImGui::DragScalar(member.name, ImGuiDataType_Float, member.addr, 0.02f);
 								break;
 							case PrimitiveType::F64:
-								ImGui::DragScalar(member.name, ImGuiDataType_Double, member.addr);
+								ImGui::DragScalar(member.name, ImGuiDataType_Double, member.addr, 0.02f);
 								break;
 							case PrimitiveType::CHAR:
 								ImGui::Text("%s Char %c", member.name.c_str(), *static_cast<char *>(member.addr));
@@ -278,7 +326,7 @@ namespace Vultr
 		ImGui::DockSpace(dockspace, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoResize);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
-		scene_window_draw(runtime);
+		scene_window_draw(state, runtime);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		entity_hierarchy_window_draw(state);

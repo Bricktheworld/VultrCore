@@ -37,6 +37,7 @@ namespace Vultr
 
 			return texture;
 		}
+
 	} // namespace Platform
 
 } // namespace Vultr

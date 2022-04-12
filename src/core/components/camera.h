@@ -17,4 +17,6 @@ namespace Vultr
 
 		bool gamma_correction = true;
 	};
+
+	inline Mat4 projection_matrix(const Camera &camera, f32 screen_width, f32 screen_height) { return glm::perspective(camera.fov, (f64)screen_width / (f64)screen_height, camera.znear, camera.zfar); }
 } // namespace Vultr
