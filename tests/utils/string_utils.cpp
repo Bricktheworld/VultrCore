@@ -108,15 +108,43 @@ TEST(StringUtils, Split)
 
 TEST(StringUtils, ParseF64)
 {
-	f64 res = parse_f64("0.512");
+	f64 res = parse_f64("0.512").value();
 	ASSERT_EQ(res, 0.512);
 
-	res = parse_f64("-0.512");
+	res = parse_f64("-0.512").value();
 	ASSERT_EQ(res, -0.512);
 
-	res = parse_f64("1e-10");
+	res = parse_f64("1e-10").value();
 	ASSERT_EQ(res, 1e-10);
 
-	res = parse_f64("-10.125e-10");
+	res = parse_f64("-10.125e-10").value();
 	ASSERT_EQ(res, -10.125e-10);
+}
+
+TEST(StringUtils, ParseU64)
+{
+	ASSERT_TRUE(parse_u64("0.512").has_error());
+	ASSERT_TRUE(parse_u64("-1249").has_error());
+	u64 res = parse_u64("1249").value();
+	ASSERT_EQ(res, 1249);
+
+	res = parse_u64("1e10").value();
+	ASSERT_EQ(res, 1e10);
+}
+
+TEST(StringUtils, ParseS64)
+{
+	ASSERT_TRUE(parse_s64("0.512").has_error());
+	ASSERT_TRUE(parse_s64("1e-10").has_error());
+	s64 res = parse_s64("1249").value();
+	ASSERT_EQ(res, 1249);
+
+	res = parse_s64("-1249").value();
+	ASSERT_EQ(res, -1249);
+
+	res = parse_s64("-1e10").value();
+	ASSERT_EQ(res, -1e10);
+
+	res = parse_s64("1e10").value();
+	ASSERT_EQ(res, 1e10);
 }

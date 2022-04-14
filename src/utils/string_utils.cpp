@@ -221,7 +221,7 @@ namespace Vultr
 		return replaced_string;
 	}
 
-	f64 parse_f64(StringView string)
+	ErrorOr<f64> parse_f64(StringView string)
 	{
 		f64 result        = 0;
 		f64 fact          = 1;
@@ -240,13 +240,16 @@ namespace Vultr
 		{
 			if (string[i] == '.')
 			{
-				ASSERT(!e_seen, "Cannot have a decimal in the e exponent!");
+				if (e_seen)
+					return Error("Cannot have a decimal in the e exponent!");
 				point_seen = true;
 				continue;
 			}
 
 			if (string[i] == 'e')
 			{
+				if (e_seen)
+					return Error("Multiple e's found!");
 				e_seen = true;
 				continue;
 			}
@@ -260,19 +263,124 @@ namespace Vultr
 				else
 				{
 					s32 d = string[i] - '0';
-					ASSERT(d >= 0 && d <= 9, "Incorrect format, unknown character found!");
+					if (d < 0 || d > 9)
+						return Error("Incorrect format, unknown character found!");
 					exponent = exponent * 10 + d;
 				}
 			}
 			else
 			{
 				s32 d = string[i] - '0';
-				ASSERT(d >= 0 && d <= 9, "Incorrect format, unknown character found!");
+				if (d < 0 || d > 9)
+					return Error("Incorrect format, unknown character found!");
+
 				if (point_seen)
 					fact /= 10.0f;
 				result = result * 10.0f + (f64)d;
 			}
 		}
 		return result * fact * pow(10, exponent * exponent_fact);
+	}
+
+	ErrorOr<u64> parse_u64(StringView string)
+	{
+		u64 result   = 0;
+		u64 exponent = 0;
+		bool e_seen  = false;
+		for (size_t i = 0; i < string.length(); i++)
+		{
+			if (string[i] == '-')
+				return Error("Expected unsigned positive integer instead found negative integer!");
+
+			if (string[i] == 'e')
+			{
+				if (e_seen)
+					return Error("Multiple e's found!");
+				e_seen = true;
+				continue;
+			}
+
+			if (string[i] == '.')
+				return Error("Expected unsigned integer, instead found floating point number!");
+
+			s32 d = string[i] - '0';
+			if (d < 0 || d > 9)
+				return Error("Incorrect format, unknown character found!");
+			if (e_seen)
+			{
+				exponent = exponent * 10 + (u64)d;
+			}
+			else
+			{
+				result = result * 10 + (u64)d;
+			}
+		}
+		return result * static_cast<u64>(pow(10, exponent));
+	}
+
+	ErrorOr<s64> parse_s64(StringView string)
+	{
+		s64 fact     = 1;
+		s64 result   = 0;
+		u64 exponent = 0;
+		bool e_seen  = false;
+		for (size_t i = 0; i < string.length(); i++)
+		{
+			if (string[i] == '-')
+			{
+				if (e_seen)
+					return Error("Cannot have negative e!");
+
+				if (fact == -1)
+					return Error("Negative symbol found twice!");
+
+				fact = -1;
+				continue;
+			}
+
+			if (string[i] == 'e')
+			{
+				if (e_seen)
+					return Error("Multiple e's found!");
+				e_seen = true;
+				continue;
+			}
+
+			if (string[i] == '.')
+				return Error("Expected unsigned integer, instead found floating point number!");
+
+			s32 d = string[i] - '0';
+			if (d < 0 || d > 9)
+				return Error("Incorrect format, unknown character found!");
+
+			if (e_seen)
+			{
+				exponent = exponent * 10 + (u64)d;
+			}
+			else
+			{
+				result = result * 10 + (s64)d;
+			}
+		}
+		return result * fact * static_cast<s64>(pow(10, exponent));
+	}
+
+	String serialize_f64(f64 value)
+	{
+		char buf[64];
+		snprintf(buf, 64, "%f", value);
+		return String(buf);
+	}
+	String serialize_u64(u64 value)
+	{
+		char buf[32];
+		snprintf(buf, 32, "%lu", value);
+		return String(buf);
+	}
+	String serialize_s64(s64 value)
+	{
+		char buf[32];
+		snprintf(buf, 32, "%lu", value);
+		return String(buf);
 	}
 } // namespace Vultr

@@ -244,7 +244,7 @@ namespace Vultr
 					auto &info   = ubo_info.push_back({
 						  .buffer = set->uniform_buffer_binding.buffer.buffer,
 						  .offset = 0,
-						  .range  = pad_size(d, set->shader->uniform_size),
+						  .range  = pad_size(d, set->shader->reflection.uniform_size),
                     });
 					write_sets.push_back({
 						.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,

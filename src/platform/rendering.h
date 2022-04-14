@@ -177,15 +177,20 @@ namespace Vultr
 
 		struct UniformMember
 		{
+			String name{};
 			UniformType type = UniformType::Vec3;
-			u32 binding      = 0;
 			u32 offset       = 0;
 		};
-
-		Hashmap<String, u32> *get_uniform_bindings(Shader *shader);
-		Vector<UniformMember> *get_uniform_members(Shader *shader);
-		Hashmap<String, u32> *get_sampler_bindings(Shader *shader);
-
+		struct SamplerBinding
+		{
+			String name{};
+		};
+		struct ShaderReflection
+		{
+			Vector<UniformMember> uniform_members{};
+			u32 uniform_size = 0;
+			Vector<SamplerBinding> samplers{};
+		};
 		struct CompiledShaderSrc
 		{
 			Buffer vert_src{};
@@ -208,7 +213,10 @@ namespace Vultr
 		};
 
 		ErrorOr<CompiledShaderSrc> try_compile_shader(StringView src);
-		ErrorOr<Shader *> try_load_shader(RenderContext *c, const CompiledShaderSrc &compiled_shader);
+		ErrorOr<ShaderReflection> try_reflect_shader(const CompiledShaderSrc &compiled_shader);
+		ErrorOr<Shader *> try_load_shader(RenderContext *c, const CompiledShaderSrc &compiled_shader, const ShaderReflection &reflection);
+		const ShaderReflection *get_reflection_data(const Shader *shader);
+
 		void destroy_shader(RenderContext *c, Shader *shader);
 		ErrorOr<Material *> try_load_material(UploadContext *c, const Resource<Shader *> &shader, const StringView &src);
 		void destroy_material(UploadContext *c, Material *mat);

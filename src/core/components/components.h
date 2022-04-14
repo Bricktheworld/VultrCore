@@ -34,15 +34,12 @@ namespace Vultr
 			Platform::Material *mat  = component->source.value();
 			Platform::Shader *shader = mat->source.value();
 
-			auto *uniform_bindings   = Platform::get_uniform_bindings(shader);
-			auto *uniform_members    = Platform::get_uniform_members(shader);
-			auto *sampler_bindings   = Platform::get_sampler_bindings(shader);
+			const auto *reflection   = Platform::get_reflection_data(shader);
 
-			for (auto &[name, binding] : *uniform_bindings)
+			for (auto &uniform_member : reflection->uniform_members)
 			{
-				auto &uniform_info = (*uniform_members)[binding];
 				PrimitiveType primitive_type;
-				switch (uniform_info.type)
+				switch (uniform_member.type)
 				{
 					case Platform::UniformType::Vec2:
 						primitive_type = PrimitiveType::VEC2;
@@ -88,19 +85,21 @@ namespace Vultr
 						break;
 				}
 				members.push_back(ComponentMember{
-					.name = name,
+					.name = uniform_member.name,
 					.type = primitive_type,
-					.addr = &mat->uniform_data[uniform_info.offset],
+					.addr = &mat->uniform_data[uniform_member.offset],
 				});
 			}
 
-			for (auto &[name, binding] : *sampler_bindings)
+			u32 binding = 1;
+			for (auto &sampler : reflection->samplers)
 			{
 				members.push_back(ComponentMember{
-					.name = name,
+					.name = sampler.name,
 					.type = PrimitiveType::RESOURCE,
 					.addr = &mat->samplers[binding - 1],
 				});
+				binding++;
 			}
 			return members;
 		}

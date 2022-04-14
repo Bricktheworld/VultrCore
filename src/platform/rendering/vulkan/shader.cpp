@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 #include <shaderc/shaderc.h>
 #include <spirv_reflect/spirv_reflect.h>
+#include <vultr_resource_allocator.h>
 
 namespace Vultr
 {
@@ -12,60 +13,6 @@ namespace Vultr
 #define ENTRY_NAME "main"
 		static constexpr StringView vertex_pragma   = "#pragma vertex\n";
 		static constexpr StringView fragment_pragma = "#pragma fragment\n";
-
-		ErrorOr<CompiledShaderSrc> try_compile_shader(StringView src)
-		{
-			if (!contains(src, "#pragma vertex\n"))
-				return Error("Source does not contain a vertex shader denoted by '#pragma vertex'");
-			if (!contains(src, "#pragma fragment\n"))
-				return Error("Source does not contain a fragment shader denoted by '#pragma fragment'");
-
-			shaderc_compiler_t compiler       = shaderc_compiler_initialize();
-			shaderc_compile_options_t options = shaderc_compile_options_initialize();
-
-			auto vert_index                   = find(src, vertex_pragma).value() + vertex_pragma.length();
-			auto frag_index                   = find(src, fragment_pragma).value() + fragment_pragma.length();
-			CompiledShaderSrc compiled_src{};
-			{
-				auto vert_src                       = String(src.substr(vert_index, frag_index));
-				shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, vert_src.c_str(), vert_src.length(), shaderc_vertex_shader, "vertex.glsl", ENTRY_NAME, options);
-
-				if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success)
-				{
-					auto err = Error("Failed to compile vertex shader " + StringView(shaderc_result_get_error_message(result)));
-					shaderc_result_release(result);
-					shaderc_compile_options_release(options);
-					shaderc_compiler_release(compiler);
-					return err;
-				}
-
-				compiled_src.vert_src = Buffer((const byte *)shaderc_result_get_bytes(result), shaderc_result_get_length(result));
-
-				shaderc_result_release(result);
-			}
-
-			{
-				auto frag_src                       = String(src.substr(frag_index));
-				shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, frag_src.c_str(), frag_src.length(), shaderc_fragment_shader, "fragment.glsl", ENTRY_NAME, options);
-
-				if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success)
-				{
-					auto err = Error("Failed to compile fragment shader " + StringView(shaderc_result_get_error_message(result)));
-					shaderc_result_release(result);
-					shaderc_compile_options_release(options);
-					shaderc_compiler_release(compiler);
-					return err;
-				}
-
-				compiled_src.frag_src = Buffer((const byte *)shaderc_result_get_bytes(result), shaderc_result_get_length(result));
-
-				shaderc_result_release(result);
-			}
-
-			shaderc_compile_options_release(options);
-			shaderc_compiler_release(compiler);
-			return compiled_src;
-		}
 
 		static u32 get_uniform_type_size(UniformType type)
 		{
@@ -248,12 +195,9 @@ namespace Vultr
 			}
 		}
 
-		ErrorOr<Shader *> try_load_shader(RenderContext *c, const CompiledShaderSrc &compiled_shader)
+		ErrorOr<ShaderReflection> try_reflect_shader(const CompiledShaderSrc &compiled_shader)
 		{
-			auto *d      = Vulkan::get_device(c);
-			auto *sc     = Vulkan::get_swapchain(c);
-			auto *shader = v_alloc<Shader>();
-
+			ShaderReflection reflection{};
 			SpvReflectShaderModule module;
 			SpvReflectResult result = spvReflectCreateShaderModule(compiled_shader.vert_src.size(), compiled_shader.vert_src.storage, &module);
 			if (result != SPV_REFLECT_RESULT_SUCCESS)
@@ -297,31 +241,21 @@ namespace Vultr
 					return Error("Uniform buffer must be a struct!");
 
 				ASSERT(type_description->member_count >= 1, "Uniform buffer struct must have at least one member!");
-				shader->uniform_members.resize(type_description->member_count);
 				u32 buffer_offset = 0;
 				for (u32 i = 0; i < type_description->member_count; i++)
 				{
 					auto member            = type_description->members[i];
 					StringView member_name = member.struct_member_name;
 					TRY_UNWRAP(UniformType member_type, get_uniform_type(member));
-					shader->uniform_member_names.set(member_name, i);
-					shader->uniform_members[i] = {
-						.type    = member_type,
-						.binding = i,
-						.offset  = get_uniform_member_offset(member_type, buffer_offset),
-					};
+					reflection.uniform_members.push_back({
+						.name   = String(member_name),
+						.type   = member_type,
+						.offset = get_uniform_member_offset(member_type, buffer_offset),
+					});
 					buffer_offset += get_uniform_type_size(member_type);
 				}
-				shader->uniform_size = buffer_offset;
+				reflection.uniform_size = buffer_offset;
 			}
-
-			VkDescriptorSetLayoutBinding layout_bindings[descriptor_set->binding_count];
-			layout_bindings[0] = {
-				.binding         = 0,
-				.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				.descriptorCount = 1,
-				.stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
-			};
 
 			for (u32 i = 1; i < descriptor_set->binding_count; i++)
 			{
@@ -329,26 +263,106 @@ namespace Vultr
 				if (binding->descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 					return Error("All bindings after 0 must be samplers!");
 
+				reflection.samplers.push_back({
+					.name = String(binding->name),
+				});
+			}
+
+			spvReflectDestroyShaderModule(&module);
+			return reflection;
+		}
+
+		ErrorOr<CompiledShaderSrc> try_compile_shader(StringView src)
+		{
+			if (!contains(src, "#pragma vertex\n"))
+				return Error("Source does not contain a vertex shader denoted by '#pragma vertex'");
+			if (!contains(src, "#pragma fragment\n"))
+				return Error("Source does not contain a fragment shader denoted by '#pragma fragment'");
+
+			shaderc_compiler_t compiler       = shaderc_compiler_initialize();
+			shaderc_compile_options_t options = shaderc_compile_options_initialize();
+
+			auto vert_index                   = find(src, vertex_pragma).value() + vertex_pragma.length();
+			auto frag_index                   = find(src, fragment_pragma).value() + fragment_pragma.length();
+			CompiledShaderSrc compiled_src{};
+			{
+				auto vert_src                       = String(src.substr(vert_index, frag_index));
+				shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, vert_src.c_str(), vert_src.length(), shaderc_vertex_shader, "vertex.glsl", ENTRY_NAME, options);
+
+				if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success)
+				{
+					auto err = Error("Failed to compile vertex shader " + StringView(shaderc_result_get_error_message(result)));
+					shaderc_result_release(result);
+					shaderc_compile_options_release(options);
+					shaderc_compiler_release(compiler);
+					return err;
+				}
+
+				compiled_src.vert_src = Buffer((const byte *)shaderc_result_get_bytes(result), shaderc_result_get_length(result));
+
+				shaderc_result_release(result);
+			}
+
+			{
+				auto frag_src                       = String(src.substr(frag_index));
+				shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, frag_src.c_str(), frag_src.length(), shaderc_fragment_shader, "fragment.glsl", ENTRY_NAME, options);
+
+				if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success)
+				{
+					auto err = Error("Failed to compile fragment shader " + StringView(shaderc_result_get_error_message(result)));
+					shaderc_result_release(result);
+					shaderc_compile_options_release(options);
+					shaderc_compiler_release(compiler);
+					return err;
+				}
+
+				compiled_src.frag_src = Buffer((const byte *)shaderc_result_get_bytes(result), shaderc_result_get_length(result));
+
+				shaderc_result_release(result);
+			}
+
+			shaderc_compile_options_release(options);
+			shaderc_compiler_release(compiler);
+
+			return compiled_src;
+		}
+
+		const ShaderReflection *get_reflection_data(const Shader *shader) { return &shader->reflection; }
+
+		ErrorOr<Shader *> try_load_shader(RenderContext *c, const CompiledShaderSrc &compiled_shader, const ShaderReflection &reflection)
+		{
+			auto *d            = Vulkan::get_device(c);
+			auto *sc           = Vulkan::get_swapchain(c);
+			auto *shader       = v_alloc<Shader>();
+			shader->reflection = reflection;
+
+			u32 binding_count  = reflection.samplers.size() + 1;
+			VkDescriptorSetLayoutBinding layout_bindings[binding_count];
+			layout_bindings[0] = {
+				.binding         = 0,
+				.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorCount = 1,
+				.stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
+			};
+
+			for (u32 i = 1; i < binding_count; i++)
+			{
 				layout_bindings[i] = {
 					.binding         = i,
 					.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.descriptorCount = 1,
 					.stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
 				};
-
-				shader->sampler_bindings.set(binding->name, i);
 			}
 
 			VkDescriptorSetLayoutCreateInfo info = {
 				.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 				.pNext        = nullptr,
 				.flags        = 0,
-				.bindingCount = static_cast<u32>(descriptor_set->binding_count),
+				.bindingCount = binding_count,
 				.pBindings    = layout_bindings,
 			};
 			VK_TRY(vkCreateDescriptorSetLayout(d->device, &info, nullptr, &shader->vk_custom_layout));
-
-			spvReflectDestroyShaderModule(&module);
 
 			VkShaderModuleCreateInfo create_info{
 				.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -417,79 +431,138 @@ namespace Vultr
 			v_free(shader);
 		}
 
-		static ErrorOr<void> read_floats(const Vector<StringView> &raw, u32 width, u32 offset, Material *out)
+		template <typename T>
+		static ErrorOr<void> read_str(const Vector<StringView> &raw, u32 width, u32 offset, Material *out)
 		{
 			if (raw.size() != width)
 				return Error("Invalid number of values!");
 
-			f32 parsed[width];
+			T parsed[width];
 			for (u32 i = 0; i < width; i++)
-				parsed[i] = static_cast<f32>(parse_f64(raw[i]));
+			{
+				if constexpr (is_same<T, f32> || is_same<T, f64>)
+				{
+					if check (parse_f64(raw[i]), f64 val, auto err)
+					{
+						parsed[i] = static_cast<T>(val);
+					}
+					else
+					{
+						return err;
+					}
+				}
+				else if (is_same<T, u8> || is_same<T, u16> || is_same<T, u32> || is_same<T, u64>)
+				{
+					if check (parse_u64(raw[i]), u64 val, auto err)
+					{
+						parsed[i] = static_cast<T>(val);
+					}
+					else
+					{
+						return err;
+					}
+				}
+				else if (is_same<T, s8> || is_same<T, s16> || is_same<T, s32> || is_same<T, s64>)
+				{
+					if check (parse_s64(raw[i]), s64 val, auto err)
+					{
+						parsed[i] = static_cast<T>(val);
+					}
+					else
+					{
+						return err;
+					}
+				}
+			}
 
-			memmove(out->uniform_data + offset, parsed, sizeof(f32) * width);
+			memmove(out->uniform_data + offset, parsed, sizeof(T) * width);
 
 			return Success;
 		}
 
 		ErrorOr<Material *> try_load_material(UploadContext *c, const Resource<Shader *> &shader_resource, const StringView &src)
 		{
-			auto *shader = shader_resource.value();
-			auto lines   = split(src, "\n");
+			auto *shader     = shader_resource.value();
+			auto *reflection = &shader->reflection;
+			auto lines       = split(src, "\n");
 			if (lines.size() <= 1)
 				return Error("Material does not have enough lines to be valid!");
-			if (lines.size() - 1 != shader->uniform_members.size() + shader->sampler_bindings.size())
+			if (lines.size() - 1 != reflection->uniform_members.size() + reflection->samplers.size())
 				return Error("Material does not match the same number of lines!");
 
 			auto *mat = v_alloc<Material>();
-			for (u32 i = 1; i < shader->uniform_members.size(); i++)
+			for (u32 i = 0; i < reflection->uniform_members.size(); i++)
 			{
-				auto &line       = lines[i];
+				auto &line       = lines[i + 1];
 				auto spl         = split(line, ":");
 				auto member_name = spl[0];
+
+				if (member_name != reflection->uniform_members[i].name)
+					return Error("Invalid uniform member " + member_name + "found!");
+
 				auto values      = split(spl[1], ",");
-				auto member_info = shader->uniform_members[shader->uniform_member_names.get(member_name)];
+				auto member_info = reflection->uniform_members[i];
 				auto offset      = member_info.offset;
 				switch (member_info.type)
 				{
 					case UniformType::Vec2:
-						TRY(read_floats(values, 2, offset, mat));
+						TRY(read_str<f32>(values, 2, offset, mat));
 						break;
 					case UniformType::Vec3:
-						TRY(read_floats(values, 3, offset, mat));
+						TRY(read_str<f32>(values, 3, offset, mat));
 						break;
 					case UniformType::Vec4:
-						TRY(read_floats(values, 4, offset, mat));
+						TRY(read_str<f32>(values, 4, offset, mat));
 						break;
 					case UniformType::Mat3:
-						TRY(read_floats(values, 3 * 3, offset, mat));
+						TRY(read_str<f32>(values, 3 * 3, offset, mat));
 						break;
 					case UniformType::Mat4:
-						TRY(read_floats(values, 4 * 4, offset, mat));
+						TRY(read_str<f32>(values, 4 * 4, offset, mat));
 						break;
 					case UniformType::f32:
+						TRY(read_str<f32>(values, 1, offset, mat));
+						break;
 					case UniformType::f64:
-						TRY(read_floats(values, 1, offset, mat));
+						TRY(read_str<f64>(values, 1, offset, mat));
 						break;
 					case UniformType::s8:
+						TRY(read_str<s8>(values, 1, offset, mat));
+						break;
 					case UniformType::s16:
+						TRY(read_str<s16>(values, 1, offset, mat));
+						break;
 					case UniformType::s32:
+						TRY(read_str<s32>(values, 1, offset, mat));
+						break;
 					case UniformType::s64:
-						THROW("Not implemented!");
+						TRY(read_str<s64>(values, 1, offset, mat));
+						break;
 					case UniformType::u8:
+						TRY(read_str<u8>(values, 1, offset, mat));
+						break;
 					case UniformType::u16:
+						TRY(read_str<u16>(values, 1, offset, mat));
+						break;
 					case UniformType::u32:
+						TRY(read_str<u32>(values, 1, offset, mat));
+						break;
 					case UniformType::u64:
-						THROW("Not implemented!");
+						TRY(read_str<u64>(values, 1, offset, mat));
+						break;
 				}
 			}
 
-			mat->samplers.resize(shader->sampler_bindings.size());
-			for (u32 i = 0; i < shader->sampler_bindings.size(); i++)
+			mat->samplers.resize(reflection->samplers.size());
+			for (u32 i = 0; i < reflection->samplers.size(); i++)
 			{
-				auto &line                 = lines[i + shader->uniform_members.size() + 1];
-				auto spl                   = split(line, ":");
-				u32 binding                = shader->sampler_bindings.get(spl[0]);
-				mat->samplers[binding - 1] = Resource<Platform::Texture *>(Path(spl[1]));
+				auto &line = lines[i + reflection->uniform_members.size() + 1];
+				auto spl   = split(line, ":");
+
+				if (spl[0] != reflection->samplers[i].name)
+					return Error("Invalid sampler found!");
+
+				mat->samplers[i] = Resource<Platform::Texture *>(Path(spl[1]));
 			}
 
 			mat->source     = shader_resource;
@@ -498,10 +571,6 @@ namespace Vultr
 
 			return mat;
 		}
-
-		Hashmap<String, u32> *get_uniform_bindings(Shader *shader) { return &shader->uniform_member_names; }
-		Vector<UniformMember> *get_uniform_members(Shader *shader) { return &shader->uniform_members; }
-		Hashmap<String, u32> *get_sampler_bindings(Shader *shader) { return &shader->sampler_bindings; }
 
 		void bind_material(CmdBuffer *cmd, GraphicsPipeline *pipeline, Material *mat)
 		{
@@ -535,12 +604,12 @@ namespace Vultr
 				shader->allocated_descriptor_sets.push_back(descriptor_set);
 			}
 
-			auto padded_size = pad_size(d, shader->uniform_size);
+			auto padded_size = pad_size(d, shader->reflection.uniform_size);
 			auto buffer      = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 			void *mapped     = map_buffer(d, &buffer);
 			descriptor_set->uniform_buffer_binding = {.buffer = buffer, .mapped = mapped};
 			descriptor_set->updated                = 0;
-			descriptor_set->sampler_bindings.resize(shader->sampler_bindings.size());
+			descriptor_set->sampler_bindings.resize(shader->reflection.samplers.size());
 
 			return descriptor_set;
 		}

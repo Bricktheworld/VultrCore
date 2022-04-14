@@ -158,14 +158,29 @@ namespace Vultr
 
 		T pop_wait()
 		{
+			Platform::Lock lock(mutex);
+			while (empty())
 			{
-				Platform::Lock lock(mutex);
-				while (empty())
-				{
-					queue_cond.wait(lock);
-				}
+				queue_cond.wait(lock);
 			}
-			return pop();
+
+			auto data = storage()[m_front];
+			storage()[m_front].~T();
+
+			if (m_front == m_rear)
+			{
+				m_front = -1;
+				m_rear  = -1;
+			}
+			else if (m_front == capacity - 1)
+			{
+				m_front = 0;
+			}
+			else
+			{
+				m_front++;
+			}
+			return data;
 		}
 
 		void clear()

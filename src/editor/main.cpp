@@ -73,7 +73,9 @@ static Vultr::ErrorOr<void> load_next_shader(Vultr::Platform::UploadContext *c, 
 
 	Vultr::fread_all(resource_dir / (path.string() + ".frag_spv"), &shader_src.frag_src);
 
-	CHECK_UNWRAP(auto *shader, Vultr::Platform::try_load_shader(Vultr::engine()->context, shader_src));
+	CHECK_UNWRAP(auto reflection, Vultr::Platform::try_reflect_shader(shader_src));
+
+	CHECK_UNWRAP(auto *shader, Vultr::Platform::try_load_shader(Vultr::engine()->context, shader_src, reflection));
 	if (allocator->add_loaded_resource(resource, shader).is_error())
 	{
 		printf("Freeing unnecessary load!\n");
@@ -103,8 +105,7 @@ static void material_loader_thread(Vultr::Platform::UploadContext *c, const Vult
 
 		auto shader_path = Vultr::split(material_src, "\n")[0];
 		auto shader      = Vultr::Resource<Vultr::Platform::Shader *>(Vultr::Path(shader_path));
-		if (!shader.loaded())
-			load_next_shader(c, resource_dir);
+		shader.wait_loaded();
 
 		CHECK_UNWRAP(auto *mat, Vultr::Platform::try_load_material(c, shader, material_src));
 
@@ -275,7 +276,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 					RenderSystem::update(state.editor_camera, state.editor_camera_transform, cmd, runtime.render_system);
 
 					Platform::begin_window_framebuffer(cmd);
-					render_windows(cmd, &state, &runtime, dt);
+					render_windows(cmd, &project, &state, &runtime, dt);
 					Platform::end_framebuffer(cmd);
 
 					Platform::end_cmd_buffer(cmd);

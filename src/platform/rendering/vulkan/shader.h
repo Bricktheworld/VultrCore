@@ -15,10 +15,8 @@ namespace Vultr
 			VkShaderModule vert_module = nullptr;
 			VkShaderModule frag_module = nullptr;
 
-			Vector<UniformMember> uniform_members{};
-			u32 uniform_size = 0;
-			Hashmap<String, u32> uniform_member_names{};
-			Hashmap<String, u32> sampler_bindings{};
+			ShaderReflection reflection{};
+
 			VkDescriptorSetLayout vk_custom_layout = nullptr;
 
 			Vector<VkDescriptorPool, Vulkan::MAX_FRAMES_IN_FLIGHT> vk_descriptor_pools{};

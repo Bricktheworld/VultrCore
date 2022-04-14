@@ -98,7 +98,115 @@ namespace Vultr
 
 		ImGui::End();
 	}
-	void entity_hierarchy_window_draw(EditorWindowState *state)
+	template <typename T>
+	static String serialize_bytes(const byte *src, u32 width)
+	{
+		String res{};
+		for (u32 i = 0; i < width; i++)
+		{
+			T val = *reinterpret_cast<const T *>(src + sizeof(T) * i);
+			if constexpr (is_same<T, f32> || is_same<T, f64>)
+			{
+				res += serialize_f64(val);
+			}
+			else if (is_same<T, u8> || is_same<T, u16> || is_same<T, u32> || is_same<T, u64>)
+			{
+				res += serialize_u64(val);
+			}
+			else if (is_same<T, s8> || is_same<T, s16> || is_same<T, s32> || is_same<T, s64>)
+			{
+				res += serialize_s64(val);
+			}
+			if (i != width - 1)
+				res += ",";
+		}
+		return res;
+	}
+
+	static String serialize_member(const byte *uniform_data, const Platform::UniformMember &member)
+	{
+		auto offset     = member.offset;
+		const byte *src = uniform_data + offset;
+		switch (member.type)
+		{
+			case Platform::UniformType::Vec2:
+				return serialize_bytes<f32>(src, 2);
+			case Platform::UniformType::Vec3:
+				return serialize_bytes<f32>(src, 3);
+			case Platform::UniformType::Vec4:
+				return serialize_bytes<f32>(src, 4);
+			case Platform::UniformType::Mat3:
+				return serialize_bytes<f32>(src, 3 * 3);
+			case Platform::UniformType::Mat4:
+				return serialize_bytes<f32>(src, 4 * 4);
+			case Platform::UniformType::f32:
+				return serialize_bytes<f32>(src, 1);
+			case Platform::UniformType::f64:
+				return serialize_bytes<f64>(src, 1);
+			case Platform::UniformType::s8:
+				return serialize_bytes<s8>(src, 1);
+			case Platform::UniformType::s16:
+				return serialize_bytes<s16>(src, 1);
+			case Platform::UniformType::s32:
+				return serialize_bytes<s32>(src, 1);
+			case Platform::UniformType::s64:
+				return serialize_bytes<s64>(src, 1);
+			case Platform::UniformType::u8:
+				return serialize_bytes<u8>(src, 1);
+			case Platform::UniformType::u16:
+				return serialize_bytes<u16>(src, 1);
+			case Platform::UniformType::u32:
+				return serialize_bytes<u32>(src, 1);
+			case Platform::UniformType::u64:
+				return serialize_bytes<u64>(src, 1);
+		}
+		return {};
+	}
+
+	static ErrorOr<void> serialize_material(const Path &editor_res_path, const Resource<Platform::Material *> &material)
+	{
+		auto *mat_allocator     = resource_allocator<Platform::Material *>();
+		auto *shader_allocator  = resource_allocator<Platform::Shader *>();
+		auto *texture_allocator = resource_allocator<Platform::Texture *>();
+		TRY_UNWRAP(auto *mat, material.try_value());
+		TRY_UNWRAP(auto *shader, mat->source.try_value());
+		auto shader_path = shader_allocator->get_resource_path(ResourceId(mat->source).id);
+
+		String out_buf{};
+		out_buf += shader_path.string();
+
+		auto *reflection = Platform::get_reflection_data(shader);
+		for (auto &uniform_member : reflection->uniform_members)
+		{
+			out_buf += "\n" + uniform_member.name + ":" + serialize_member(mat->uniform_data, uniform_member);
+		}
+
+		u32 i = 0;
+		for (auto &sampler : reflection->samplers)
+		{
+			auto sampler_path = texture_allocator->get_resource_path(ResourceId(mat->samplers[i]).id);
+
+			out_buf += "\n" + sampler.name + ":" + sampler_path.string();
+			i++;
+		}
+
+		auto mat_path = mat_allocator->get_resource_path(ResourceId(material).id);
+		TRY(try_fwrite_all(editor_res_path / mat_path, out_buf, StreamWriteMode::OVERWRITE));
+
+		return Success;
+	}
+
+	static ErrorOr<void> serialize_editor_buffer(const Path &editor_res_path, const ResourceId &id, EditorBuffer *buf)
+	{
+		switch (buf->editor_buffer_type)
+		{
+			case EditorBufferType::MATERIAL:
+				return serialize_material(editor_res_path, Resource<Platform::Material *>(id));
+		}
+		return Success;
+	}
+
+	void entity_hierarchy_window_draw(Project *project, EditorWindowState *state)
 	{
 		ImGui::Begin("Hierarchy");
 		for (Entity entity = 1; entity < MAX_ENTITIES; entity++)
@@ -107,7 +215,29 @@ namespace Vultr
 				continue;
 
 			if (ImGui::Selectable("Entity " + String(entity), state->selected_entity == entity))
+			{
+				if (state->selected_entity.has_value() && has_component<Material>(state->selected_entity.value()))
+				{
+					auto &mat_component = get_component<Material>(state->selected_entity.value());
+					if (state->open_editor_buffers.contains(mat_component.source))
+					{
+						if (mat_component.source.loaded())
+						{
+							auto &buf = state->open_editor_buffers.get(mat_component.source);
+							auto res  = serialize_material(project->resource_dir, mat_component.source);
+							if (res.is_error())
+								fprintf(stderr, "Something went wrong saving material %s", res.get_error().message.c_str());
+						}
+						state->open_editor_buffers.remove(mat_component.source);
+					}
+				}
 				state->selected_entity = entity;
+				if (has_component<Material>(entity))
+				{
+					auto &mat_component = get_component<Material>(state->selected_entity.value());
+					state->open_editor_buffers.set(mat_component.source, {EditorBufferType::MATERIAL});
+				}
+			}
 		}
 		ImGui::End();
 	}
@@ -304,7 +434,7 @@ namespace Vultr
 
 	void update_windows(EditorWindowState *state, f64 dt) { scene_window_update(state, dt); }
 
-	void render_windows(Platform::CmdBuffer *cmd, EditorWindowState *state, EditorRuntime *runtime, f64 dt)
+	void render_windows(Platform::CmdBuffer *cmd, Project *project, EditorWindowState *state, EditorRuntime *runtime, f64 dt)
 	{
 		Platform::imgui_begin_frame(cmd, runtime->imgui_c);
 
@@ -329,7 +459,7 @@ namespace Vultr
 		scene_window_draw(state, runtime);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
-		entity_hierarchy_window_draw(state);
+		entity_hierarchy_window_draw(project, state);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		component_inspector_window_draw(state);

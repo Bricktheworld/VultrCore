@@ -156,6 +156,8 @@ namespace Vultr
 			}
 		}
 
+		Path get_resource_path(u32 id) { return resources.get(id).path; }
+
 		Hashmap<u32, ResourceInfo<T>> resources{};
 		Queue<u32, 1024> load_queue{};
 		Queue<T, 1024> free_queue{};
@@ -238,6 +240,11 @@ namespace Vultr
 		explicit Resource(StringHash hash) : id(hash.value()) { resource_allocator<T>()->incr(id.value(), Path(hash.c_str())); }
 
 		explicit Resource(const Path &path) : id(Traits<StringView>::hash(path.string())) { resource_allocator<T>()->incr(id.value(), path); }
+		explicit Resource(const ResourceId &other) : id(other.id)
+		{
+			if (id.has_value())
+				resource_allocator<T>()->incr(id.value());
+		}
 		~Resource()
 		{
 			if (!id.has_value())
@@ -296,6 +303,12 @@ namespace Vultr
 		bool operator==(const ResourceId &other) const { return this->id == other.id; }
 
 		bool loaded() const { return id.has_value() && resource_allocator<T>()->is_loaded(id.value()); }
+		void wait_loaded() const
+		{
+			while (!loaded())
+			{
+			}
+		}
 
 		ErrorOr<T> try_value() const
 		{

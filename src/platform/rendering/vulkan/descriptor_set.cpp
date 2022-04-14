@@ -41,7 +41,7 @@ namespace Vultr
 		void update_descriptor_set(DescriptorSet *set, void *data)
 		{
 			auto *start = set->uniform_buffer_binding.mapped;
-			auto size   = set->shader->uniform_size;
+			auto size   = set->shader->reflection.uniform_size;
 
 			if (memcmp(data, start, size) == 0)
 				return;
