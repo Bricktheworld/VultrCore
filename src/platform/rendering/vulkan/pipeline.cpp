@@ -259,16 +259,20 @@ namespace Vultr
 					u32 i = 1;
 					for (auto &sampler : set->sampler_bindings)
 					{
-						if (!sampler.has_value() || !sampler.value().loaded<Platform::Texture *>())
-							continue;
+						Platform::Texture *texture = c->white_texture;
 
-						auto *texture = sampler.value().value<Platform::Texture *>();
+						if (sampler.has_value())
+						{
+							if (!sampler.value().loaded<Platform::Texture *>())
+								continue;
+							texture = sampler.value().value<Platform::Texture *>();
+						}
 
-						auto &info    = tex_info.push_back({
-							   .sampler     = texture->sampler,
-							   .imageView   = texture->image_view,
-							   .imageLayout = texture->layout,
-                        });
+						auto &info = tex_info.push_back({
+							.sampler     = texture->sampler,
+							.imageView   = texture->image_view,
+							.imageLayout = texture->layout,
+						});
 						write_sets.push_back({
 							.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 							.pNext           = nullptr,

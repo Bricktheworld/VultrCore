@@ -553,7 +553,6 @@ namespace Vultr
 				}
 			}
 
-			mat->samplers.resize(reflection->samplers.size());
 			for (u32 i = 0; i < reflection->samplers.size(); i++)
 			{
 				auto &line = lines[i + reflection->uniform_members.size() + 1];
@@ -561,8 +560,14 @@ namespace Vultr
 
 				if (spl[0] != reflection->samplers[i].name)
 					return Error("Invalid sampler found!");
-
-				mat->samplers[i] = Resource<Platform::Texture *>(Path(spl[1]));
+				if (spl[1] == VULTR_NULL_FILE_HANDLE)
+				{
+					mat->samplers.push_back(None);
+				}
+				else
+				{
+					mat->samplers.push_back(Resource<Platform::Texture *>(Path(spl[1])));
+				}
 			}
 
 			mat->source     = shader_resource;
@@ -578,7 +583,14 @@ namespace Vultr
 			u32 binding = 1;
 			for (auto &sampler : mat->samplers)
 			{
-				update_descriptor_set(mat->descriptor, sampler, binding);
+				if (sampler.has_value())
+				{
+					update_descriptor_set(mat->descriptor, ResourceId(sampler.value()), binding);
+				}
+				else
+				{
+					update_descriptor_set(mat->descriptor, None, binding);
+				}
 				binding++;
 			}
 			bind_pipeline(cmd, pipeline);

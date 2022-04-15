@@ -114,7 +114,7 @@ namespace Vultr
 		Texture *init_white_texture(UploadContext *c)
 		{
 			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8);
-			byte data[4]  = {1};
+			byte data[4]  = {255, 255, 255, 255};
 			fill_texture(c, texture, data);
 			return texture;
 		}

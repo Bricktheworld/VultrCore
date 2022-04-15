@@ -50,13 +50,13 @@ namespace Vultr
 			set->updated = U8Max;
 		}
 
-		void update_descriptor_set(DescriptorSet *set, const Resource<Platform::Texture *> &texture, u32 binding)
+		void update_descriptor_set(DescriptorSet *set, const Option<ResourceId> &texture, u32 binding)
 		{
 			auto &existing_texture = set->sampler_bindings[binding - 1];
 			if (existing_texture.has_value() && texture == existing_texture.value())
 				return;
 
-			existing_texture = ResourceId(texture);
+			existing_texture = texture;
 			set->updated     = U8Max;
 		}
 

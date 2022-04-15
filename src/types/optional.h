@@ -24,6 +24,27 @@ namespace Vultr
 			m_has_value = true;
 			new (m_storage) T(value);
 		}
+		Option(const Option &other) : m_has_value(other.has_value())
+		{
+			if (!other.has_value())
+				return;
+
+			new (m_storage) T(other.value());
+		}
+
+		Option &operator=(const Option &other)
+		{
+			if (m_has_value)
+				free_value();
+
+			m_has_value = other.has_value();
+			if (!other.has_value())
+				return *this;
+
+			new (m_storage) T(other.value());
+			return *this;
+		}
+
 		~Option()
 		{
 			if (m_has_value)

@@ -22,7 +22,7 @@ namespace Vultr
 
 		for (auto &sampler : value()->samplers)
 		{
-			if (!sampler.loaded())
+			if (sampler.has_value() && !sampler.value().loaded())
 				return false;
 		}
 		return true;

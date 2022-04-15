@@ -182,27 +182,25 @@ namespace Vultr
 		}
 
 		u32 i = 0;
-		for (auto &sampler : reflection->samplers)
+		for (auto &sampler_refl : reflection->samplers)
 		{
-			auto sampler_path = texture_allocator->get_resource_path(ResourceId(mat->samplers[i]).id);
+			auto &sampler = mat->samplers[i];
+			if (!sampler.has_value())
+			{
+				out_buf += "\n" + sampler_refl.name + ":" + Platform::VULTR_NULL_FILE_HANDLE;
+			}
+			else
+			{
+				auto sampler_path = texture_allocator->get_resource_path(ResourceId(sampler.value()).id);
 
-			out_buf += "\n" + sampler.name + ":" + sampler_path.string();
-			i++;
+				out_buf += "\n" + sampler_refl.name + ":" + sampler_path.string();
+				i++;
+			}
 		}
 
 		auto mat_path = mat_allocator->get_resource_path(ResourceId(material).id);
 		TRY(try_fwrite_all(editor_res_path / mat_path, out_buf, StreamWriteMode::OVERWRITE));
 
-		return Success;
-	}
-
-	static ErrorOr<void> serialize_editor_buffer(const Path &editor_res_path, const ResourceId &id, EditorBuffer *buf)
-	{
-		switch (buf->editor_buffer_type)
-		{
-			case EditorBufferType::MATERIAL:
-				return serialize_material(editor_res_path, Resource<Platform::Material *>(id));
-		}
 		return Success;
 	}
 
@@ -219,24 +217,14 @@ namespace Vultr
 				if (state->selected_entity.has_value() && has_component<Material>(state->selected_entity.value()))
 				{
 					auto &mat_component = get_component<Material>(state->selected_entity.value());
-					if (state->open_editor_buffers.contains(mat_component.source))
+					if (mat_component.source.loaded())
 					{
-						if (mat_component.source.loaded())
-						{
-							auto &buf = state->open_editor_buffers.get(mat_component.source);
-							auto res  = serialize_material(project->resource_dir, mat_component.source);
-							if (res.is_error())
-								fprintf(stderr, "Something went wrong saving material %s", res.get_error().message.c_str());
-						}
-						state->open_editor_buffers.remove(mat_component.source);
+						auto res = serialize_material(project->resource_dir, mat_component.source);
+						if (res.is_error())
+							fprintf(stderr, "Something went wrong saving material %s", res.get_error().message.c_str());
 					}
 				}
 				state->selected_entity = entity;
-				if (has_component<Material>(entity))
-				{
-					auto &mat_component = get_component<Material>(state->selected_entity.value());
-					state->open_editor_buffers.set(mat_component.source, {EditorBufferType::MATERIAL});
-				}
 			}
 		}
 		ImGui::End();

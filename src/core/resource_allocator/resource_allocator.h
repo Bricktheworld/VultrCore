@@ -360,8 +360,8 @@ namespace Vultr
 	template <typename T>
 	struct Traits<Resource<T>> : GenericTraits<Resource<T>>
 	{
-		static constexpr u32 hash(const Resource<T> value) { return value.id.value_or(0); }
-		static constexpr bool equals(const Resource<T> a, const Resource<T> b) { return a == b; }
+		static constexpr u32 hash(const Resource<T> &value) { return value.id.value_or(0); }
+		static constexpr bool equals(const Resource<T> &a, const Resource<T> &b) { return a == b; }
 		static constexpr bool is_trivial() { return false; }
 	};
 

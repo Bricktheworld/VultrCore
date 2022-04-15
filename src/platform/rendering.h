@@ -207,7 +207,7 @@ namespace Vultr
 		struct Material
 		{
 			byte uniform_data[MAX_MATERIAL_SIZE]{};
-			Vector<Resource<Platform::Texture *>> samplers{};
+			Vector<Option<Resource<Platform::Texture *>>> samplers{};
 			Resource<Platform::Shader *> source{};
 			DescriptorSet *descriptor = nullptr;
 		};
@@ -218,6 +218,8 @@ namespace Vultr
 		const ShaderReflection *get_reflection_data(const Shader *shader);
 
 		void destroy_shader(RenderContext *c, Shader *shader);
+
+		static constexpr StringView VULTR_NULL_FILE_HANDLE = "VULTR_NULL_FILE";
 		ErrorOr<Material *> try_load_material(UploadContext *c, const Resource<Shader *> &shader, const StringView &src);
 		void destroy_material(UploadContext *c, Material *mat);
 
@@ -396,7 +398,7 @@ namespace Vultr
 		void draw_indexed(CmdBuffer *cmd, u32 index_count, u32 instance_count = 1, u32 first_index = 0, s32 vertex_offset = 0, u32 first_instance_id = 0);
 		void push_constants(CmdBuffer *cmd, GraphicsPipeline *pipeline, const PushConstant &constant);
 		void update_descriptor_set(DescriptorSet *set, void *data);
-		void update_descriptor_set(DescriptorSet *set, const Resource<Texture *> &texture, u32 binding);
+		void update_descriptor_set(DescriptorSet *set, const Option<ResourceId> &texture, u32 binding);
 		void update_default_descriptor_set(CmdBuffer *cmd, CameraUBO *camera_ubo, DirectionalLightUBO *directional_light_ubo);
 		void bind_descriptor_set(CmdBuffer *cmd, GraphicsPipeline *pipeline, DescriptorSet *set);
 		void bind_material(CmdBuffer *cmd, GraphicsPipeline *pipeline, Material *material);
