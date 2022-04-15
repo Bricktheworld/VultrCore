@@ -235,33 +235,33 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 			Vultr::init_resource_allocators();
 
-			auto *c = Vultr::Platform::init_upload_context(Vultr::engine()->context);
-			Platform::Thread mesh_loading_thread(mesh_loader_thread, c, build_dir / "res");
+			EditorRuntime runtime{};
+			runtime.render_system  = RenderSystem::init();
+			runtime.upload_context = Vultr::Platform::init_upload_context(Vultr::engine()->context);
+			runtime.imgui_c        = Platform::init_imgui(engine()->window, runtime.upload_context);
+
+			Platform::Thread mesh_loading_thread(mesh_loader_thread, runtime.upload_context, build_dir / "res");
 			mesh_loading_thread.detach();
-			Platform::Thread mesh_freeing_thread(mesh_free_thread, c);
+			Platform::Thread mesh_freeing_thread(mesh_free_thread, runtime.upload_context);
 			mesh_freeing_thread.detach();
-			Platform::Thread material_loading_thread(material_loader_thread, c, build_dir / "res");
+			Platform::Thread material_loading_thread(material_loader_thread, runtime.upload_context, build_dir / "res");
 			material_loading_thread.detach();
-			Platform::Thread material_freeing_thread(material_free_thread, c);
+			Platform::Thread material_freeing_thread(material_free_thread, runtime.upload_context);
 			material_freeing_thread.detach();
-			Platform::Thread shader_loading_thread(shader_loader_thread, c, build_dir / "res");
+			Platform::Thread shader_loading_thread(shader_loader_thread, runtime.upload_context, build_dir / "res");
 			shader_loading_thread.detach();
 			Platform::Thread shader_freeing_thread(shader_free_thread);
 			shader_freeing_thread.detach();
-			Platform::Thread texture_loading_thread(texture_loader_thread, c, build_dir / "res");
+			Platform::Thread texture_loading_thread(texture_loader_thread, runtime.upload_context, build_dir / "res");
 			texture_loading_thread.detach();
-			Platform::Thread texture_freeing_thread(texture_free_thread, c);
+			Platform::Thread texture_freeing_thread(texture_free_thread, runtime.upload_context);
 			texture_freeing_thread.detach();
-
-			EditorRuntime runtime{};
-			runtime.render_system  = RenderSystem::init();
-			runtime.upload_context = Platform::init_upload_context(engine()->context);
-			runtime.imgui_c        = Platform::init_imgui(engine()->window, runtime.upload_context);
 
 			EditorWindowState state{};
 
 			void *project_state = project.init();
 
+			init_windows(&runtime, &project, &state);
 			while (!Platform::window_should_close(engine()->window))
 			{
 				Platform::poll_events(engine()->window);
@@ -298,6 +298,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			resource_allocator<Platform::Texture *>()->kill_freeing_threads();
 
 			Platform::destroy_imgui(engine()->context, runtime.imgui_c);
+			destroy_windows(&state);
 			Platform::destroy_upload_context(runtime.upload_context);
 			RenderSystem::destroy(runtime.render_system);
 			Platform::close_window(engine()->window);

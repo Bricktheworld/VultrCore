@@ -5,10 +5,10 @@ namespace Vultr
 {
 	namespace Platform
 	{
-		ErrorOr<Texture *> load_texture_file(UploadContext *c, const Path &path, TextureFormat format)
+		ErrorOr<Texture *> load_texture_file(UploadContext *c, const Path &path, TextureFormat format, bool flip_on_load)
 		{
 			s32 width, height, channels;
-			stbi_set_flip_vertically_on_load(true);
+			stbi_set_flip_vertically_on_load(flip_on_load);
 			byte *buffer = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
 			if (buffer == nullptr)
@@ -21,18 +21,18 @@ namespace Vultr
 			return texture;
 		}
 
-		ErrorOr<Texture *> load_texture_memory(UploadContext *c, byte *data, u64 size, TextureFormat format)
+		ErrorOr<Texture *> load_texture_memory(UploadContext *c, byte *data, u64 size, TextureFormat format, bool flip_on_load)
 		{
 			s32 width  = 0;
 			s32 height = 0;
-			stbi_set_flip_vertically_on_load(true);
+			stbi_set_flip_vertically_on_load(flip_on_load);
 			byte *buffer = stbi_load_from_memory(data, static_cast<s32>(size), &width, &height, nullptr, 4);
 
 			if (buffer == nullptr)
 				return Error("stbi failed to load texture!");
 
 			auto *texture = init_texture(c, width, height, format);
-			fill_texture(c, texture, data);
+			fill_texture(c, texture, buffer);
 			stbi_image_free(buffer);
 
 			return texture;

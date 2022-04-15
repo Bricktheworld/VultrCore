@@ -29,11 +29,46 @@ namespace Vultr
 		return fget_date_modified_ms(src_file).value() > fget_date_modified_ms(out_file).value();
 	}
 
+	ResourceType get_resource_type(const Path &path)
+	{
+		if let (auto extension, path.get_extension())
+		{
+			if (extension == ".fbx" || extension == ".obj" || extension == ".blend")
+			{
+				return ResourceType::MESH;
+			}
+			else if (extension == ".glsl")
+			{
+				return ResourceType::SHADER;
+			}
+			else if (extension == ".png" || extension == ".jpg" || extension == ".bmp")
+			{
+				return ResourceType::TEXTURE;
+			}
+			else if (extension == ".mat")
+			{
+				return ResourceType::MATERIAL;
+			}
+			else if (extension == ".c" || extension == ".cpp" || extension == ".cc" || extension == ".h" || extension == ".hpp")
+			{
+				return ResourceType::CPP_SRC;
+			}
+			else
+			{
+				return ResourceType::OTHER;
+			}
+		}
+		else
+		{
+			return ResourceType::OTHER;
+		}
+	}
+
 	static ErrorOr<void> import_resource_file(const Path &out_dir, const Path &local_src, const Path &full_src)
 	{
-		if let (auto extension, local_src.get_extension())
+		switch (get_resource_type(local_src))
 		{
-			if (extension == ".fbx")
+			case ResourceType::MESH:
 			{
 				auto vertex_out = out_dir / (local_src.basename() + ".vertex");
 				auto index_out  = out_dir / (local_src.basename() + ".index");
@@ -44,11 +79,9 @@ namespace Vultr
 					TRY(Platform::export_mesh(vertex_out, index_out, &mesh));
 					Platform::free_imported_mesh(&mesh);
 				}
+				break;
 			}
-			//			else if (extension == ".png")
-			//			{
-			//			}
-			else if (extension == ".glsl")
+			case ResourceType::SHADER:
 			{
 				auto vertex_out   = out_dir / (local_src.basename() + ".vert_spv");
 				auto fragment_out = out_dir / (local_src.basename() + ".frag_spv");
@@ -60,8 +93,9 @@ namespace Vultr
 					TRY(try_fwrite_all(vertex_out, compiled.vert_src, StreamWriteMode::OVERWRITE));
 					TRY(try_fwrite_all(fragment_out, compiled.frag_src, StreamWriteMode::OVERWRITE));
 				}
+				break;
 			}
-			else
+			default:
 			{
 				auto out = out_dir / local_src.basename();
 				if (needs_reimport(full_src, out))
@@ -70,13 +104,10 @@ namespace Vultr
 					TRY(try_fread_all(full_src, &src));
 					TRY(try_fwrite_all(out, src, StreamWriteMode::OVERWRITE));
 				}
+				break;
 			}
-			return Success;
 		}
-		else
-		{
-			return Error("No extension for file " + full_src.string());
-		}
+		return Success;
 	}
 
 	static ErrorOr<void> import_dir(const Path &in_dir, const Path &out_dir)

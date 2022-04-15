@@ -3,6 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <ImGuizmo/ImGuizmo.h>
 #include <math/decompose_transform.h>
+#include <editor/res/resources.h>
 
 namespace Vultr
 {
@@ -419,6 +420,209 @@ namespace Vultr
 		}
 		ImGui::End();
 	}
+#define WIDGET_SIZE 200.0f
+#define ASSET_BROWSER_PADDING 2
+#define ICON_SIZE 125.0f
+
+	static u32 get_num_cols()
+	{
+
+		s32 num_cols = static_cast<s32>(ImGui::GetWindowWidth()) / WIDGET_SIZE - ASSET_BROWSER_PADDING;
+
+		if (num_cols < 1)
+			return 1;
+
+		return static_cast<u32>(num_cols);
+	}
+
+	static void draw_directory(const Path &path) {}
+
+	static void change_dir(Path dir, EditorWindowState *state)
+	{
+		state->resource_browser_state.current_dir = dir;
+		state->resource_browser_state.dirs.clear();
+		state->resource_browser_state.files.clear();
+		for (auto path : DirectoryIterator(dir))
+		{
+			if (path.is_directory())
+			{
+				state->resource_browser_state.dirs.push_back(path);
+			}
+			else
+			{
+				state->resource_browser_state.files.push_back(path);
+			}
+		}
+	}
+
+	static void resource_window_init(Project *project, EditorWindowState *state)
+	{
+		state->resource_browser_state.current_dir = project->resource_dir;
+		change_dir(project->resource_dir, state);
+	}
+
+	static void path_drag_drop_src(const Path &path, str type)
+	{
+		if (ImGui::BeginDragDropSource())
+		{
+			auto *heap_payload = v_alloc<Path>();
+			*heap_payload      = path;
+			void *payload      = static_cast<void *>(heap_payload);
+
+			ImGui::SetDragDropPayload(type, payload, sizeof(Path));
+
+			v_free(heap_payload);
+
+			ImGui::EndDragDropSource();
+		}
+	}
+
+	static Platform::Texture *get_texture_for_resource(const Path &path, EditorWindowState *state)
+	{
+		switch (get_resource_type(path))
+		{
+			case ResourceType::TEXTURE:
+				return state->texture;
+			case ResourceType::SHADER:
+				return state->shader;
+			case ResourceType::MATERIAL:
+				// TODO(Brandon): Get an actual icon for materials.
+				return state->file;
+			case ResourceType::MESH:
+				return state->mesh;
+			case ResourceType::CPP_SRC:
+				return state->cpp_source;
+			case ResourceType::OTHER:
+				return state->file;
+		}
+	}
+
+	static void draw_resource(const Path &path, Platform::Texture *texture)
+	{
+		auto name           = path.basename();
+
+		auto folder_texture = Platform::imgui_get_texture_id(texture);
+		ImGui::SameLine((WIDGET_SIZE - ICON_SIZE) / 2);
+		ImGui::Image(folder_texture, ImVec2(ICON_SIZE, ICON_SIZE));
+
+		f32 padding_left = (WIDGET_SIZE - ImGui::CalcTextSize(name.c_str()).x) / 2;
+
+		ImGui::SameLine(padding_left);
+		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ICON_SIZE);
+
+		ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + WIDGET_SIZE - padding_left);
+		ImGui::Text("%s", name.c_str());
+		ImGui::PopTextWrapPos();
+	}
+
+	void resource_browser_window_draw(EditorWindowState *editor_state)
+	{
+		ImGui::Begin("Asset Browser");
+		u32 num_cols = get_num_cols();
+		auto *state  = &editor_state->resource_browser_state;
+
+		if (ImGui::BeginTable("Asset Table", static_cast<s32>(num_cols)))
+		{
+			ImGui::TableNextRow();
+			u32 col = 0;
+			for (u32 i = 0; i < state->files.size(); i++)
+			{
+				if (col >= num_cols)
+				{
+					ImGui::TableNextRow();
+					col = 0;
+				}
+				ImGui::TableSetColumnIndex(static_cast<s32>(col));
+				auto &file = state->files[i];
+
+				ImGui::PushID(i);
+				if (ImGui::Selectable("##", state->selected_index.has_value() && state->selected_index.value() == i, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(WIDGET_SIZE, WIDGET_SIZE)))
+				{
+					state->selected_index = i;
+				}
+
+				path_drag_drop_src(file, "File");
+
+				draw_resource(file, get_texture_for_resource(file, editor_state));
+
+				ImGui::PopID();
+
+				col++;
+			}
+
+			for (u32 i = 0; i < state->dirs.size(); i++)
+			{
+				if (col >= num_cols)
+				{
+					ImGui::TableNextRow();
+					col = 0;
+				}
+				ImGui::TableSetColumnIndex(static_cast<s32>(col));
+				u32 full_index = i + state->files.size();
+				auto &dir      = state->dirs[i];
+
+				ImGui::PushID(full_index);
+
+				if (ImGui::Selectable("##", state->selected_index.has_value() && state->selected_index.value() == full_index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(WIDGET_SIZE, WIDGET_SIZE)))
+				{
+					state->selected_index = full_index;
+				}
+
+				path_drag_drop_src(dir, "Directory");
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					const auto *payload = ImGui::AcceptDragDropPayload("File");
+
+					if (payload != nullptr)
+					{
+						auto *file = static_cast<Path *>(payload->Data);
+
+						change_dir(state->current_dir, editor_state);
+
+						ImGui::PopID();
+						ImGui::EndTable();
+						ImGui::End();
+						return;
+					}
+					ImGui::EndDragDropTarget();
+				}
+
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+				{
+					change_dir(dir, editor_state);
+					ImGui::PopID();
+					ImGui::EndTable();
+					ImGui::End();
+					return;
+				}
+
+				draw_resource(dir, editor_state->folder);
+
+				ImGui::PopID();
+				col++;
+			}
+
+			ImGui::EndTable();
+		}
+
+		if (ImGui::Button("BACK"))
+		{
+		}
+
+		ImGui::End();
+	}
+
+	void init_windows(EditorRuntime *runtime, Project *project, EditorWindowState *state)
+	{
+		resource_window_init(project, state);
+		CHECK_UNWRAP(state->texture, Platform::load_texture_memory(runtime->upload_context, EditorResources::TEXTURE_PNG, EditorResources::TEXTURE_PNG_LEN));
+		CHECK_UNWRAP(state->cpp_source, Platform::load_texture_memory(runtime->upload_context, EditorResources::CPP_PNG, EditorResources::CPP_PNG_LEN));
+		CHECK_UNWRAP(state->shader, Platform::load_texture_memory(runtime->upload_context, EditorResources::SHADER_PNG, EditorResources::SHADER_PNG_LEN));
+		CHECK_UNWRAP(state->file, Platform::load_texture_memory(runtime->upload_context, EditorResources::FILE_PNG, EditorResources::FILE_PNG_LEN));
+		CHECK_UNWRAP(state->folder, Platform::load_texture_memory(runtime->upload_context, EditorResources::FOLDER_PNG, EditorResources::FOLDER_PNG_LEN, Platform::TextureFormat::SRGBA8, false));
+		CHECK_UNWRAP(state->mesh, Platform::load_texture_memory(runtime->upload_context, EditorResources::MESH_3D_PNG, EditorResources::MESH_3D_PNG_LEN));
+	}
 
 	void update_windows(EditorWindowState *state, f64 dt) { scene_window_update(state, dt); }
 
@@ -452,8 +656,22 @@ namespace Vultr
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		component_inspector_window_draw(state);
 
+		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
+		resource_browser_window_draw(state);
+
 		ImGui::End();
 
 		Platform::imgui_end_frame(cmd, runtime->imgui_c);
+	}
+
+	void destroy_windows(EditorWindowState *state)
+	{
+		auto *c = engine()->context;
+		Platform::destroy_texture(c, state->texture);
+		Platform::destroy_texture(c, state->cpp_source);
+		Platform::destroy_texture(c, state->shader);
+		Platform::destroy_texture(c, state->file);
+		Platform::destroy_texture(c, state->folder);
+		Platform::destroy_texture(c, state->mesh);
 	}
 } // namespace Vultr

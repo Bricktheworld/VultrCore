@@ -113,8 +113,8 @@ namespace Vultr
 		Texture *init_texture(UploadContext *c, u32 width, u32 height, TextureFormat format);
 
 		void fill_texture(UploadContext *c, Texture *texture, byte *data);
-		ErrorOr<Texture *> load_texture_file(UploadContext *c, const Path &path, TextureFormat format = TextureFormat::SRGBA8);
-		ErrorOr<Texture *> load_texture_memory(UploadContext *c, byte *data, u64 size, TextureFormat format = TextureFormat::SRGBA8);
+		ErrorOr<Texture *> load_texture_file(UploadContext *c, const Path &path, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
+		ErrorOr<Texture *> load_texture_memory(UploadContext *c, byte *data, u64 size, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
 		Texture *init_white_texture(UploadContext *c);
 		Texture *init_black_texture(UploadContext *c);
 

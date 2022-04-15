@@ -78,7 +78,7 @@ namespace Vultr
 			{
 				Platform::Lock lock(mutex);
 				auto res = try_push_impl();
-				ASSERT(res.has_value(), res.get_error().message.c_str());
+				ASSERT(res.has_value(), "%s", res.get_error().message.c_str());
 				new (res.value()) T(move(element));
 			}
 			queue_cond.notify_one();

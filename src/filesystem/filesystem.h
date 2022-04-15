@@ -19,7 +19,7 @@ namespace Vultr
 
 		Path operator/(StringView other) const
 		{
-			ASSERT(is_directory(), "Cannot get subdirectory of path that doesn't end with '/'.");
+			ASSERT(is_directory(), "Cannot get subdirectory of path that isn't a directory!");
 			auto trailing_slash = String(m_path.last() == '/' ? "" : "/");
 			if (other[0] == '/')
 			{

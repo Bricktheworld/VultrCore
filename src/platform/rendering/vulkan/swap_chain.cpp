@@ -263,7 +263,7 @@ namespace Vultr
 					.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 					.flags         = 0,
 					.maxSets       = 1,
-					.poolSizeCount = 2,
+					.poolSizeCount = 1,
 					.pPoolSizes    = pool_sizes,
 				};
 				VkDescriptorPool pool;
