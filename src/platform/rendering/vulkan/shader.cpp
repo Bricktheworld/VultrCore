@@ -262,9 +262,28 @@ namespace Vultr
 				auto *binding = descriptor_set->bindings[i];
 				if (binding->descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 					return Error("All bindings after 0 must be samplers!");
+				StringView name  = binding->name;
+				SamplerType type = SamplerType::ALBEDO;
+				if (name == "u_Normal_map")
+				{
+					type = SamplerType::NORMAL;
+				}
+				else if (name == "u_Metallic_map")
+				{
+					type = SamplerType::METALLIC;
+				}
+				else if (name == "u_Roughness_map")
+				{
+					type = SamplerType::ROUGHNESS;
+				}
+				else if (name == "u_Ambient_occlusion_map")
+				{
+					type = SamplerType::AMBIENT_OCCLUSION;
+				}
 
 				reflection.samplers.push_back({
-					.name = String(binding->name),
+					.name = String(name),
+					.type = type,
 				});
 			}
 
@@ -562,7 +581,7 @@ namespace Vultr
 					return Error("Invalid sampler found!");
 				if (spl[1] == VULTR_NULL_FILE_HANDLE)
 				{
-					mat->samplers.push_back(None);
+					mat->samplers.push_back(Resource<Platform::Texture *>());
 				}
 				else
 				{
@@ -583,9 +602,9 @@ namespace Vultr
 			u32 binding = 1;
 			for (auto &sampler : mat->samplers)
 			{
-				if (sampler.has_value())
+				if (!sampler.empty())
 				{
-					update_descriptor_set(mat->descriptor, ResourceId(sampler.value()), binding);
+					update_descriptor_set(mat->descriptor, ResourceId(sampler), binding);
 				}
 				else
 				{
@@ -597,7 +616,7 @@ namespace Vultr
 			bind_descriptor_set(cmd, pipeline, mat->descriptor);
 		}
 
-		void destroy_material(UploadContext *c, Material *mat)
+		void destroy_material(RenderContext *c, Material *mat)
 		{
 			free_descriptor_set(c, mat->descriptor);
 			mat->samplers.clear();
@@ -626,7 +645,7 @@ namespace Vultr
 			return descriptor_set;
 		}
 
-		void free_descriptor_set(UploadContext *c, DescriptorSet *set)
+		void free_descriptor_set(RenderContext *c, DescriptorSet *set)
 		{
 			auto *d      = Vulkan::get_device(c);
 			auto *shader = set->shader;
@@ -639,7 +658,7 @@ namespace Vultr
 			set->updated = 0;
 
 			unmap_buffer(d, &set->uniform_buffer_binding.buffer);
-			free_buffer(d, &set->uniform_buffer_binding.buffer);
+			free_buffer(Vulkan::get_swapchain(c), &set->uniform_buffer_binding.buffer);
 
 			set->uniform_buffer_binding = {};
 			set->sampler_bindings.clear();

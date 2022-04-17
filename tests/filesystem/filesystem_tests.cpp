@@ -34,3 +34,63 @@ TEST(Filesystem, FileInputStream)
 	String buf;
 	ASSERT_TRUE(try_fread_all(p, &buf).has_value());
 }
+
+TEST(Filesystem, Parent)
+{
+	Path p("./src/test.cpp");
+	ASSERT_TRUE(get_parent(p).value() == Path("./src/"));
+
+	p = Path("./src/a");
+	ASSERT_TRUE(get_parent(p).value() == Path("./src/"));
+
+	p = Path("./src/a/");
+	ASSERT_TRUE(get_parent(p).value() == Path("./src/"));
+
+	p = Path("/src/test.cpp");
+	ASSERT_TRUE(get_parent(p).value() == Path("/src/"));
+
+	p = Path("/src/a");
+	ASSERT_TRUE(get_parent(p).value() == Path("/src/"));
+
+	p = Path("/src/a/");
+	ASSERT_TRUE(get_parent(p).value() == Path("/src/"));
+
+	p = Path("src/test.cpp");
+	ASSERT_TRUE(get_parent(p).value() == Path("src/"));
+
+	p = Path("src/a");
+	ASSERT_TRUE(get_parent(p).value() == Path("src/"));
+
+	p = Path("src/a/");
+	ASSERT_TRUE(get_parent(p).value() == Path("src/"));
+
+	p = Path("test/");
+	ASSERT_TRUE(get_parent(p).has_error());
+
+	p = Path("test");
+	ASSERT_TRUE(get_parent(p).has_error());
+
+	p = Path("./test");
+	ASSERT_TRUE(get_parent(p).value() == Path("./"));
+
+	p = Path("/test");
+	ASSERT_TRUE(get_parent(p).value() == Path("/"));
+
+	p = Path("/test/");
+	ASSERT_TRUE(get_parent(p).value() == Path("/"));
+
+	p = Path("a/");
+	ASSERT_TRUE(get_parent(p).has_error());
+
+	p = Path("a");
+	ASSERT_TRUE(get_parent(p).has_error());
+
+	p = Path("./a");
+	ASSERT_TRUE(get_parent(p).value() == Path("./"));
+
+	p = Path("/a");
+	ASSERT_TRUE(get_parent(p).value() == Path("/"));
+
+	p = Path("/a/");
+	ASSERT_TRUE(get_parent(p).value() == Path("/"));
+}

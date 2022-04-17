@@ -176,7 +176,7 @@ namespace Vultr
 			if (res == nullptr)
 				break;
 			positions.push_back(res - haystack.c_str());
-			current_position += res - haystack.c_str() + 1;
+			current_position = res - haystack.c_str() + 1;
 		}
 		return positions;
 	}

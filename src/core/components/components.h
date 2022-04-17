@@ -24,7 +24,7 @@ namespace Vultr
 			Vector<ComponentMember> members = Vector({
 				ComponentMember{
 					.name = "source",
-					.type = PrimitiveType::RESOURCE,
+					.type = PrimitiveType::MATERIAL_RESOURCE,
 					.addr = &component->source,
 				},
 			});
@@ -91,15 +91,15 @@ namespace Vultr
 				});
 			}
 
-			u32 binding = 1;
+			u32 i = 0;
 			for (auto &sampler : reflection->samplers)
 			{
 				members.push_back(ComponentMember{
 					.name = sampler.name,
-					.type = PrimitiveType::RESOURCE,
-					.addr = &mat->samplers[binding - 1],
+					.type = PrimitiveType::TEXTURE_RESOURCE,
+					.addr = &mat->samplers[i],
 				});
-				binding++;
+				i++;
 			}
 			return members;
 		}
@@ -154,7 +154,7 @@ namespace Vultr
 			return Vector({
 				ComponentMember{
 					.name = "source",
-					.type = PrimitiveType::RESOURCE,
+					.type = PrimitiveType::MESH_RESOURCE,
 					.addr = &component->source,
 				},
 			});

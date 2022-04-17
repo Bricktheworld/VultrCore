@@ -19,6 +19,11 @@ namespace Vultr
 		void copy_buffer(Platform::UploadContext *c, GpuBuffer dst_buffer, GpuBuffer src_buffer, VkDeviceSize size);
 		void *map_buffer(Device *d, GpuBuffer *buffer);
 		void unmap_buffer(Device *d, GpuBuffer *buffer);
-		void free_buffer(Device *d, GpuBuffer *buffer);
+		struct SwapChain;
+		void free_buffer(SwapChain *sc, GpuBuffer *buffer);
+
+		// If you are certain that a buffer does will never appear in the swapchain, you can simply use this function.
+		// This does not check the swapchain for command buffers with dependencies
+		void unsafe_free_buffer(Device *d, GpuBuffer *buffer);
 	} // namespace Vulkan
 } // namespace Vultr

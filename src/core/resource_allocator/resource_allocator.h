@@ -336,6 +336,8 @@ namespace Vultr
 			}
 		}
 
+		bool empty() { return !id.has_value(); }
+
 		constexpr operator ResourceId() { return ResourceId(id.value_or(0)); }
 
 	  private:

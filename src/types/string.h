@@ -97,7 +97,12 @@ namespace Vultr
 
 		constexpr str c_str() const { return storage; }
 		operator str() { return storage; }
-		constexpr size_t length() const { return size() - 1; }
+		constexpr size_t length() const
+		{
+			if (size() == 0)
+				return 0;
+			return size() - 1;
+		}
 		constexpr size_t is_empty() const { return length() == 0; }
 		constexpr char last() const
 		{
@@ -147,7 +152,7 @@ namespace Vultr
 	struct Traits<String> : public GenericTraits<String>
 	{
 		static u32 hash(const String &s) { return s.hash(); }
-		static u32 equals(const String &a, const String &b) { return a == b; }
-		static u32 equals(const String &a, str b) { return a == b; }
+		static bool equals(const String &a, const String &b) { return a == b; }
+		static bool equals(const String &a, str b) { return a == b; }
 	};
 } // namespace Vultr

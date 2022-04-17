@@ -33,12 +33,13 @@ namespace Vultr
 			PRODUCTION_ASSERT(c != nullptr, "Failed to allocate render context!");
 			new (c) RenderContext();
 
-			auto device          = Vulkan::init_device(window, debug, Vulkan::debug_cb);
-			c->swap_chain        = Vulkan::init_swapchain(device, window);
+			auto device = Vulkan::init_device(window, debug, Vulkan::debug_cb);
+			Vulkan::init_swapchain(&device, window, &c->swap_chain);
 
 			auto *upload_context = init_upload_context(c);
 			c->white_texture     = Platform::init_white_texture(upload_context);
 			c->black_texture     = Platform::init_black_texture(upload_context);
+			c->normal_texture    = Platform::init_normal_texture(upload_context);
 			destroy_upload_context(upload_context);
 			return c;
 		}
@@ -51,9 +52,9 @@ namespace Vultr
 			{
 				auto [image_index, frame, framebuffer] = res.value();
 				auto *cmd_pool                         = &frame->cmd_pool;
-				//				Vulkan::update_uniform_buffer(c, image_index, dt);
 
 				Vulkan::recycle_cmd_pool(Vulkan::get_device(c), cmd_pool);
+				Vulkan::get_swapchain(c)->cmd_buffer_resource_semaphore.acquire();
 				auto cmd             = Vulkan::begin_cmd_buffer(Vulkan::get_device(c), cmd_pool);
 
 				auto *buf            = v_alloc<CmdBuffer>();
@@ -132,6 +133,7 @@ namespace Vultr
 			}
 
 			begin_vk_framebuffer(cmd->cmd_buffer, framebuffer->vk_renderpass, framebuffer->vk_framebuffer, framebuffer->width, framebuffer->height, clear_colors);
+			Vulkan::depend_resource(cmd, framebuffer);
 		}
 		void end_framebuffer(CmdBuffer *cmd) { vkCmdEndRenderPass(cmd->cmd_buffer); }
 
@@ -140,6 +142,7 @@ namespace Vultr
 			auto *c = cmd->render_context;
 			Vulkan::end_cmd_buffer(cmd->cmd_buffer, &cmd->frame->cmd_pool);
 			Vulkan::submit_swapchain(Vulkan::get_swapchain(c), cmd->image_index, 1, &cmd->cmd_buffer);
+			Vulkan::get_swapchain(c)->cmd_buffer_resource_semaphore.release();
 			v_free(cmd);
 		}
 		void wait_idle(RenderContext *c) { wait_idle(Vulkan::get_device(c)); }
@@ -148,6 +151,7 @@ namespace Vultr
 		{
 			// Make sure don't destroy anything that is in use.
 			wait_idle(c);
+			destroy_texture(c, c->normal_texture);
 			destroy_texture(c, c->black_texture);
 			destroy_texture(c, c->white_texture);
 			destroy_swapchain(Vulkan::get_swapchain(c));

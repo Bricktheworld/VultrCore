@@ -218,7 +218,7 @@ namespace Vultr
 		T &get_component(Entity entity)
 		{
 			auto res = try_get_component<T>(entity);
-			ASSERT(res, "DefaultComponent does not exist!");
+			ASSERT(res, "Component does not exist!");
 			return res.value();
 		}
 

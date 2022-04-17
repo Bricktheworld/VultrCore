@@ -41,6 +41,28 @@ namespace Vultr
 		return Path(buf);
 	}
 
+	bool has_parent(const Path &path) { return get_parent(path).has_value(); }
+	ErrorOr<Path> get_parent(const Path &path)
+	{
+		StringView str_path = path.string();
+		auto indices        = find_all(str_path, "/");
+
+		if (str_path.last() == '/')
+			indices.remove_last();
+
+		if (str_path == "/" || str_path == "./" || indices.empty())
+			return Error("No parent directory!");
+
+		auto last = indices.size() - 1;
+		if (indices[last] == 0)
+			return Path("/");
+
+		if (indices[last] == 1 && starts_with(str_path, "./"))
+			return Path("./");
+
+		return Path(str_path.substr(0, indices[last] + 1));
+	}
+
 	ErrorOr<void> makedir(const Path &path)
 	{
 		if (exists(path))

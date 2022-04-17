@@ -53,7 +53,10 @@ namespace Vultr
 		void update_descriptor_set(DescriptorSet *set, const Option<ResourceId> &texture, u32 binding)
 		{
 			auto &existing_texture = set->sampler_bindings[binding - 1];
-			if (existing_texture.has_value() && texture == existing_texture.value())
+			if (existing_texture.has_value() && texture.has_value() && texture.value() == existing_texture.value())
+				return;
+
+			if (!existing_texture.has_value() && !texture.has_value())
 				return;
 
 			existing_texture = texture;
@@ -65,6 +68,19 @@ namespace Vultr
 			auto vk_set = set->vk_frame_descriptor_sets[cmd->image_index];
 			ASSERT(set->shader == pipeline->layout.shader, "Descriptor set is not compatible with pipeline!");
 			vkCmdBindDescriptorSets(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_layout, 1, 1, &vk_set, 0, nullptr);
+			Vulkan::depend_resource(cmd, set);
+			Vulkan::depend_resource(cmd, &set->uniform_buffer_binding.buffer);
+			for (auto &sampler_optional : set->sampler_bindings)
+			{
+				if let (ResourceId sampler, sampler_optional)
+				{
+					if (sampler.loaded<Platform::Texture *>())
+						Vulkan::depend_resource(cmd, sampler.value<Platform::Texture *>());
+				}
+				else
+				{
+				}
+			}
 		}
 	} // namespace Platform
 } // namespace Vultr

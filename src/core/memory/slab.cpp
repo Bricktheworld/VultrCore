@@ -89,7 +89,7 @@ namespace Vultr
 			do
 			{
 				// Load the most recent bitfield.
-				bitfield    = slab->free_blocks[i].load(std::memory_order_relaxed);
+				bitfield    = slab->free_blocks[i].load();
 				u64 inverse = ~bitfield;
 
 				// Figure out index.
@@ -100,7 +100,7 @@ namespace Vultr
 				u64 new_val = bitfield | mask;
 
 				// If we successfully update the bitfield, then we can assume that we allocated successfully.
-				if (slab->free_blocks[i].compare_exchange_weak(bitfield, new_val, std::memory_order_relaxed))
+				if (slab->free_blocks[i].compare_exchange_weak(bitfield, new_val))
 				{
 					// Set the index in the entire block array, not just this bitfield.
 					return reinterpret_cast<byte *>(slab->heap) + (bit_index + (i * 64)) * slab->block_size;
@@ -126,15 +126,15 @@ namespace Vultr
 		u32 index          = (reinterpret_cast<byte *>(data) - reinterpret_cast<byte *>(slab->heap)) / slab->block_size;
 
 		u32 bitfield_index = index / 64;
-		u64 bitfield       = slab->free_blocks[bitfield_index].load(std::memory_order_relaxed);
+		u64 bitfield       = slab->free_blocks[bitfield_index].load();
 		u64 shifted        = 1 << (index % 64);
 
 		ASSERT(bitfield & shifted, "Double free detected!");
 
 		u64 inverse = ~shifted;
 
-		slab->free_blocks[bitfield_index].fetch_and(inverse, std::memory_order_relaxed);
-		ASSERT((slab->free_blocks[bitfield_index].load(std::memory_order_relaxed) & shifted) == 0, "Something went wrong writing the correct bitfield");
+		slab->free_blocks[bitfield_index].fetch_and(inverse);
+		ASSERT((slab->free_blocks[bitfield_index].load() & shifted) == 0, "Something went wrong writing the correct bitfield");
 	}
 
 	void *slab_alloc(SlabAllocator *allocator, size_t size)

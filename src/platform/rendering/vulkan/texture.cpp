@@ -127,6 +127,14 @@ namespace Vultr
 			return texture;
 		}
 
+		Texture *init_normal_texture(UploadContext *c)
+		{
+			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8);
+			byte data[4]  = {128, 128, 255, 0};
+			fill_texture(c, texture, data);
+			return texture;
+		}
+
 		void fill_texture(UploadContext *c, Texture *texture, byte *data)
 		{
 			auto *d = Vulkan::get_device(c);
@@ -222,15 +230,19 @@ namespace Vultr
 
 			VK_CHECK(vkWaitForFences(d->device, 1, &c->cmd_pool.fence, VK_TRUE, UINT64_MAX));
 
-			Vulkan::free_buffer(d, &staging_buffer);
+			Vulkan::unsafe_free_buffer(d, &staging_buffer);
 		}
 
 		u32 get_width(Texture *texture) { return texture->width; }
 		u32 get_height(Texture *texture) { return texture->height; }
 
-		static void destroy_texture(Vulkan::Device *d, Texture *texture)
+		static void destroy_texture(Vulkan::SwapChain *sc, Texture *texture)
 		{
 			ASSERT(texture != nullptr, "Cannot destroy invalid texture!");
+			Vulkan::wait_resource_not_in_use(sc, texture);
+
+			auto *d = Vulkan::get_device(sc);
+
 			vkDestroyImageView(d->device, texture->image_view, nullptr);
 			vkDestroySampler(d->device, texture->sampler, nullptr);
 			vmaDestroyImage(d->allocator, texture->image, texture->allocation);
@@ -238,7 +250,6 @@ namespace Vultr
 			v_free(texture);
 		}
 
-		void destroy_texture(RenderContext *c, Texture *texture) { destroy_texture(Vulkan::get_device(c), texture); }
-		void destroy_texture(UploadContext *c, Texture *texture) { destroy_texture(Vulkan::get_device(c), texture); }
+		void destroy_texture(RenderContext *c, Texture *texture) { destroy_texture(Vulkan::get_swapchain(c), texture); }
 	} // namespace Platform
 } // namespace Vultr

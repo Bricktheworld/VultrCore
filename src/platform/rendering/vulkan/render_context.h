@@ -15,8 +15,9 @@ namespace Vultr
 		struct RenderContext
 		{
 			Vulkan::SwapChain swap_chain{};
-			Texture *black_texture = nullptr;
-			Texture *white_texture = nullptr;
+			Texture *black_texture  = nullptr;
+			Texture *white_texture  = nullptr;
+			Texture *normal_texture = nullptr;
 		};
 
 	} // namespace Platform

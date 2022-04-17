@@ -288,6 +288,23 @@ namespace Vultr
 			}
 		}
 
+		static void init_in_flight_fence(Device *d, InFlightFence *out)
+		{
+			VkFenceCreateInfo fence_info{
+				.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+				.flags = VK_FENCE_CREATE_SIGNALED_BIT,
+			};
+			VK_CHECK(vkCreateFence(d->device, &fence_info, nullptr, &out->vk_fence));
+		}
+
+		static void destroy_in_flight_fence(Device *d, InFlightFence *fence) { vkDestroyFence(d->device, fence->vk_fence, nullptr); }
+
+		static void clear_in_flight_fence(Device *d, InFlightFence *fence)
+		{
+			Platform::Lock lock(fence->mutex);
+			fence->in_use_resources.clear();
+		}
+
 		static void init_concurrency(SwapChain *sc)
 		{
 			auto *d = &sc->device;
@@ -296,30 +313,23 @@ namespace Vultr
 
 			VkSemaphoreCreateInfo semaphore_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
 
-			VkFenceCreateInfo fence_info{
-				.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-				.flags = VK_FENCE_CREATE_SIGNALED_BIT,
-			};
-
 			for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			{
 				VK_CHECK(vkCreateSemaphore(d->device, &semaphore_info, nullptr, &sc->image_available_semaphores[i]));
 				VK_CHECK(vkCreateSemaphore(d->device, &semaphore_info, nullptr, &sc->render_finished_semaphores[i]));
-				VK_CHECK(vkCreateFence(d->device, &fence_info, nullptr, &sc->in_flight_fences[i]));
+				init_in_flight_fence(d, &sc->in_flight_fences[i]);
 			}
 		}
 
-		SwapChain init_swapchain(const Device &device, const Platform::Window *window)
+		void init_swapchain(Device *device, const Platform::Window *window, SwapChain *out)
 		{
-			SwapChain sc{};
-			sc.device = device;
-			init_swap_chain(&sc, window);
-			init_image_views(&sc);
-			init_render_pass(&sc);
-			init_framebuffers(&sc);
-			init_frames(&sc);
-			init_concurrency(&sc);
-			return sc;
+			out->device = *device;
+			init_swap_chain(out, window);
+			init_image_views(out);
+			init_render_pass(out);
+			init_framebuffers(out);
+			init_frames(out);
+			init_concurrency(out);
 		}
 
 		static void internal_destroy_swapchain(SwapChain *sc)
@@ -349,7 +359,7 @@ namespace Vultr
 			{
 				vkDestroySemaphore(d->device, sc->render_finished_semaphores[i], nullptr);
 				vkDestroySemaphore(d->device, sc->image_available_semaphores[i], nullptr);
-				vkDestroyFence(d->device, sc->in_flight_fences[i], nullptr);
+				destroy_in_flight_fence(d, &sc->in_flight_fences[i]);
 			}
 
 			for (auto &frame : sc->frames)
@@ -360,9 +370,9 @@ namespace Vultr
 
 			vkDestroyDescriptorSetLayout(d->device, sc->default_descriptor_set_layout, nullptr);
 			unmap_buffer(d, &sc->camera_binding.buffer);
-			free_buffer(d, &sc->camera_binding.buffer);
+			free_buffer(sc, &sc->camera_binding.buffer);
 			unmap_buffer(d, &sc->directional_light_binding.buffer);
-			free_buffer(d, &sc->directional_light_binding.buffer);
+			free_buffer(sc, &sc->directional_light_binding.buffer);
 
 			internal_destroy_swapchain(sc);
 
@@ -396,7 +406,8 @@ namespace Vultr
 		ErrorOr<Tuple<u32, Frame *, VkFramebuffer>> acquire_swapchain(SwapChain *sc)
 		{
 			auto *d = &sc->device;
-			vkWaitForFences(d->device, 1, &sc->in_flight_fences[sc->current_frame], VK_TRUE, UINT64_MAX);
+			vkWaitForFences(d->device, 1, &sc->in_flight_fences[sc->current_frame].vk_fence, VK_TRUE, UINT64_MAX);
+			clear_in_flight_fence(d, &sc->in_flight_fences[sc->current_frame]);
 
 			u32 image_index;
 			auto res = vkAcquireNextImageKHR(d->device, sc->swap_chain, U64Max, sc->image_available_semaphores[sc->current_frame], VK_NULL_HANDLE, &image_index);
@@ -415,7 +426,7 @@ namespace Vultr
 				vkWaitForFences(d->device, 1, &sc->images_in_flight[image_index], VK_TRUE, U64Max);
 			}
 
-			sc->images_in_flight[image_index] = sc->in_flight_fences[sc->current_frame];
+			sc->images_in_flight[image_index] = sc->in_flight_fences[sc->current_frame].vk_fence;
 			return Tuple(image_index, &sc->frames[image_index], sc->framebuffers[image_index]);
 		}
 
@@ -437,8 +448,8 @@ namespace Vultr
 				.signalSemaphoreCount = 1,
 				.pSignalSemaphores    = signal_semaphores,
 			};
-			VK_CHECK(vkResetFences(d->device, 1, &sc->in_flight_fences[sc->current_frame]));
-			graphics_queue_submit(d, 1, &submit_info, sc->in_flight_fences[sc->current_frame]);
+			VK_CHECK(vkResetFences(d->device, 1, &sc->in_flight_fences[sc->current_frame].vk_fence));
+			graphics_queue_submit(d, 1, &submit_info, sc->in_flight_fences[sc->current_frame].vk_fence);
 
 			VkPresentInfoKHR present_info{
 				.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -488,6 +499,35 @@ namespace Vultr
 			vkQueueWaitIdle(sc->device.graphics_queue);
 			return Success;
 		}
+
+		void wait_resource_not_in_use(SwapChain *sc, void *resource)
+		{
+			sc->cmd_buffer_resource_semaphore.acquire();
+			VkFence fences[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
+			u32 count = 0;
+			for (auto &fence : sc->in_flight_fences)
+			{
+				fence.mutex.lock();
+				if (fence.in_use_resources.contains(resource))
+				{
+					count++;
+					fences[count - 1] = fence.vk_fence;
+				}
+			}
+
+			if (count > 0)
+			{
+				auto *d = Vulkan::get_device(sc);
+				vkWaitForFences(d->device, count, fences, VK_TRUE, U64Max);
+			}
+
+			for (auto &fence : sc->in_flight_fences)
+			{
+				fence.mutex.unlock();
+			}
+			sc->cmd_buffer_resource_semaphore.release();
+		}
+
 	} // namespace Vulkan
 	namespace Platform
 	{

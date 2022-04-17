@@ -72,6 +72,9 @@ namespace Vultr
 		typedef std::condition_variable ConditionVar;
 		typedef std::unique_lock<Mutex> Lock;
 
+		template <size_t max>
+		using Semaphore = std::counting_semaphore<max>;
+
 		/**
 		 * Represents a dynamic library in memory.
 		 */

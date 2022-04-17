@@ -31,7 +31,7 @@ namespace Vultr
 	void scene_window_update(EditorWindowState *state, f64 dt);
 	void scene_window_draw(EditorWindowState *state, EditorRuntime *runtime);
 	void entity_hierarchy_window_draw(Project *project, EditorWindowState *state);
-	void component_inspector_window_draw(EditorWindowState *state);
+	void component_inspector_window_draw(Project *project, EditorWindowState *state);
 	void resource_browser_window_draw(EditorWindowState *state);
 	void init_windows(EditorRuntime *runtime, Project *project, EditorWindowState *state);
 	void update_windows(EditorWindowState *state, f64 dt);

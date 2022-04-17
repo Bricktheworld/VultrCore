@@ -186,13 +186,13 @@ namespace Vultr
 		for (auto &sampler_refl : reflection->samplers)
 		{
 			auto &sampler = mat->samplers[i];
-			if (!sampler.has_value())
+			if (sampler.empty())
 			{
 				out_buf += "\n" + sampler_refl.name + ":" + Platform::VULTR_NULL_FILE_HANDLE;
 			}
 			else
 			{
-				auto sampler_path = texture_allocator->get_resource_path(ResourceId(sampler.value()).id);
+				auto sampler_path = texture_allocator->get_resource_path(ResourceId(sampler).id);
 
 				out_buf += "\n" + sampler_refl.name + ":" + sampler_path.string();
 				i++;
@@ -230,7 +230,85 @@ namespace Vultr
 		}
 		ImGui::End();
 	}
-	void component_inspector_window_draw(EditorWindowState *state)
+
+	static ErrorOr<Path> local_resource_file(Project *project, const Path &full_path)
+	{
+		if (!starts_with(full_path.string(), project->resource_dir.string()))
+			return Error("Not a valid resource!");
+
+		return Path(full_path.string().substr(project->resource_dir.string().length()));
+	}
+
+	template <typename T>
+	static void draw_resource_target(Project *project, const ComponentMember &member)
+	{
+		ImGui::PushID(member.name);
+		auto *resource = static_cast<Resource<T> *>(member.addr);
+		ImGui::Selectable("##", false, 0, ImVec2(20, 20));
+		if (ImGui::BeginDragDropTarget())
+		{
+			const auto *payload = ImGui::AcceptDragDropPayload("File");
+
+			if (payload != nullptr)
+			{
+				auto *full_path = static_cast<char *>(payload->Data);
+				if check (local_resource_file(project, Path(full_path)), auto file, auto err)
+				{
+					auto payload_type = get_resource_type(file);
+
+					bool matches      = false;
+					switch (member.type)
+					{
+						case PrimitiveType::TEXTURE_RESOURCE:
+							matches = payload_type == ResourceType::TEXTURE;
+							break;
+						case PrimitiveType::MESH_RESOURCE:
+							matches = payload_type == ResourceType::MESH;
+							break;
+						case PrimitiveType::SHADER_RESOURCE:
+							matches = payload_type == ResourceType::SHADER;
+							break;
+						case PrimitiveType::MATERIAL_RESOURCE:
+							matches = payload_type == ResourceType::MATERIAL;
+							break;
+						default:
+							break;
+					}
+
+					if (matches)
+					{
+						auto new_res = Resource<T>(file);
+						*resource    = new_res;
+					}
+				}
+				else
+				{
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		ImGui::SameLine();
+		if (!resource->empty())
+		{
+			auto path = resource_allocator<T>()->get_resource_path(ResourceId(*resource).id);
+			ImGui::Text("%s: %s", member.name.c_str(), path.c_str());
+		}
+		else
+		{
+			ImGui::Text("%s", member.name.c_str());
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Remove resource"))
+		{
+			*resource = Resource<T>();
+		}
+		ImGui::PopID();
+	}
+
+	void component_inspector_window_draw(Project *project, EditorWindowState *state)
 	{
 		ImGui::Begin("Inspector");
 		if (state->selected_entity)
@@ -405,8 +483,17 @@ namespace Vultr
 								break;
 							case PrimitiveType::STRING:
 								break;
-							case PrimitiveType::RESOURCE:
-								ImGui::Text("RESOURCE");
+							case PrimitiveType::TEXTURE_RESOURCE:
+								draw_resource_target<Platform::Texture *>(project, member);
+								break;
+							case PrimitiveType::MESH_RESOURCE:
+								draw_resource_target<Platform::Mesh *>(project, member);
+								break;
+							case PrimitiveType::SHADER_RESOURCE:
+								draw_resource_target<Platform::Shader *>(project, member);
+								break;
+							case PrimitiveType::MATERIAL_RESOURCE:
+								draw_resource_target<Platform::Material *>(project, member);
 								break;
 						}
 					}
@@ -420,9 +507,9 @@ namespace Vultr
 		}
 		ImGui::End();
 	}
-#define WIDGET_SIZE 200.0f
+#define WIDGET_SIZE 130.0f
 #define ASSET_BROWSER_PADDING 2
-#define ICON_SIZE 125.0f
+#define ICON_SIZE 100.0f
 
 	static u32 get_num_cols()
 	{
@@ -465,14 +552,7 @@ namespace Vultr
 	{
 		if (ImGui::BeginDragDropSource())
 		{
-			auto *heap_payload = v_alloc<Path>();
-			*heap_payload      = path;
-			void *payload      = static_cast<void *>(heap_payload);
-
-			ImGui::SetDragDropPayload(type, payload, sizeof(Path));
-
-			v_free(heap_payload);
-
+			ImGui::SetDragDropPayload(type, path.c_str(), path.string().length());
 			ImGui::EndDragDropSource();
 		}
 	}
@@ -520,6 +600,19 @@ namespace Vultr
 		ImGui::Begin("Asset Browser");
 		u32 num_cols = get_num_cols();
 		auto *state  = &editor_state->resource_browser_state;
+
+		if (ImGui::Button("BACK"))
+		{
+			if check (get_parent(state->current_dir), auto parent, auto err)
+			{
+				change_dir(parent, editor_state);
+				ImGui::End();
+				return;
+			}
+			else
+			{
+			}
+		}
 
 		if (ImGui::BeginTable("Asset Table", static_cast<s32>(num_cols)))
 		{
@@ -576,7 +669,7 @@ namespace Vultr
 
 					if (payload != nullptr)
 					{
-						auto *file = static_cast<Path *>(payload->Data);
+						auto *path = static_cast<char *>(payload->Data);
 
 						change_dir(state->current_dir, editor_state);
 
@@ -604,10 +697,6 @@ namespace Vultr
 			}
 
 			ImGui::EndTable();
-		}
-
-		if (ImGui::Button("BACK"))
-		{
 		}
 
 		ImGui::End();
@@ -654,7 +743,7 @@ namespace Vultr
 		entity_hierarchy_window_draw(project, state);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
-		component_inspector_window_draw(state);
+		component_inspector_window_draw(project, state);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		resource_browser_window_draw(state);

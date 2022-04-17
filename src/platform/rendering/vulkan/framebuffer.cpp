@@ -129,6 +129,7 @@ namespace Vultr
 
 		void destroy_framebuffer(RenderContext *c, Framebuffer *framebuffer)
 		{
+			Vulkan::wait_resource_not_in_use(Vulkan::get_swapchain(c), framebuffer);
 			auto *d = Vulkan::get_device(c);
 
 			vkDestroyFramebuffer(d->device, framebuffer->vk_framebuffer, nullptr);

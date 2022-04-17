@@ -23,7 +23,7 @@ namespace Vultr
 		void recycle_cmd_pool(Device *d, CommandPool *cmd_pool);
 		void destroy_cmd_pool(Device *d, CommandPool *cmd_pool);
 		struct Frame;
-
+		void depend_resource(Platform::CmdBuffer *cmd, void *resource);
 	} // namespace Vulkan
 
 	namespace Platform

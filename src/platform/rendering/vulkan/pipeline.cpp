@@ -215,11 +215,26 @@ namespace Vultr
 		void destroy_pipeline(RenderContext *c, GraphicsPipeline *pipeline)
 		{
 			auto *d = Vulkan::get_device(c);
+			Vulkan::wait_resource_not_in_use(Vulkan::get_swapchain(c), pipeline);
 			vkDestroyPipelineLayout(d->device, pipeline->vk_layout, nullptr);
 			vkDestroyPipeline(d->device, pipeline->vk_pipeline, nullptr);
 			pipeline->vk_layout = nullptr;
 			pipeline->vk_layout = nullptr;
 			v_free(pipeline);
+		}
+
+		static Platform::Texture *get_placeholder_texture(RenderContext *c, SamplerType type)
+		{
+			switch (type)
+			{
+				case SamplerType::NORMAL:
+					return c->normal_texture;
+				case SamplerType::ALBEDO:
+				case SamplerType::METALLIC:
+				case SamplerType::ROUGHNESS:
+				case SamplerType::AMBIENT_OCCLUSION:
+					return c->white_texture;
+			}
 		}
 
 		void bind_pipeline(CmdBuffer *cmd, GraphicsPipeline *pipeline)
@@ -259,7 +274,8 @@ namespace Vultr
 					u32 i = 1;
 					for (auto &sampler : set->sampler_bindings)
 					{
-						Platform::Texture *texture = c->white_texture;
+						auto type                  = shader->reflection.samplers[i - 1].type;
+						Platform::Texture *texture = get_placeholder_texture(c, type);
 
 						if (sampler.has_value())
 						{
@@ -291,6 +307,8 @@ namespace Vultr
 
 			vkCmdBindPipeline(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_pipeline);
 			vkCmdBindDescriptorSets(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_layout, 0, 1, &cmd->frame->default_uniform_descriptor, 0, nullptr);
+			Vulkan::depend_resource(cmd, shader);
+			Vulkan::depend_resource(cmd, pipeline);
 		}
 	} // namespace Platform
 

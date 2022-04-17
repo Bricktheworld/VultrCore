@@ -67,7 +67,16 @@ namespace Vultr
 		}
 		void unmap_buffer(Device *d, GpuBuffer *buffer) { vmaUnmapMemory(d->allocator, buffer->memory); }
 
-		void free_buffer(Device *d, GpuBuffer *buffer)
+		void free_buffer(SwapChain *sc, GpuBuffer *buffer)
+		{
+			Vulkan::wait_resource_not_in_use(sc, buffer);
+			auto *d = Vulkan::get_device(sc);
+			vmaDestroyBuffer(d->allocator, buffer->buffer, buffer->memory);
+			buffer->buffer = nullptr;
+			buffer->memory = nullptr;
+		}
+
+		void unsafe_free_buffer(Device *d, GpuBuffer *buffer)
 		{
 			vmaDestroyBuffer(d->allocator, buffer->buffer, buffer->memory);
 			buffer->buffer = nullptr;

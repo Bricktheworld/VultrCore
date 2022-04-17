@@ -34,7 +34,7 @@ static void mesh_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::P
 		if (allocator->add_loaded_resource(resource, mesh).is_error())
 		{
 			printf("Freeing unnecessary load!\n");
-			Vultr::Platform::destroy_mesh(c, mesh);
+			Vultr::Platform::destroy_mesh(Vultr::engine()->context, mesh);
 		}
 	}
 }
@@ -54,7 +54,7 @@ static void mesh_free_thread(Vultr::Platform::UploadContext *c)
 		}
 
 		printf("Freeing mesh data at location %p\n", mesh);
-		Vultr::Platform::destroy_mesh(c, mesh);
+		Vultr::Platform::destroy_mesh(Vultr::engine()->context, mesh);
 	}
 }
 
@@ -112,7 +112,7 @@ static void material_loader_thread(Vultr::Platform::UploadContext *c, const Vult
 		if (!allocator->add_loaded_resource(resource, mat).has_value())
 		{
 			printf("Freeing unnecessary load!\n");
-			Vultr::Platform::destroy_material(c, mat);
+			Vultr::Platform::destroy_material(Vultr::engine()->context, mat);
 		}
 	}
 }
@@ -164,7 +164,7 @@ static void material_free_thread(Vultr::Platform::UploadContext *c)
 		}
 
 		printf("Freeing material data at location %p\n", mat);
-		Vultr::Platform::destroy_material(c, mat);
+		Vultr::Platform::destroy_material(Vultr::engine()->context, mat);
 	}
 }
 
@@ -189,7 +189,7 @@ static void texture_loader_thread(Vultr::Platform::UploadContext *c, const Vultr
 		if (allocator->add_loaded_resource(resource, texture).is_error())
 		{
 			printf("Freeing unnecessary load!\n");
-			Vultr::Platform::destroy_texture(c, texture);
+			Vultr::Platform::destroy_texture(Vultr::engine()->context, texture);
 		}
 	}
 }
@@ -209,7 +209,7 @@ static void texture_free_thread(Vultr::Platform::UploadContext *c)
 		}
 
 		printf("Freeing texture data at location %p\n", texture);
-		Vultr::Platform::destroy_texture(c, texture);
+		Vultr::Platform::destroy_texture(Vultr::engine()->context, texture);
 	}
 }
 

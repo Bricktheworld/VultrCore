@@ -193,7 +193,7 @@ namespace Vultr
 			storage()[index].~T();
 
 			// Shift elements to the left
-			Utils::move(storage()[index], storage()[index + 1], m_size - index - 1);
+			Utils::move(&storage()[index], &storage()[index + 1], m_size - index - 1);
 
 			resize(m_size - 1);
 		}

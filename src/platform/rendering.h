@@ -117,11 +117,11 @@ namespace Vultr
 		ErrorOr<Texture *> load_texture_memory(UploadContext *c, byte *data, u64 size, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
 		Texture *init_white_texture(UploadContext *c);
 		Texture *init_black_texture(UploadContext *c);
+		Texture *init_normal_texture(UploadContext *c);
 
 		u32 get_width(Texture *texture);
 		u32 get_height(Texture *texture);
 		void destroy_texture(RenderContext *c, Texture *texture);
-		void destroy_texture(UploadContext *c, Texture *texture);
 
 		struct Subpass;
 		struct RenderPass;
@@ -181,9 +181,18 @@ namespace Vultr
 			UniformType type = UniformType::Vec3;
 			u32 offset       = 0;
 		};
+		enum struct SamplerType
+		{
+			ALBEDO,
+			NORMAL,
+			METALLIC,
+			ROUGHNESS,
+			AMBIENT_OCCLUSION,
+		};
 		struct SamplerBinding
 		{
 			String name{};
+			SamplerType type = SamplerType::ALBEDO;
 		};
 		struct ShaderReflection
 		{
@@ -200,14 +209,14 @@ namespace Vultr
 		struct DescriptorSet;
 
 		DescriptorSet *alloc_descriptor_set(UploadContext *c, Shader *shader);
-		void free_descriptor_set(UploadContext *c, DescriptorSet *set);
+		void free_descriptor_set(RenderContext *c, DescriptorSet *set);
 
 		static constexpr u64 MAX_MATERIAL_SIZE = Kilobyte(2);
 
 		struct Material
 		{
 			byte uniform_data[MAX_MATERIAL_SIZE]{};
-			Vector<Option<Resource<Platform::Texture *>>> samplers{};
+			Vector<Resource<Platform::Texture *>> samplers{};
 			Resource<Platform::Shader *> source{};
 			DescriptorSet *descriptor = nullptr;
 		};
@@ -221,7 +230,7 @@ namespace Vultr
 
 		static constexpr StringView VULTR_NULL_FILE_HANDLE = "VULTR_NULL_FILE";
 		ErrorOr<Material *> try_load_material(UploadContext *c, const Resource<Shader *> &shader, const StringView &src);
-		void destroy_material(UploadContext *c, Material *mat);
+		void destroy_material(RenderContext *c, Material *mat);
 
 		struct VertexBuffer;
 		struct IndexBuffer;
@@ -240,10 +249,10 @@ namespace Vultr
 		typedef MeshT<Vertex> Mesh;
 
 		VertexBuffer *init_vertex_buffer(UploadContext *c, void *data, size_t size);
-		void destroy_vertex_buffer(UploadContext *c, VertexBuffer *buffer);
+		void destroy_vertex_buffer(RenderContext *c, VertexBuffer *buffer);
 
 		IndexBuffer *init_index_buffer(UploadContext *c, u16 *data, size_t size);
-		void destroy_index_buffer(UploadContext *c, IndexBuffer *buffer);
+		void destroy_index_buffer(RenderContext *c, IndexBuffer *buffer);
 
 		inline Mesh *init_mesh(UploadContext *c, Vertex *vertices, size_t vertex_count, u16 *indices, size_t index_count)
 		{
@@ -323,7 +332,7 @@ namespace Vultr
 			return mesh;
 		}
 
-		inline void destroy_mesh(UploadContext *c, Mesh *mesh)
+		inline void destroy_mesh(RenderContext *c, Mesh *mesh)
 		{
 			destroy_index_buffer(c, mesh->index_buffer);
 			destroy_vertex_buffer(c, mesh->vertex_buffer);
@@ -381,7 +390,6 @@ namespace Vultr
 		GraphicsPipeline *init_pipeline(RenderContext *c, Framebuffer *framebuffer, const GraphicsPipelineInfo &info);
 		void destroy_pipeline(RenderContext *c, GraphicsPipeline *pipeline);
 		void attach_pipeline(RenderContext *c, Framebuffer *framebuffer, const GraphicsPipelineInfo &info, u32 id);
-		bool has_pipeline(Framebuffer *framebuffer, u32 id);
 		void remove_pipeline(RenderContext *c, Framebuffer *framebuffer, u32 id);
 
 		struct CmdBuffer;

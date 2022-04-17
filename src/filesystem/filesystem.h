@@ -44,6 +44,7 @@ namespace Vultr
 			}
 
 			size_t prev_slash_loc = m_path.length();
+			ASSERT(m_path.length() > 0, "Cannot get base name for empty path!");
 			for (size_t i = m_path.length(); i > 0; i--)
 			{
 				char c = m_path[i - 1];
@@ -90,6 +91,8 @@ namespace Vultr
 	ErrorOr<size_t> fsize(const Path &path);
 	ErrorOr<u64> fget_date_modified_ms(const Path &path);
 	ErrorOr<Path> pwd();
+	bool has_parent(const Path &path);
+	ErrorOr<Path> get_parent(const Path &path);
 
 	struct DirectoryIterator
 	{

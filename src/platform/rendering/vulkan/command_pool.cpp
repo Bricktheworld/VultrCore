@@ -1,5 +1,6 @@
 #include "command_pool.h"
 #include "swap_chain.h"
+#include "render_context.h"
 
 namespace Vultr
 {
@@ -87,5 +88,13 @@ namespace Vultr
 			cmd_pool->command_buffers.clear();
 		}
 
+		void depend_resource(Platform::CmdBuffer *cmd, void *resource)
+		{
+			auto *sc    = Vulkan::get_swapchain(cmd->render_context);
+			auto *fence = &sc->in_flight_fences[sc->current_frame];
+			Platform::Lock lock(fence->mutex);
+			if (!fence->in_use_resources.contains(resource))
+				fence->in_use_resources.set<void *, Traits<void *>>(resource);
+		}
 	} // namespace Vulkan
 } // namespace Vultr
