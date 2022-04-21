@@ -42,7 +42,7 @@ namespace Vultr
 	inline consteval u32 string_hash(const char (&characters)[n])
 	{
 		u32 hash = 0;
-		for (size_t i = 0; i < n; ++i)
+		for (size_t i = 0; i < n - 1; ++i)
 		{
 			hash += (u32)characters[i];
 			hash += (hash << 10);
