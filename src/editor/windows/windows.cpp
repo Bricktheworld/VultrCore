@@ -76,8 +76,8 @@ namespace Vultr
 
 		if (state->selected_entity.has_value())
 		{
-			auto &transform    = get_component<Transform>(state->selected_entity.value());
-			auto transform_mat = model_matrix(transform);
+			auto ent           = state->selected_entity.value();
+			auto transform_mat = get_world_transform(ent);
 			auto view_mat      = view_matrix(state->editor_camera_transform);
 			auto camera_proj   = projection_matrix(state->editor_camera, window_width, window_height);
 
@@ -85,10 +85,11 @@ namespace Vultr
 
 			if (ImGuizmo::IsUsing())
 			{
+				auto &transform = get_component<Transform>(ent);
 				Vec3 translation;
 				Vec3 rotation;
 				Vec3 scale;
-				Math::decompose_transform(transform_mat, translation, rotation, scale);
+				Math::decompose_transform(get_local_transform(transform_mat, ent), translation, rotation, scale);
 
 				Vec3 deltaRotation = rotation - glm::eulerAngles(transform.rotation);
 				transform.position = translation;
@@ -195,14 +196,80 @@ namespace Vultr
 				auto sampler_path = texture_allocator->get_resource_path(ResourceId(sampler).id);
 
 				out_buf += "\n" + sampler_refl.name + ":" + sampler_path.string();
-				i++;
 			}
+			i++;
 		}
 
 		auto mat_path = mat_allocator->get_resource_path(ResourceId(material).id);
 		TRY(try_fwrite_all(editor_res_path / mat_path, out_buf, StreamWriteMode::OVERWRITE));
 
 		return Success;
+	}
+
+	static void render_entity_hierarchy(Entity entity, EditorWindowState *state, Project *project)
+	{
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanFullWidth;
+
+		if (get_children(entity).size() == 0)
+			flags |= ImGuiTreeNodeFlags_Leaf;
+
+		bool already_selected = state->selected_entity.has_value() && state->selected_entity.value() == entity;
+
+		if (already_selected)
+			flags |= ImGuiTreeNodeFlags_Selected;
+
+		ImGui::PushID(static_cast<int>(entity));
+
+		bool open = ImGui::TreeNodeEx((void *)(u64)(entity), flags, "%s", get_label(entity)->c_str());
+		if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen() && !already_selected)
+		{
+			if (state->selected_entity.has_value() && has_component<Material>(state->selected_entity.value()))
+			{
+				auto &mat_component = get_component<Material>(state->selected_entity.value());
+				if (mat_component.source.loaded())
+				{
+					auto res = serialize_material(project->resource_dir, mat_component.source);
+					if (res.is_error())
+						fprintf(stderr, "Something went wrong saving material %s", res.get_error().message.c_str());
+
+					import_resource_dir(project);
+				}
+			}
+			state->selected_entity = entity;
+		}
+
+		if (has_component<Transform>(entity))
+		{
+			if (ImGui::BeginDragDropSource())
+			{
+				ImGui::SetDragDropPayload("Entity", &entity, sizeof(entity));
+				ImGui::Text("Drag drop entity");
+				ImGui::EndDragDropSource();
+			}
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				const auto *payload = ImGui::AcceptDragDropPayload("Entity");
+				if (payload != nullptr)
+				{
+					auto new_child = *static_cast<Entity *>(payload->Data);
+
+					reparent_entity(new_child, entity);
+				}
+				ImGui::EndDragDropTarget();
+			}
+		}
+
+		if (open)
+		{
+			for (auto child : get_children(entity))
+			{
+				render_entity_hierarchy(child, state, project);
+			}
+			ImGui::TreePop();
+		}
+
+		ImGui::PopID();
 	}
 
 	void entity_hierarchy_window_draw(Project *project, EditorWindowState *state)
@@ -213,20 +280,10 @@ namespace Vultr
 			if (!entity_exists(entity))
 				continue;
 
-			if (ImGui::Selectable("Entity " + String(entity), state->selected_entity == entity))
-			{
-				if (state->selected_entity.has_value() && has_component<Material>(state->selected_entity.value()))
-				{
-					auto &mat_component = get_component<Material>(state->selected_entity.value());
-					if (mat_component.source.loaded())
-					{
-						auto res = serialize_material(project->resource_dir, mat_component.source);
-						if (res.is_error())
-							fprintf(stderr, "Something went wrong saving material %s", res.get_error().message.c_str());
-					}
-				}
-				state->selected_entity = entity;
-			}
+			if (has_parent(entity))
+				continue;
+
+			render_entity_hierarchy(entity, state, project);
 		}
 		ImGui::End();
 	}
@@ -313,6 +370,7 @@ namespace Vultr
 		ImGui::Begin("Inspector");
 		if (state->selected_entity)
 		{
+			ImGui::Text("%s", get_label(state->selected_entity.value())->c_str());
 			auto info = world()->component_manager.get_component_information(state->selected_entity.value());
 			for (auto [component_name, members] : info)
 			{
@@ -738,6 +796,9 @@ namespace Vultr
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		scene_window_draw(state, runtime);
+
+		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
+		ImGui::ShowDemoWindow();
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		entity_hierarchy_window_draw(project, state);

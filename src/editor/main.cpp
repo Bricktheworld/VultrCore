@@ -7,8 +7,9 @@
 #include <filesystem/filestream.h>
 #include <vultr_resource_allocator.h>
 
-static void mesh_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::Path &resource_dir)
+static void mesh_loader_thread(const Vultr::Path &resource_dir)
 {
+	auto *c         = Vultr::Platform::init_upload_context(Vultr::engine()->context);
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Mesh *>();
 	while (true)
 	{
@@ -18,6 +19,7 @@ static void mesh_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::P
 		if (is_kill_request)
 		{
 			printf("Shutting down mesh loading thread.\n");
+			Vultr::Platform::destroy_upload_context(c);
 			return;
 		}
 
@@ -30,6 +32,7 @@ static void mesh_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::P
 		Vultr::fread_all(resource_dir / (path.string() + ".index"), &index_buffer);
 
 		auto *mesh = Vultr::Platform::load_mesh_memory(c, vertex_buffer, index_buffer);
+		printf("Loaded mesh %p from path %s\n", mesh, path.c_str());
 
 		if (allocator->add_loaded_resource(resource, mesh).is_error())
 		{
@@ -39,7 +42,7 @@ static void mesh_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::P
 	}
 }
 
-static void mesh_free_thread(Vultr::Platform::UploadContext *c)
+static void mesh_free_thread()
 {
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Mesh *>();
 	while (true)
@@ -58,34 +61,9 @@ static void mesh_free_thread(Vultr::Platform::UploadContext *c)
 	}
 }
 
-static Vultr::ErrorOr<void> load_next_shader(Vultr::Platform::UploadContext *c, const Vultr::Path &resource_dir)
+static void material_loader_thread(const Vultr::Path &resource_dir)
 {
-	auto *allocator                        = Vultr::resource_allocator<Vultr::Platform::Shader *>();
-
-	auto [resource, path, is_kill_request] = allocator->wait_pop_load_queue();
-	if (is_kill_request)
-		return Vultr::Error("Killed");
-
-	printf("Loading shader %u, from path %s\n", resource, path.c_str());
-
-	Vultr::Platform::CompiledShaderSrc shader_src{};
-	Vultr::fread_all(resource_dir / (path.string() + ".vert_spv"), &shader_src.vert_src);
-
-	Vultr::fread_all(resource_dir / (path.string() + ".frag_spv"), &shader_src.frag_src);
-
-	CHECK_UNWRAP(auto reflection, Vultr::Platform::try_reflect_shader(shader_src));
-
-	CHECK_UNWRAP(auto *shader, Vultr::Platform::try_load_shader(Vultr::engine()->context, shader_src, reflection));
-	if (allocator->add_loaded_resource(resource, shader).is_error())
-	{
-		printf("Freeing unnecessary load!\n");
-		Vultr::Platform::destroy_shader(Vultr::engine()->context, shader);
-	}
-	return Vultr::Success;
-}
-
-static void material_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::Path &resource_dir)
-{
+	auto *c         = Vultr::Platform::init_upload_context(Vultr::engine()->context);
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Material *>();
 	while (true)
 	{
@@ -95,6 +73,7 @@ static void material_loader_thread(Vultr::Platform::UploadContext *c, const Vult
 		if (is_kill_request)
 		{
 			printf("Shutting down material loading thread.\n");
+			Vultr::Platform::destroy_upload_context(c);
 			return;
 		}
 
@@ -117,15 +96,56 @@ static void material_loader_thread(Vultr::Platform::UploadContext *c, const Vult
 	}
 }
 
-static void shader_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::Path &resource_dir)
+static void material_free_thread()
 {
+	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Material *>();
+	while (true)
+	{
+		printf("Waiting for another material to free...\n");
+		auto *mat = allocator->wait_pop_free_queue();
+
+		if (mat == (void *)-1)
+		{
+			printf("Shutting down material freeing thread.\n");
+			return;
+		}
+
+		printf("Freeing material data at location %p\n", mat);
+		Vultr::Platform::destroy_material(Vultr::engine()->context, mat);
+	}
+}
+
+static void shader_loader_thread(const Vultr::Path &resource_dir)
+{
+	auto *c         = Vultr::Platform::init_upload_context(Vultr::engine()->context);
+	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Shader *>();
 	while (true)
 	{
 		printf("Waiting for another shader to load...\n");
-		if (load_next_shader(c, resource_dir).is_error())
+
+		auto [resource, path, is_kill_request] = allocator->wait_pop_load_queue();
+		if (is_kill_request)
 		{
 			printf("Shutting down shader loading thread.\n");
+			Vultr::Platform::destroy_upload_context(c);
 			return;
+		}
+
+		printf("Loading shader %u, from path %s\n", resource, path.c_str());
+
+		Vultr::Platform::CompiledShaderSrc shader_src{};
+		Vultr::fread_all(resource_dir / (path.string() + ".vert_spv"), &shader_src.vert_src);
+
+		Vultr::fread_all(resource_dir / (path.string() + ".frag_spv"), &shader_src.frag_src);
+
+		CHECK_UNWRAP(auto reflection, Vultr::Platform::try_reflect_shader(shader_src));
+
+		CHECK_UNWRAP(auto *shader, Vultr::Platform::try_load_shader(Vultr::engine()->context, shader_src, reflection));
+
+		if (allocator->add_loaded_resource(resource, shader).is_error())
+		{
+			printf("Freeing unnecessary load!\n");
+			Vultr::Platform::destroy_shader(Vultr::engine()->context, shader);
 		}
 	}
 }
@@ -149,27 +169,9 @@ static void shader_free_thread()
 	}
 }
 
-static void material_free_thread(Vultr::Platform::UploadContext *c)
+static void texture_loader_thread(const Vultr::Path &resource_dir)
 {
-	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Material *>();
-	while (true)
-	{
-		printf("Waiting for another material to free...\n");
-		auto *mat = allocator->wait_pop_free_queue();
-
-		if (mat == (void *)-1)
-		{
-			printf("Shutting down material freeing thread.\n");
-			return;
-		}
-
-		printf("Freeing material data at location %p\n", mat);
-		Vultr::Platform::destroy_material(Vultr::engine()->context, mat);
-	}
-}
-
-static void texture_loader_thread(Vultr::Platform::UploadContext *c, const Vultr::Path &resource_dir)
-{
+	auto *c         = Vultr::Platform::init_upload_context(Vultr::engine()->context);
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
 	while (true)
 	{
@@ -179,12 +181,13 @@ static void texture_loader_thread(Vultr::Platform::UploadContext *c, const Vultr
 		if (is_kill_request)
 		{
 			printf("Shutting down texture loading thread.\n");
+			Vultr::Platform::destroy_upload_context(c);
 			return;
 		}
 
 		printf("Loading texture %u, from path %s\n", resource, path.c_str());
 
-		CHECK_UNWRAP(auto *texture, Vultr::Platform::load_texture_file(c, resource_dir / path));
+		CHECK_UNWRAP(auto *texture, Vultr::Platform::load_texture_file(c, resource_dir / path, Vultr::Platform::TextureFormat::SRGBA8));
 
 		if (allocator->add_loaded_resource(resource, texture).is_error())
 		{
@@ -194,7 +197,7 @@ static void texture_loader_thread(Vultr::Platform::UploadContext *c, const Vultr
 	}
 }
 
-static void texture_free_thread(Vultr::Platform::UploadContext *c)
+static void texture_free_thread()
 {
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
 	while (true)
@@ -235,27 +238,27 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 			Vultr::init_resource_allocators();
 
+			Platform::Thread mesh_loading_thread(mesh_loader_thread, build_dir / "res");
+			mesh_loading_thread.detach();
+			Platform::Thread mesh_freeing_thread(mesh_free_thread);
+			mesh_freeing_thread.detach();
+			Platform::Thread material_loading_thread(material_loader_thread, build_dir / "res");
+			material_loading_thread.detach();
+			Platform::Thread material_freeing_thread(material_free_thread);
+			material_freeing_thread.detach();
+			Platform::Thread shader_loading_thread(shader_loader_thread, build_dir / "res");
+			shader_loading_thread.detach();
+			Platform::Thread shader_freeing_thread(shader_free_thread);
+			shader_freeing_thread.detach();
+			Platform::Thread texture_loading_thread(texture_loader_thread, build_dir / "res");
+			texture_loading_thread.detach();
+			Platform::Thread texture_freeing_thread(texture_free_thread);
+			texture_freeing_thread.detach();
+
 			EditorRuntime runtime{};
 			runtime.render_system  = RenderSystem::init();
 			runtime.upload_context = Vultr::Platform::init_upload_context(Vultr::engine()->context);
 			runtime.imgui_c        = Platform::init_imgui(engine()->window, runtime.upload_context);
-
-			Platform::Thread mesh_loading_thread(mesh_loader_thread, runtime.upload_context, build_dir / "res");
-			mesh_loading_thread.detach();
-			Platform::Thread mesh_freeing_thread(mesh_free_thread, runtime.upload_context);
-			mesh_freeing_thread.detach();
-			Platform::Thread material_loading_thread(material_loader_thread, runtime.upload_context, build_dir / "res");
-			material_loading_thread.detach();
-			Platform::Thread material_freeing_thread(material_free_thread, runtime.upload_context);
-			material_freeing_thread.detach();
-			Platform::Thread shader_loading_thread(shader_loader_thread, runtime.upload_context, build_dir / "res");
-			shader_loading_thread.detach();
-			Platform::Thread shader_freeing_thread(shader_free_thread);
-			shader_freeing_thread.detach();
-			Platform::Thread texture_loading_thread(texture_loader_thread, runtime.upload_context, build_dir / "res");
-			texture_loading_thread.detach();
-			Platform::Thread texture_freeing_thread(texture_free_thread, runtime.upload_context);
-			texture_freeing_thread.detach();
 
 			EditorWindowState state{};
 

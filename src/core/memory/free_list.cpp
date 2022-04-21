@@ -252,36 +252,198 @@ namespace Vultr
 			assign_center(dest, src);
 		}
 	}
-	static FreeListMemoryBlock *remove_center(FreeListMemoryBlock *block)
-	{
-		auto *c = get_center(block);
-		ASSERT(c != nullptr, "Memory block does not have a center!");
 
-		auto *cc = get_center(c);
-		assign_center(block, cc);
-		assign_center(c, nullptr);
-		return c;
+	static void rbt_print_binary_tree(const char *prefix, FreeListMemoryBlock *b, bool is_left)
+	{
+		if (b == nullptr)
+			return;
+		printf("%s", prefix);
+
+		printf("%s", (is_left ? "├──" : "└──"));
+
+		if (is_red(b))
+			printf("\033[1;31m");
+
+		printf("%lu\033[0m\n", get_mb_size(b));
+
+		char new_prefix[strlen(prefix) + 5];
+		strcpy(new_prefix, prefix);
+		strcat(new_prefix, (is_left ? "│   " : "    "));
+
+		rbt_print_binary_tree(new_prefix, get_left(b), true);
+		rbt_print_binary_tree(new_prefix, get_right(b), false);
 	}
-	static void find_remove_center(FreeListMemoryBlock *block, FreeListMemoryBlock *find)
-	{
-		ASSERT(find != nullptr, "Cannot find a memory block that is NULL.");
 
-		auto *c = get_center(block);
-		if (c == nullptr)
+	static u32 get_black_height(FreeListMemoryBlock *n)
+	{
+		u32 height = 0;
+		while (n != nullptr)
 		{
-			return;
+			if (is_black(n))
+				height++;
+			n = get_parent(n);
 		}
-		else if (c == find)
+		return height;
+	}
+
+	static FreeListMemoryBlock *node_first(FreeListAllocator *allocator)
+	{
+		auto *n = allocator->free_root;
+		if (!n)
+			return nullptr;
+
+		while (get_left(n))
 		{
-			auto *cc = get_center(c);
-			assign_center(block, cc);
-			assign_center(c, nullptr);
-			return;
+			n = get_left(n);
 		}
-		else if (c != find)
+		return n;
+	}
+
+	static FreeListMemoryBlock *node_next(FreeListMemoryBlock *n)
+	{
+		if (get_right(n))
 		{
-			find_remove_center(c, find);
+			n = get_right(n);
+			while (get_left(n))
+			{
+				n = get_left(n);
+			}
+			return n;
 		}
+
+		auto *parent = get_parent(n);
+		while (parent && is_right_child(n))
+		{
+			n      = parent;
+			parent = get_parent(n);
+		}
+		return parent;
+	}
+	static u32 count_black_nodes(FreeListMemoryBlock *n)
+	{
+		u32 black_nodes = 0;
+		while (n)
+		{
+			if (is_black(n))
+				black_nodes++;
+			n = get_parent(n);
+		}
+		return black_nodes;
+	}
+
+	static bool test_rbt(FreeListAllocator *allocator)
+	{
+		auto *root   = allocator->free_root;
+		bool success = true;
+
+		if (is_red(root))
+		{
+			success = false;
+			printf("The root is not black!\n");
+		}
+
+		auto *n         = node_first(allocator);
+		u32 black_nodes = 0;
+
+		{
+			FreeListMemoryBlock *first_black_leaf = nullptr;
+			FreeListMemoryBlock *parent           = nullptr;
+			auto *i                               = n;
+			while (i)
+			{
+				if (!get_left(i) && !get_right(i))
+				{
+					black_nodes      = count_black_nodes(i);
+					first_black_leaf = i;
+					break;
+				}
+				i = node_next(i);
+			}
+		}
+
+		while (n)
+		{
+			auto *l = get_left(n);
+			auto *r = get_right(n);
+			if (l && get_mb_size(l) >= get_mb_size(n))
+			{
+				success = false;
+				printf("Has left that is not less than memory block!");
+			}
+			if (r && get_mb_size(r) <= get_mb_size(n))
+			{
+				success = false;
+				printf("Has right that is not greater than the memory block!");
+			}
+			if (!l)
+			{
+				if (r)
+				{
+					u32 bn = count_black_nodes(n);
+					if (bn != black_nodes)
+					{
+						success = false;
+						printf("Has a nullptr left child with a different black height\n");
+					}
+				}
+			}
+			else if (!r)
+			{
+				u32 bn = count_black_nodes(n);
+				if (bn != black_nodes)
+				{
+					success = false;
+					printf("Has a nullptr right childw ith a different black height\n");
+				}
+			}
+
+			if (l && !r && is_black(l))
+			{
+				success = false;
+				printf("Has one left child and it isn't red\n");
+			}
+			if (!l && r && is_black(r))
+			{
+				success = false;
+				printf("Has one right child and it isn't red\n");
+			}
+			if (is_red(n))
+			{
+				if (is_red(l))
+				{
+					success = false;
+					printf("Has a red left child and is red\n");
+				}
+				if (is_red(r))
+				{
+					success = false;
+					printf("Has a red right child and is red\n");
+				}
+				auto *parent = get_parent(n);
+				if (is_red(parent))
+				{
+					success = false;
+					printf("Has a red parent and is red\n");
+				}
+			}
+
+			if (!l && !r)
+			{
+				u32 bn = count_black_nodes(n);
+				if (black_nodes != bn)
+				{
+					success = false;
+					printf("Has a different black height\n");
+				}
+			}
+
+			n = node_next(n);
+		}
+		if (!success)
+		{
+			rbt_print_binary_tree("", allocator->free_root, false);
+		}
+		return success;
 	}
 
 	static void rbt_insert(FreeListAllocator *allocator, FreeListMemoryBlock *n);
@@ -290,6 +452,7 @@ namespace Vultr
 		ASSERT_MB_INITIALIZED(block);
 		ASSERT_MB_FREE(block);
 		rbt_insert(allocator, block);
+		ASSERT(test_rbt(allocator), "Something went wrong with the RBT tree!");
 		ASSERT(allocator->free_root != nullptr, "Something went wrong inserting memory block!");
 		set_mb_black(allocator->free_root);
 		assign_parent(allocator->free_root, nullptr);
@@ -300,6 +463,7 @@ namespace Vultr
 		ASSERT_MB_INITIALIZED(block);
 		ASSERT_MB_FREE(block);
 		rbt_delete(allocator, block);
+		ASSERT(test_rbt(allocator), "Something went wrong with the RBT tree!");
 		if (allocator->free_root != nullptr)
 		{
 			set_mb_black(allocator->free_root);
@@ -338,32 +502,6 @@ namespace Vultr
 			return mb_best_match(r, size);
 		}
 		else // if(size == get_mb_size(h))
-		{
-			return h;
-		}
-	}
-
-	static u32 get_height(FreeListMemoryBlock *h)
-	{
-		if (h == nullptr)
-		{
-			return 0;
-		}
-		else
-		{
-			auto *l = get_left(h);
-			auto *r = get_right(h);
-			return 1 + MAX(get_height(l), get_height(r));
-		}
-	}
-	static FreeListMemoryBlock *min(FreeListMemoryBlock *h)
-	{
-		auto *l = get_left(h);
-		if (l != nullptr)
-		{
-			return min(l);
-		}
-		else
 		{
 			return h;
 		}
@@ -417,6 +555,7 @@ namespace Vultr
 		if (new_size == old_size)
 		{
 			rbt_delete(allocator, b);
+			ASSERT(test_rbt(allocator), "Something went wrong with the RBT tree!");
 			return b;
 		}
 
@@ -425,13 +564,14 @@ namespace Vultr
 		if (old_size - new_size < sizeof(FreeListMemoryBlock))
 		{
 			rbt_delete(allocator, b);
+			ASSERT(test_rbt(allocator), "Something went wrong with the RBT tree!");
 			return b;
 		}
 
 		size_t updated_size = old_size - new_size - HEADER_SIZE;
 		rbt_update(allocator, b, updated_size);
 
-		auto *new_block = reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(b) + updated_size);
+		auto *new_block = reinterpret_cast<FreeListMemoryBlock *>(reinterpret_cast<byte *>(b) + updated_size + HEADER_SIZE);
 		init_free_mb(new_block, new_size, b, b->next);
 
 		if (new_block->next != nullptr)
@@ -499,6 +639,7 @@ namespace Vultr
 	static void *free_list_alloc_no_lock(FreeListAllocator *allocator, size_t size)
 	{
 		size = align(size, allocator->alignment);
+		printf("Request to allocate %zu bytes\n", size);
 		// Find a memory block of suitable size.
 		auto *best_match = mb_best_match(allocator->free_root, size);
 		PRODUCTION_ASSERT(best_match != nullptr, "Not enough memory to allocate!");
@@ -510,7 +651,11 @@ namespace Vultr
 		// Set our memory block to allocated.
 		set_mb_allocated(new_block);
 		allocator->used += size;
-		return reinterpret_cast<byte *>(new_block) + HEADER_SIZE;
+		void *data = reinterpret_cast<byte *>(new_block) + HEADER_SIZE;
+		printf("Allocated %zu bytes at %p\n", size, data);
+		free_list_print(allocator);
+		ASSERT(test_rbt(allocator), "Something went wrong with the RBT tree!");
+		return data;
 	}
 
 	// TODO(Brandon): Add lots of error messages to make sure this isn't misused.
@@ -525,11 +670,14 @@ namespace Vultr
 	{
 		auto *block_to_free = get_block_from_allocated_data(data);
 		size_t size         = get_mb_size(block_to_free);
-		auto *prev          = block_to_free->prev;
-		auto *next          = block_to_free->next;
+		printf("Freeing %zu bytes at %p\n", size, data);
+		auto *prev = block_to_free->prev;
+		auto *next = block_to_free->next;
 		init_free_mb(block_to_free, size, prev, next);
 		coalesce_mbs(allocator, block_to_free);
 		allocator->used -= size;
+		free_list_print(allocator);
+		ASSERT(test_rbt(allocator), "Something went wrong with the RBT tree!");
 	}
 	void free_list_free(FreeListAllocator *allocator, void *data)
 	{
@@ -689,6 +837,7 @@ namespace Vultr
 		auto can_skip = bst_insert(allocator, n);
 		if (can_skip)
 		{
+			set_mb_black(allocator->free_root);
 			return;
 		}
 
@@ -774,283 +923,141 @@ namespace Vultr
 		set_mb_black(allocator->free_root);
 	}
 
-	static FreeListMemoryBlock *bst_get_successor(FreeListMemoryBlock *n)
+	static void mb_replace_child(FreeListAllocator *allocator, FreeListMemoryBlock *n, FreeListMemoryBlock *child)
 	{
-		// Find node that doesn't have a left child in the given tree.
-		FreeListMemoryBlock *x = n;
-
-		while (get_left(x) != nullptr)
+		auto *parent = get_parent(n);
+		if (parent != nullptr)
 		{
-			x = get_left(x);
-		}
-
-		return x;
-	}
-
-	static FreeListMemoryBlock *bst_find_replacement(FreeListMemoryBlock *n)
-	{
-		ASSERT(get_center(n) == nullptr, "The replacement for this block should have been just it's center, however this method is being called meaning something went wrong.");
-
-		// When the node has 2 children.
-		if (get_left(n) != nullptr && get_right(n) != nullptr)
-		{
-			return bst_get_successor(get_right(n));
-		}
-
-		// When the node is a leaf, just return nullptr since there is no node to replace it.
-		if (get_left(n) == nullptr && get_right(n) == nullptr)
-		{
-			return nullptr;
-		}
-
-		// When the node has a single child return that child.
-		if (get_left(n) != nullptr)
-		{
-			return get_left(n);
-		}
-		else // if (get_right(n) != nullptr)
-		{
-			return get_right(n);
-		}
-	}
-
-	static void fix_double_black(FreeListAllocator *allocator, FreeListMemoryBlock *n)
-	{
-		while (true)
-		{
-			// Recurse until reach the root.
-			if (n == allocator->free_root)
-				return;
-
-			auto *sibling = get_sibling(n);
-			auto *parent  = get_parent(n);
-
-			// If there is no sibling, double black is pushed up the tree.
-			if (sibling == nullptr)
+			if (is_left_child(n))
 			{
-				n = parent;
-				continue;
+				assign_left(parent, child);
 			}
 			else
 			{
-				// If sibling is red...
-				if (is_red(sibling))
+				assign_right(parent, child);
+			}
+		}
+		else
+		{
+			allocator->free_root = child;
+			assign_parent(child, nullptr);
+		}
+		set_mb_color(child, is_red(n) ? RED : BLACK);
+	}
+
+	static void rbt_fix_double_black(FreeListAllocator *allocator, FreeListMemoryBlock *parent, FreeListMemoryBlock *n)
+	{
+		FreeListMemoryBlock *sibling = nullptr;
+		if (get_right(parent) != n)
+		{
+			sibling = get_right(parent);
+			if (is_red(sibling))
+			{
+				rbt_left_rotate(allocator, parent);
+				sibling = get_right(parent);
+			}
+
+			if (is_red(get_right(sibling)))
+			{
+				set_mb_black(get_right(sibling));
+				rbt_left_rotate(allocator, parent);
+			}
+			else if (is_red(get_left(sibling)))
+			{
+				rbt_right_rotate(allocator, sibling);
+				rbt_left_rotate(allocator, parent);
+				set_mb_black(sibling);
+			}
+			else
+			{
+				set_mb_red(sibling);
+				if (get_parent(parent) != nullptr && is_black(parent))
 				{
-					set_mb_red(parent);
-					set_mb_black(sibling);
-
-					// Left case
-					if (is_left_child(sibling))
-					{
-						rbt_right_rotate(allocator, parent);
-					}
-					else
-					{
-						rbt_left_rotate(allocator, parent);
-					}
-
-					// Fix double black again.
-					continue;
+					rbt_fix_double_black(allocator, get_parent(parent), parent);
 				}
-				// If sibling is black...
 				else
 				{
-					// If there is at least one red child...
-					if (has_red_child(sibling))
-					{
-						// Left case...
-						if (is_red(get_left(sibling)))
-						{
-							// Left left
-							if (is_left_child(sibling))
-							{
-								set_mb_color(get_left(sibling), is_red(sibling));
-								set_mb_color(sibling, is_red(parent));
-								rbt_right_rotate(allocator, parent);
-							}
-							// Right left
-							else
-							{
-								set_mb_color(get_left(sibling), is_red(parent));
-								rbt_right_rotate(allocator, sibling);
-								rbt_left_rotate(allocator, parent);
-							}
-						}
-						// Right case...
-						else
-						{
-							// Left right
-							if (is_left_child(sibling))
-							{
-								set_mb_color(get_right(sibling), is_red(parent));
-								rbt_left_rotate(allocator, sibling);
-								rbt_right_rotate(allocator, parent);
-							}
-							// Right right
-							else
-							{
-								set_mb_color(get_right(sibling), is_red(sibling));
-								set_mb_color(sibling, is_red(parent));
-								rbt_left_rotate(allocator, parent);
-							}
-						}
-						set_mb_black(parent);
-					}
-					// If there are two black children...
-					else
-					{
-						set_mb_red(sibling);
-						if (is_black(parent))
-						{
-							n = parent;
-							continue;
-						}
-						else
-						{
-							set_mb_black(parent);
-						}
-					}
+					set_mb_black(parent);
 				}
 			}
 		}
-	}
-
-	static void swap_nodes(FreeListAllocator *allocator, FreeListMemoryBlock *x, FreeListMemoryBlock *y)
-	{
-		ASSERT(x != nullptr && y != nullptr, "Cannot swap NULL nodes!");
-		auto *x_parent = get_parent(x);
-		auto x_color   = is_red(x);
-		auto *x_left   = get_left(x);
-		auto *x_right  = get_right(x);
-		auto x_is_lc   = x_parent != nullptr && is_left_child(x);
-
-		auto *y_parent = get_parent(y);
-		auto y_color   = is_red(y);
-		auto *y_left   = get_left(y);
-		auto *y_right  = get_right(y);
-		auto y_is_lc   = y_parent != nullptr && is_left_child(y);
-
-		if (y_parent == x)
-		{
-			y_parent = y;
-		}
-		if (x_parent == y)
-		{
-			x_parent = x;
-		}
-
-		assign_parent(x, y_parent);
-		set_mb_color(x, y_color);
-		if (y_left == x)
-		{
-			assign_left(x, y);
-		}
 		else
 		{
-			assign_left(x, y_left);
-		}
-		if (y_right == x)
-		{
-			assign_right(x, y);
-		}
-		else
-		{
-			assign_right(x, y_right);
-		}
-		if (y_parent != nullptr)
-		{
-			if (y_is_lc)
+			sibling = get_left(parent);
+			if (is_red(sibling))
 			{
-				assign_left(y_parent, x);
+				rbt_right_rotate(allocator, parent);
+				sibling = get_left(parent);
+			}
+			if (is_red(get_left(sibling)))
+			{
+				set_mb_black(get_left(sibling));
+				rbt_right_rotate(allocator, parent);
+			}
+			else if (is_red(get_right(sibling)))
+			{
+				rbt_left_rotate(allocator, sibling);
+				rbt_right_rotate(allocator, parent);
+				set_mb_black(sibling);
 			}
 			else
 			{
-				assign_right(y_parent, x);
+				set_mb_red(sibling);
+				if (get_parent(parent) && is_black(parent))
+				{
+					rbt_fix_double_black(allocator, get_parent(parent), parent);
+				}
+				else
+				{
+					set_mb_black(parent);
+				}
 			}
-		}
-		else
-		{
-			ASSERT(x_parent != nullptr, "Both cannot be roots...");
-			allocator->free_root = x;
-		}
-
-		assign_parent(y, x_parent);
-		set_mb_color(y, x_color);
-		if (x_left == y)
-		{
-			assign_left(y, x);
-		}
-		else
-		{
-			assign_left(y, x_left);
-		}
-		if (x_right == y)
-		{
-			assign_right(y, x);
-		}
-		else
-		{
-			assign_right(y, x_right);
-		}
-		if (x_parent != nullptr)
-		{
-			if (x_is_lc)
-			{
-				assign_left(x_parent, y);
-			}
-			else
-			{
-				assign_right(x_parent, y);
-			}
-		}
-		else
-		{
-			ASSERT(y_parent != nullptr, "Both cannot be roots...");
-			allocator->free_root = y;
 		}
 	}
 
 	void rbt_delete(FreeListAllocator *allocator, FreeListMemoryBlock *n)
 	{
-		while (true)
+		auto *parent = get_parent(n);
+		auto *l      = get_left(n);
+		auto *r      = get_right(n);
+
+		auto *c      = get_center(n);
+		if (c != nullptr)
 		{
-			ASSERT(n != nullptr, "Cannot delete null memory block!");
-
-			auto *replacement = bst_find_replacement(n);
-
-			bool both_black   = is_black(replacement) && is_black(n);
-			auto *parent      = get_parent(n);
-			auto *root        = allocator->free_root;
-
-			// If replacement is nullptr then n is a leaf.
-			if (replacement == nullptr)
+			assign_center(n, nullptr);
+			assign_left(c, l);
+			assign_right(c, r);
+			if (parent != nullptr)
 			{
-				// If the root is nullptr...
-				if (n == root)
+				if (is_left_child(n))
 				{
-					// Then update the free root in the memory allocator.
-					allocator->free_root = nullptr;
+					assign_left(parent, n);
 				}
-				else
+				else // if (is_right_child(n))
 				{
-					// If both are black, then it needs to be fixed.
-					// n is a leaf, thus we need to fix the double black at n.
-					if (both_black)
-					{
-						fix_double_black(allocator, n);
-					}
-					// If either n or replacement are red...
-					else
-					{
-						auto *sibling = get_sibling(n);
-						// If the sibling exists, make it red.
-						if (sibling != nullptr)
-						{
-							set_mb_red(sibling);
-						}
-					}
+					assign_right(parent, n);
+				}
+				set_mb_color(c, is_red(n) ? RED : BLACK);
+			}
+			else
+			{
+				assign_parent(c, nullptr);
+				allocator->free_root = c;
+				set_mb_black(c);
+			}
+			return;
+		}
 
-					// Delete n from the tree.
+		if (l == nullptr)
+		{
+			if (r != nullptr)
+			{
+				mb_replace_child(allocator, n, r);
+			}
+			else
+			{
+				if (parent != nullptr)
+				{
 					if (is_left_child(n))
 					{
 						assign_left(parent, nullptr);
@@ -1059,84 +1066,75 @@ namespace Vultr
 					{
 						assign_right(parent, nullptr);
 					}
-				}
-				return;
-			}
-			// If n has one child...
-			else if (get_left(n) == nullptr || get_right(n) == nullptr)
-			{
-				if (n == root)
-				{
-					assign_parent(replacement, nullptr);
-					set_mb_black(replacement);
-					assign_left(replacement, nullptr);
-					assign_right(replacement, nullptr);
-					allocator->free_root = replacement;
+
+					if (is_black(n))
+						rbt_fix_double_black(allocator, parent, nullptr);
 				}
 				else
 				{
-					if (is_left_child(n))
-					{
-						assign_left(parent, replacement);
-					}
-					else
-					{
-						assign_right(parent, replacement);
-					}
-
-					assign_parent(replacement, parent);
-
-					// If both are black, then fix the double black at the replacement.
-					if (both_black)
-					{
-						fix_double_black(allocator, replacement);
-					}
-					// If either are red, then set the replacement to black.
-					else
-					{
-						set_mb_black(replacement);
-					}
+					allocator->free_root = nullptr;
 				}
-				return;
-			}
-			// If n has two children...
-			else
-			{
-				swap_nodes(allocator, n, replacement);
 			}
 		}
-	}
+		else if (r == nullptr)
+		{
+			mb_replace_child(allocator, n, l);
+		}
+		else
+		{
+			auto *successor = r;
+			if (get_left(successor) == nullptr)
+			{
+				bool black = is_black(successor);
+				mb_replace_child(allocator, n, successor);
 
-	static void rbt_brute_force_update(FreeListAllocator *allocator, FreeListMemoryBlock *n, size_t new_size)
-	{
-		rbt_delete(allocator, n);
+				assign_left(successor, l);
+				if (get_right(successor) != nullptr)
+				{
+					set_mb_black(get_right(successor));
+				}
+				else
+				{
+					if (black)
+						rbt_fix_double_black(allocator, successor, nullptr);
+				}
+			}
+			else
+			{
+				while (get_left(successor) != nullptr)
+					successor = get_left(successor);
 
-		n->size = new_size | (1UL << INITIALIZED_BIT);
-		set_mb_free(n);
+				bool black    = is_black(successor);
+				auto *sr      = get_right(successor);
+				auto *sparent = get_parent(successor);
+				assign_left(sparent, sr);
 
-		rbt_insert(allocator, n);
+				if (sr)
+				{
+					set_mb_black(sr);
+					black = false;
+				}
+
+				mb_replace_child(allocator, n, successor);
+				assign_left(successor, l);
+				assign_right(successor, r);
+				if (black)
+					rbt_fix_double_black(allocator, sparent, nullptr);
+			}
+		}
+		set_mb_black(allocator->free_root);
 	}
 
 	void rbt_update(FreeListAllocator *allocator, FreeListMemoryBlock *n, size_t new_size)
 	{
-		auto *l = get_left(n);
-		auto *r = get_right(n);
+		rbt_delete(allocator, n);
+		ASSERT(test_rbt(allocator), "Something went wrong with the RBT tree!");
 
-		if ((r != nullptr && new_size > get_mb_size(r)) || (l != nullptr && new_size < get_mb_size(l)))
-		{
-			rbt_brute_force_update(allocator, n, new_size);
-		}
-		else
-		{
-			n->size = new_size | (1UL << INITIALIZED_BIT);
-			set_mb_free(n);
+		init_free_mb(n, new_size, n->prev, n->next);
 
-			auto *c = get_center(n);
-			if (c != nullptr)
-			{
-				remove_center(n);
-				insert_free_mb(allocator, c);
-			}
-		}
+		rbt_insert(allocator, n);
+		ASSERT(test_rbt(allocator), "Something went wrong with the RBT tree!");
 	}
+
+	void free_list_print(FreeListAllocator *allocator) { rbt_print_binary_tree("", allocator->free_root, false); }
 } // namespace Vultr

@@ -26,6 +26,19 @@ namespace Vultr
 					return VK_FORMAT_R8G8B8_UNORM;
 			}
 		}
+
+		VkFormat get_vk_texture_format_linear(VkFormat format)
+		{
+			switch (format)
+			{
+				case VK_FORMAT_R8G8B8_SRGB:
+					return VK_FORMAT_R8G8B8_UNORM;
+				case VK_FORMAT_R8G8B8A8_SRGB:
+					return VK_FORMAT_R8G8B8A8_UNORM;
+				default:
+					return format;
+			}
+		}
 	} // namespace Vulkan
 	namespace Platform
 	{

@@ -13,6 +13,7 @@ namespace Vultr
 		{
 			Platform::Framebuffer *output_framebuffer = nullptr;
 			Hashmap<ResourceId, Platform::GraphicsPipeline *> pipelines{};
+			Queue<u32, 1024> free_queue_listener{};
 		};
 
 		Component *init();

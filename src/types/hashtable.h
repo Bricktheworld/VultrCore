@@ -80,6 +80,45 @@ namespace Vultr
 			Bucket *m_bucket = nullptr;
 		};
 
+		struct ConstHashTableIterator
+		{
+			explicit ConstHashTableIterator(Bucket *bucket) : m_bucket(bucket) {}
+			const T &operator*() { return *m_bucket->storage(); }
+			const T *operator->() { return m_bucket->storage(); }
+			bool operator==(const ConstHashTableIterator &other) const { return m_bucket == other.m_bucket; }
+
+			ConstHashTableIterator &operator++()
+			{
+				skip_to_next();
+				return *this;
+			}
+
+			ConstHashTableIterator operator++(int)
+			{
+				ConstHashTableIterator cpy = *this;
+				skip_to_next();
+				return cpy;
+			}
+
+			void skip_to_next()
+			{
+				if (m_bucket == nullptr)
+					return;
+
+				do
+				{
+					m_bucket++;
+					if (m_bucket->used && !m_bucket->deleted)
+						return;
+				} while (!m_bucket->end);
+
+				if (m_bucket->end)
+					m_bucket = nullptr;
+			}
+
+			Bucket *m_bucket = nullptr;
+		};
+
 		template <typename U>
 		using default_traits = conditional<is_same<U, T>, TraitsForT, Traits<U>>;
 
@@ -146,7 +185,20 @@ namespace Vultr
 			return end();
 		}
 
+		ConstHashTableIterator begin() const
+		{
+			for (size_t i = 0; i < m_capacity; i++)
+			{
+				if (m_buckets[i].used)
+				{
+					return ConstHashTableIterator(&m_buckets[i]);
+				}
+			}
+			return end();
+		}
+
 		HashTableIterator end() { return HashTableIterator(nullptr); }
+		ConstHashTableIterator end() const { return ConstHashTableIterator(nullptr); }
 
 		bool empty() const { return m_size == 0; }
 		size_t size() const { return m_size; }

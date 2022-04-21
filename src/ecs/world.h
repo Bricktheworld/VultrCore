@@ -3,16 +3,25 @@
 #include <types/queue.h>
 #include <types/hashmap.h>
 #include <types/vector.h>
+#include <types/string.h>
 #include "entity.h"
 #include "component.h"
 #include "system.h"
 
 namespace Vultr
 {
+	struct EntityInfo
+	{
+		String label{};
+		Signature signature{};
+		Entity parent = INVALID_ENTITY;
+		HashTable<Entity> children{};
+	};
+
 	struct EntityManager
 	{
 		Queue<Entity, MAX_ENTITIES> m_queue{};
-		Hashmap<Entity, Signature> m_living_entities{};
+		Hashmap<Entity, EntityInfo> m_living_entities{};
 
 		EntityManager()
 		{
@@ -22,17 +31,61 @@ namespace Vultr
 			}
 		}
 
-		Entity create_entity()
+		Entity create_entity(const StringView &label, Entity parent = INVALID_ENTITY)
 		{
+			ASSERT(parent == INVALID_ENTITY || entity_exists(parent), "Cannot re-parent to non-existent parent entity!");
 			Entity new_entity = m_queue.pop();
-			m_living_entities.set(new_entity, Signature());
+			m_living_entities.set(new_entity, {.label = String(label), .parent = parent});
+			if (parent != INVALID_ENTITY)
+				m_living_entities.get(parent).children.set<Entity>(new_entity);
 			return new_entity;
 		}
 
-		void add_signature(Entity entity, const Signature &signature) { m_living_entities.set(entity, get_signature(entity) | signature); }
-		void remove_signature(Entity entity, const Signature &signature) { m_living_entities.set(entity, get_signature(entity) & (~signature)); }
-		const Signature &get_signature(Entity entity) { return m_living_entities.get(entity); }
+		void add_signature(Entity entity, const Signature &signature) { m_living_entities.get(entity).signature |= signature; }
+		void remove_signature(Entity entity, const Signature &signature) { m_living_entities.get(entity).signature &= (~signature); }
+		const Signature &get_signature(Entity entity) { return m_living_entities.get(entity).signature; }
+		String *get_label(Entity entity) { return &m_living_entities.get(entity).label; }
+
+		Option<Entity> get_parent(Entity entity)
+		{
+			ASSERT(entity_exists(entity), "Cannot get parent of non-existent entity!");
+
+			Entity parent = m_living_entities.get(entity).parent;
+
+			if (parent == INVALID_ENTITY)
+				return None;
+
+			return parent;
+		}
+
+		void reparent(Entity entity, Entity new_parent)
+		{
+			ASSERT(entity_exists(entity), "Cannot re-parent non-existent entity!");
+			ASSERT(entity_exists(new_parent), "Cannot re-parent to non-existent parent entity!");
+
+			auto current_parent                  = m_living_entities.get(entity).parent;
+			m_living_entities.get(entity).parent = new_parent;
+
+			if (current_parent != INVALID_ENTITY)
+				m_living_entities.get(current_parent).children.remove(entity);
+
+			m_living_entities.get(new_parent).children.set<Entity>(entity);
+		}
+
+		void unparent(Entity entity)
+		{
+			ASSERT(entity_exists(entity), "Cannot un-parent non-existent entity!");
+			auto current_parent = m_living_entities.get(entity).parent;
+			if (current_parent != INVALID_ENTITY)
+			{
+				m_living_entities.get(entity).parent = INVALID_ENTITY;
+				m_living_entities.get(current_parent).children.set<Entity>(entity);
+			}
+		}
+
 		bool entity_exists(Entity entity) { return m_living_entities.contains(entity); }
+
+		const HashTable<Entity> &get_children(Entity entity) { return m_living_entities.get(entity).children; }
 
 		void destroy_entity(Entity entity)
 		{
@@ -325,7 +378,7 @@ namespace Vultr
 			explicit IteratorContainer(WorldT *world) : m_world(world) {}
 			struct EntityIterator
 			{
-				EntityIterator(WorldT *world, const Hashmap<Entity, Signature>::HIterator &iterator)
+				EntityIterator(WorldT *world, const Hashmap<Entity, EntityInfo>::HIterator &iterator)
 					: m_world(world), m_iterator(iterator), m_signature(world->component_manager.template signature_from_components<Ts...>())
 				{
 					if (!matches_signature())
@@ -360,10 +413,10 @@ namespace Vultr
 					}
 				}
 
-				bool matches_signature() { return !is_end() && (m_iterator->value & m_signature) == m_signature; }
+				bool matches_signature() { return !is_end() && (m_iterator->value.signature & m_signature) == m_signature; }
 				bool is_end() { return m_iterator == m_world->entity_manager.m_living_entities.end(); }
 
-				Hashmap<Entity, Signature>::HIterator m_iterator;
+				Hashmap<Entity, EntityInfo>::HIterator m_iterator;
 				Signature m_signature{};
 				WorldT *m_world = nullptr;
 			};

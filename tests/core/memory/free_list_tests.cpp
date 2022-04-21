@@ -69,3 +69,50 @@ TEST(FreeListTests, AllocRealloc)
 
 	destroy_mem_arena(arena);
 }
+
+TEST(FreeListTests, RBTBug)
+{
+	MemoryArena *arena = init_mem_arena(Gigabyte(1));
+	auto *allocator    = init_free_list_allocator(arena, Megabyte(900), 16);
+
+	free_list_alloc(allocator, 8000);
+	free_list_alloc(allocator, 40000);
+	free_list_alloc(allocator, 8000);
+	free_list_alloc(allocator, 64000);
+	free_list_alloc(allocator, 40000);
+	free_list_alloc(allocator, 4240);
+	auto *p3 = free_list_alloc(allocator, 753040);
+	auto *p1 = free_list_alloc(allocator, 4992);
+	auto *p2 = free_list_alloc(allocator, 10704);
+	free_list_alloc(allocator, 52544);
+	auto *p4 = free_list_alloc(allocator, 119104);
+	free_list_free(allocator, p2);
+	free_list_free(allocator, p1);
+	free_list_alloc(allocator, 753040);
+	free_list_alloc(allocator, 119104);
+
+	free_list_free(allocator, p4);
+	free_list_free(allocator, p3);
+
+	auto *p5 = free_list_alloc(allocator, 452592);
+	auto *p6 = free_list_alloc(allocator, 83280);
+	//	auto *p7 = free_list_alloc(allocator, 452592);
+	//	auto *p8 = free_list_alloc(allocator, 83280);
+	//	free_list_free(allocator, p6);
+	//	free_list_free(allocator, p5);
+	//	free_list_alloc(allocator, 254352);
+	//	free_list_alloc(allocator, 37920);
+	//	auto *p9  = free_list_alloc(allocator, 254352);
+	//	auto *p10 = free_list_alloc(allocator, 37920);
+	//	free_list_free(allocator, p10);
+	//	free_list_free(allocator, p9);
+	//
+	//	free_list_free(allocator, p7);
+	//	free_list_free(allocator, p8);
+	//
+	//	free_list_alloc(allocator, 254352);
+	//	free_list_alloc(allocator, 37920);
+	//	free_list_alloc(allocator, 254352);
+	//	free_list_print(allocator);
+	destroy_mem_arena(arena);
+}

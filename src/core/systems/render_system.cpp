@@ -26,6 +26,8 @@ namespace Vultr
 			c->output_framebuffer = nullptr;
 			reinitialize(c);
 
+			resource_allocator<Platform::Shader *>()->free_queue_listener = &c->free_queue_listener;
+
 			return c;
 		}
 		void entity_created(void *system, Entity entity) {}
@@ -33,6 +35,15 @@ namespace Vultr
 
 		static void render(Platform::CameraUBO camera_ubo, Component *system, Platform::CmdBuffer *cmd)
 		{
+			while (!system->free_queue_listener.empty())
+			{
+				auto shader = ResourceId(system->free_queue_listener.pop());
+				if (system->pipelines.contains(shader))
+				{
+					Platform::destroy_pipeline(engine()->context, system->pipelines.get(shader));
+					system->pipelines.remove(shader);
+				}
+			}
 			bool update_light = false;
 			for (auto [light, transform_component, directional_light] : get_entities<Transform, DirectionalLight>())
 			{
@@ -55,18 +66,18 @@ namespace Vultr
 				if (!mesh.source.loaded() || !material.source.loaded())
 					continue;
 
-				auto model        = model_matrix(transform);
+				auto model        = get_world_transform(entity);
 				auto *loaded_mesh = mesh.source.value();
 				auto *loaded_mat  = material.source.value();
 
-				if (!system->pipelines.contains(material.source))
+				if (!system->pipelines.contains(loaded_mat->source))
 				{
 					Platform::GraphicsPipelineInfo info{.shader = loaded_mat->source.value()};
 					auto *pipeline = Platform::init_pipeline(engine()->context, system->output_framebuffer, info);
-					system->pipelines.set(material.source, pipeline);
+					system->pipelines.set(loaded_mat->source, pipeline);
 				}
 
-				auto *pipeline = system->pipelines.get(material.source);
+				auto *pipeline = system->pipelines.get(loaded_mat->source);
 
 				Platform::PushConstant push_constant{
 					.color = Vec4(1),
@@ -126,7 +137,7 @@ namespace Vultr
 
 		void reinitialize(Component *c)
 		{
-			const auto attachment_descriptions = Vector<Platform::AttachmentDescription>({{.format = Platform::TextureFormat::RGBA8}, {.format = Platform::TextureFormat::DEPTH}});
+			const auto attachment_descriptions = Vector<Platform::AttachmentDescription>({{.format = Platform::TextureFormat::SRGBA8}, {.format = Platform::TextureFormat::DEPTH}});
 			if (c->output_framebuffer != nullptr)
 				Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
 			c->output_framebuffer = Platform::init_framebuffer(engine()->context, attachment_descriptions);
