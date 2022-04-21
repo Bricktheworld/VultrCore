@@ -781,6 +781,11 @@ namespace Vultr
 		assign_left(n, get_right(l));
 
 		assign_parent(l, get_parent(n));
+
+		u8 old_n_color = is_red(n);
+		set_mb_color(n, is_red(l));
+		set_mb_color(l, old_n_color);
+
 		// If node n is not the root...
 		if (get_parent(n) != nullptr)
 		{
@@ -810,6 +815,11 @@ namespace Vultr
 		assign_right(n, get_left(r));
 
 		assign_parent(r, get_parent(n));
+
+		u8 old_n_color = is_red(n);
+		set_mb_color(n, is_red(r));
+		set_mb_color(r, old_n_color);
+
 		// If node n is not the root...
 		if (get_parent(n) != nullptr)
 		{
@@ -881,9 +891,9 @@ namespace Vultr
 
 					// If n is a left child of its parent...
 					rbt_right_rotate(allocator, grandparent);
-					auto c = is_red(parent);
-					set_mb_color(parent, is_red(grandparent));
-					set_mb_color(grandparent, c);
+//					auto c = is_red(parent);
+//					set_mb_color(parent, is_red(grandparent));
+//					set_mb_color(grandparent, c);
 					n = parent;
 				}
 			}
@@ -912,9 +922,9 @@ namespace Vultr
 
 					// If n is a right child of its parent...
 					rbt_left_rotate(allocator, grandparent);
-					auto c = is_red(parent);
-					set_mb_color(parent, is_red(grandparent));
-					set_mb_color(grandparent, c);
+//					auto c = is_red(parent);
+//					set_mb_color(parent, is_red(grandparent));
+//					set_mb_color(grandparent, c);
 					n = parent;
 				}
 			}
