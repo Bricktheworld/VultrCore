@@ -891,9 +891,6 @@ namespace Vultr
 
 					// If n is a left child of its parent...
 					rbt_right_rotate(allocator, grandparent);
-//					auto c = is_red(parent);
-//					set_mb_color(parent, is_red(grandparent));
-//					set_mb_color(grandparent, c);
 					n = parent;
 				}
 			}
@@ -922,9 +919,6 @@ namespace Vultr
 
 					// If n is a right child of its parent...
 					rbt_left_rotate(allocator, grandparent);
-//					auto c = is_red(parent);
-//					set_mb_color(parent, is_red(grandparent));
-//					set_mb_color(grandparent, c);
 					n = parent;
 				}
 			}
