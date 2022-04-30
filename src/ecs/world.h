@@ -95,34 +95,29 @@ namespace Vultr
 		}
 	};
 
-	struct ComponentInformation
-	{
-		StringView component_name{};
-		Vector<ComponentMember> component_members{};
-	};
-
 	struct IComponentArray
 	{
+		typedef void (*GetRttiApi)(IComponentArray *, Entity, Vector<Tuple<Type, void *>> *);
+		typedef void (*GetEditorRttiApi)(IComponentArray *, Entity, Vector<EditorType> *);
 		typedef ErrorOr<void> (*TryRemoveEntity)(IComponentArray *arr, Entity entity);
-		typedef void (*GetComponentInformation)(IComponentArray *arr, Entity entity, Vector<ComponentInformation> &info);
 		TryRemoveEntity m_try_remove_entity;
-		GetComponentInformation m_get_component_information;
-		explicit IComponentArray(TryRemoveEntity try_remove_entity, GetComponentInformation get_component_information) : m_try_remove_entity(try_remove_entity), m_get_component_information(get_component_information)
+		explicit IComponentArray(TryRemoveEntity try_remove_entity, GetRttiApi get_rtti, GetEditorRttiApi get_editor_rtti)
+			: m_try_remove_entity(try_remove_entity), m_get_rtti(get_rtti), m_get_editor_rtti(get_editor_rtti)
 		{
 		}
 
+		void get_rtti(Entity entity, Vector<Tuple<Type, void *>> *rtti) { m_get_rtti(this, entity, rtti); }
+		void get_editor_rtti(Entity entity, Vector<EditorType> *rtti) { m_get_editor_rtti(this, entity, rtti); }
+
 		ErrorOr<void> try_remove_entity(Entity entity) { return m_try_remove_entity(this, entity); }
-		void get_component_information(Entity entity, Vector<ComponentInformation> &info) { return m_get_component_information(this, entity, info); }
+		GetRttiApi m_get_rtti              = nullptr;
+		GetEditorRttiApi m_get_editor_rtti = nullptr;
 	};
 
 	template <typename T>
 	struct ComponentArray : IComponentArray
 	{
-		typedef Vector<ComponentMember> (*MemberAPI)(T *);
-		ComponentArray() : IComponentArray(try_remove_entity_impl, get_component_information_impl), m_member_api(ComponentTraits<T>::members), m_component_name(ComponentTraits<T>::type_name())
-		{
-			m_array = v_alloc<T>(MAX_ENTITIES);
-		}
+		ComponentArray() : IComponentArray(try_remove_entity_impl, get_rtti_impl, get_editor_rtti_impl) { m_array = v_alloc<T>(MAX_ENTITIES); }
 		ErrorOr<void> add_entity(Entity entity, const T &component)
 		{
 			if (m_entity_to_index.contains(entity))
@@ -174,23 +169,28 @@ namespace Vultr
 			}
 		}
 
-		static void get_component_information_impl(IComponentArray *p_arr, Entity entity, Vector<ComponentInformation> &component_members)
+		static void get_rtti_impl(IComponentArray *p_arr, Entity entity, Vector<Tuple<Type, void *>> *rtti)
 		{
 			auto *arr = static_cast<ComponentArray<T> *>(p_arr);
 			if (!arr->has_component(entity))
 				return;
 
-			component_members.push_back(ComponentInformation{
-				.component_name    = arr->m_component_name,
-				.component_members = arr->m_member_api(&arr->get_component(entity).value()),
-			});
+			rtti->push_back(Tuple<Type, void *>(Refl::get_type<T>(), &arr->get_component(entity).value()));
+		}
+
+		static void get_editor_rtti_impl(IComponentArray *p_arr, Entity entity, Vector<EditorType> *editor_rtti)
+		{
+			auto *arr = static_cast<ComponentArray<T> *>(p_arr);
+			if (!arr->has_component(entity))
+				return;
+
+			auto *component = &arr->get_component(entity).value();
+			editor_rtti->push_back(get_editor_type(component));
 		}
 
 		T *storage() { return static_cast<T *>(m_array); }
 
-		T *m_array                  = nullptr;
-		MemberAPI m_member_api      = nullptr;
-		StringView m_component_name = "";
+		T *m_array = nullptr;
 		Hashmap<Entity, size_t> m_entity_to_index{};
 		Hashmap<size_t, Entity> m_index_to_entity{};
 		size_t m_size = 0;
@@ -218,7 +218,7 @@ namespace Vultr
 		template <typename T>
 		void register_component()
 		{
-			constexpr u32 type_id = ComponentTraits<T>::component_id();
+			constexpr u32 type_id = get_component_type<T>().id;
 			ASSERT(!type_to_index.contains(type_id), "Component already registered!");
 			size_t index = component_arrays.size();
 			component_arrays.push_back(v_alloc<ComponentArray<T>>());
@@ -303,15 +303,26 @@ namespace Vultr
 			}
 		}
 
-		Vector<ComponentInformation> get_component_information(Entity entity)
+		Vector<Tuple<Type, void *>> get_component_rtti(Entity entity)
 		{
-			Vector<ComponentInformation> information{};
-			(get_component_array<DefaultComponent>()->get_component_information(entity, information), ...);
+			Vector<Tuple<Type, void *>> types{};
+			(get_component_array<DefaultComponent>()->get_rtti(entity, &types), ...);
 			for (auto &[type_id, index] : type_to_index)
 			{
-				component_arrays[index]->get_component_information(entity, information);
+				component_arrays[index]->get_rtti(entity, &types);
 			}
-			return information;
+			return types;
+		}
+
+		Vector<EditorType> get_component_editor_rtti(Entity entity)
+		{
+			Vector<EditorType> editor_types{};
+			(get_component_array<DefaultComponent>()->get_editor_rtti(entity, &editor_types), ...);
+			for (auto &[type_id, index] : type_to_index)
+			{
+				component_arrays[index]->get_editor_rtti(entity, &editor_types);
+			}
+			return editor_types;
 		}
 
 	  private:

@@ -1,4 +1,5 @@
 #pragma once
+#include <ecs/component.h>
 #include <types/types.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -6,12 +7,11 @@
 
 namespace Vultr
 {
-	struct Transform
-	{
-		Vec3 position = Vec3(0);
-		Quat rotation = Quat(1, 0, 0, 0);
-		Vec3 scale    = Vec3(1);
-	};
+	VCOMPONENT_BEGIN(Transform)
+	VCOMPONENT_FIELD(Vec3, position, Vec3(0))
+	VCOMPONENT_FIELD(Quat, rotation, Quat(1, 0, 0, 0))
+	VCOMPONENT_FIELD(Vec3, scale, Vec3(1))
+	VCOMPONENT_END()
 
 	inline Vec3 forward(const Transform &transform) { return transform.rotation * Vec3(0, 0, -1); }
 	inline Vec3 right(const Transform &transform) { return transform.rotation * Vec3(1, 0, 0); }

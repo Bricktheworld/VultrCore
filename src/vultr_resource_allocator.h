@@ -1,6 +1,8 @@
 #pragma once
 #include <core/resource_allocator/resource_allocator.h>
 #include <platform/rendering.h>
+#include <ecs/component.h>
+#include <core/components/material.h>
 
 namespace Vultr
 {
@@ -26,5 +28,33 @@ namespace Vultr
 				return false;
 		}
 		return true;
+	}
+
+	template <>
+	inline EditorType get_editor_type<Material>(Material *component)
+	{
+		EditorType type = {Refl::get_type<Material>(), component};
+		if (!component->source.loaded())
+			return type;
+
+		Platform::Material *mat  = component->source.value();
+		Platform::Shader *shader = mat->source.value();
+
+		const auto *reflection   = Platform::get_reflection_data(shader);
+
+		for (auto &uniform_member : reflection->uniform_members)
+		{
+			auto field = Field(uniform_member.name, uniform_member.type, nullptr);
+			type.fields.push_back({field, &mat->uniform_data[uniform_member.offset]});
+		}
+
+		u32 i = 0;
+		for (auto &sampler : reflection->samplers)
+		{
+			auto field = Field(sampler.name, init_type<Resource<Platform::Texture *>>(), nullptr);
+			type.fields.push_back({field, &mat->samplers[i]});
+			i++;
+		}
+		return type;
 	}
 } // namespace Vultr

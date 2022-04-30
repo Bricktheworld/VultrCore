@@ -5,87 +5,100 @@
 #include <shaderc/shaderc.h>
 #include <spirv_reflect/spirv_reflect.h>
 #include <vultr_resource_allocator.h>
+#include <core/reflection/reflection.h>
 
 namespace Vultr
 {
+	// Dumb hack so that we can have another consteval for colors specifically for shaders.
+	struct Color
+	{
+	};
+
+	template <>
+	consteval Type init_type<Color>()
+	{
+		return {PrimitiveType::COLOR, "Color"};
+	}
 	namespace Platform
 	{
 #define ENTRY_NAME "main"
 		static constexpr StringView vertex_pragma   = "#pragma vertex\n";
 		static constexpr StringView fragment_pragma = "#pragma fragment\n";
 
-		static u32 get_uniform_type_size(UniformType type)
+		static u32 get_uniform_type_size(const Type &type)
 		{
-			switch (type)
+			switch (type.primitive_type)
 			{
-				case UniformType::Vec2:
+				case PrimitiveType::VEC2:
 					return sizeof(f32) * 2;
-				case UniformType::Vec3:
+				case PrimitiveType::VEC3:
 					return sizeof(f32) * 3;
-				case UniformType::Vec4:
+				case PrimitiveType::VEC4:
+				case PrimitiveType::COLOR:
 					return sizeof(f32) * 4;
-				case UniformType::Mat3:
+				case PrimitiveType::MAT3:
 					return sizeof(f32) * 3 * 3;
-				case UniformType::Mat4:
+				case PrimitiveType::MAT4:
 					return sizeof(f32) * 4 * 4;
-				case UniformType::f32:
+				case PrimitiveType::F32:
 					return sizeof(f32);
-				case UniformType::f64:
+				case PrimitiveType::F64:
 					return sizeof(f64);
-				case UniformType::s8:
+				case PrimitiveType::S8:
 					return sizeof(s8);
-				case UniformType::s16:
+				case PrimitiveType::S16:
 					return sizeof(s16);
-				case UniformType::s32:
+				case PrimitiveType::S32:
 					return sizeof(s32);
-				case UniformType::s64:
+				case PrimitiveType::S64:
 					return sizeof(s64);
-				case UniformType::u8:
+				case PrimitiveType::U8:
 					return sizeof(u8);
-				case UniformType::u16:
+				case PrimitiveType::U16:
 					return sizeof(u16);
-				case UniformType::u32:
+				case PrimitiveType::U32:
 					return sizeof(u32);
-				case UniformType::u64:
+				case PrimitiveType::U64:
 					return sizeof(u64);
 				default:
 					return 0;
 			}
 		}
 
-		static u32 get_uniform_type_alignment(UniformType type)
+		static u32 get_uniform_type_alignment(const Type &type)
 		{
-			switch (type)
+			switch (type.primitive_type)
 			{
-				case UniformType::Vec2:
+				case PrimitiveType::VEC2:
 					return sizeof(f32) * 2;
-				case UniformType::Vec3:
+				case PrimitiveType::VEC3:
 					return sizeof(f32) * 3;
-				case UniformType::Vec4:
+				case PrimitiveType::VEC4:
+				case PrimitiveType::COLOR:
 					return sizeof(f32) * 4;
-				case UniformType::Mat3:
+				case PrimitiveType::MAT3:
 					return sizeof(f32) * 3 * 3;
-				case UniformType::Mat4:
+				case PrimitiveType::MAT4:
 					return sizeof(f32) * 4 * 4;
-				case UniformType::f32:
+				case PrimitiveType::F32:
 					return sizeof(f32);
-				case UniformType::f64:
+				case PrimitiveType::F64:
 					return sizeof(f64);
-				case UniformType::s8:
+				case PrimitiveType::S8:
 					return sizeof(s8);
-				case UniformType::s16:
+				case PrimitiveType::S16:
 					return sizeof(s16);
-				case UniformType::s32:
+				case PrimitiveType::S32:
 					return sizeof(s32);
-				case UniformType::s64:
+				case PrimitiveType::S64:
 					return sizeof(s64);
-				case UniformType::u8:
+				case PrimitiveType::U8:
 					return sizeof(u8);
-				case UniformType::u16:
+				case PrimitiveType::U16:
 					return sizeof(u16);
-				case UniformType::u32:
+				case PrimitiveType::U32:
 					return sizeof(u32);
-				case UniformType::u64:
+				case PrimitiveType::U64:
 					return sizeof(u64);
 				default:
 					return 0;
@@ -105,9 +118,9 @@ namespace Vultr
 			return next + alignment - remainder;
 		}
 
-		static u32 get_uniform_member_offset(UniformType type, u32 next) { return align(next, get_uniform_type_alignment(type)); }
+		static u32 get_uniform_member_offset(const Type &type, u32 next) { return align(next, get_uniform_type_alignment(type)); }
 
-		static ErrorOr<UniformType> get_uniform_type(const SpvReflectTypeDescription &member)
+		static ErrorOr<Type> get_uniform_type(const SpvReflectTypeDescription &member)
 		{
 			switch (member.op)
 			{
@@ -116,11 +129,11 @@ namespace Vultr
 					switch (member.traits.numeric.vector.component_count)
 					{
 						case 2:
-							return UniformType::Vec2;
+							return init_type<Vec2>();
 						case 3:
-							return UniformType::Vec3;
+							return init_type<Vec3>();
 						case 4:
-							return UniformType::Vec4;
+							return init_type<Color>();
 						default:
 							return Error("Unsupported vector size!");
 					}
@@ -133,11 +146,11 @@ namespace Vultr
 					{
 						case 3:
 						{
-							return UniformType::Mat3;
+							return init_type<Mat3>();
 						}
 						case 4:
 						{
-							return UniformType::Mat4;
+							return init_type<Mat4>();
 						}
 						default:
 							return Error("Unsupported matrix size!");
@@ -148,9 +161,9 @@ namespace Vultr
 					switch (member.traits.numeric.scalar.width)
 					{
 						case 32:
-							return UniformType::f32;
+							return init_type<f32>();
 						case 64:
-							return UniformType::f64;
+							return init_type<f64>();
 						default:
 							return Error("Unsupported float size!");
 					}
@@ -162,13 +175,13 @@ namespace Vultr
 						switch (member.traits.numeric.scalar.width)
 						{
 							case 8:
-								return UniformType::s8;
+								return init_type<s8>();
 							case 16:
-								return UniformType::s16;
+								return init_type<s16>();
 							case 32:
-								return UniformType::s32;
+								return init_type<s32>();
 							case 64:
-								return UniformType::s64;
+								return init_type<s64>();
 							default:
 								return Error("Unsupported int size!");
 						}
@@ -178,13 +191,13 @@ namespace Vultr
 						switch (member.traits.numeric.scalar.width)
 						{
 							case 8:
-								return UniformType::u8;
+								return init_type<u8>();
 							case 16:
-								return UniformType::u16;
+								return init_type<u16>();
 							case 32:
-								return UniformType::u32;
+								return init_type<u32>();
 							case 64:
-								return UniformType::u64;
+								return init_type<u64>();
 							default:
 								return Error("Unsupported unsigned int size!");
 						}
@@ -246,7 +259,7 @@ namespace Vultr
 				{
 					auto member            = type_description->members[i];
 					StringView member_name = member.struct_member_name;
-					TRY_UNWRAP(UniformType member_type, get_uniform_type(member));
+					TRY_UNWRAP(auto member_type, get_uniform_type(member));
 					reflection.uniform_members.push_back({
 						.name   = String(member_name),
 						.type   = member_type,
@@ -522,53 +535,56 @@ namespace Vultr
 				auto values      = split(spl[1], ",");
 				auto member_info = reflection->uniform_members[i];
 				auto offset      = member_info.offset;
-				switch (member_info.type)
+				switch (member_info.type.primitive_type)
 				{
-					case UniformType::Vec2:
+					case PrimitiveType::VEC2:
 						TRY(read_str<f32>(values, 2, offset, mat));
 						break;
-					case UniformType::Vec3:
+					case PrimitiveType::VEC3:
 						TRY(read_str<f32>(values, 3, offset, mat));
 						break;
-					case UniformType::Vec4:
+					case PrimitiveType::VEC4:
+					case PrimitiveType::COLOR:
 						TRY(read_str<f32>(values, 4, offset, mat));
 						break;
-					case UniformType::Mat3:
+					case PrimitiveType::MAT3:
 						TRY(read_str<f32>(values, 3 * 3, offset, mat));
 						break;
-					case UniformType::Mat4:
+					case PrimitiveType::MAT4:
 						TRY(read_str<f32>(values, 4 * 4, offset, mat));
 						break;
-					case UniformType::f32:
+					case PrimitiveType::F32:
 						TRY(read_str<f32>(values, 1, offset, mat));
 						break;
-					case UniformType::f64:
+					case PrimitiveType::F64:
 						TRY(read_str<f64>(values, 1, offset, mat));
 						break;
-					case UniformType::s8:
+					case PrimitiveType::S8:
 						TRY(read_str<s8>(values, 1, offset, mat));
 						break;
-					case UniformType::s16:
+					case PrimitiveType::S16:
 						TRY(read_str<s16>(values, 1, offset, mat));
 						break;
-					case UniformType::s32:
+					case PrimitiveType::S32:
 						TRY(read_str<s32>(values, 1, offset, mat));
 						break;
-					case UniformType::s64:
+					case PrimitiveType::S64:
 						TRY(read_str<s64>(values, 1, offset, mat));
 						break;
-					case UniformType::u8:
+					case PrimitiveType::U8:
 						TRY(read_str<u8>(values, 1, offset, mat));
 						break;
-					case UniformType::u16:
+					case PrimitiveType::U16:
 						TRY(read_str<u16>(values, 1, offset, mat));
 						break;
-					case UniformType::u32:
+					case PrimitiveType::U32:
 						TRY(read_str<u32>(values, 1, offset, mat));
 						break;
-					case UniformType::u64:
+					case PrimitiveType::U64:
 						TRY(read_str<u64>(values, 1, offset, mat));
 						break;
+					default:
+						THROW("Invalid member type!");
 				}
 			}
 

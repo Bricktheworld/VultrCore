@@ -58,10 +58,6 @@ target_include_directories(${Executable} PUBLIC ${TargetIncludeDirs})
 
 target_precompile_headers(${This} PUBLIC pch.h)
 
-add_executable(ShaderGenerator "src/tools/shader_generator/sources.cpp")
-target_link_libraries(ShaderGenerator PUBLIC ${Libs} ${This})
-target_include_directories(ShaderGenerator PUBLIC ${TargetIncludeDirs})
-
 add_subdirectory(tests)
 
 add_subdirectory(benchmark)

@@ -38,22 +38,6 @@ namespace Vultr
 
 	inline u32 ptr_hash(const void *ptr) { return u64_hash((u64)ptr); }
 
-	template <u32 n>
-	inline consteval u32 string_hash(const char (&characters)[n])
-	{
-		u32 hash = 0;
-		for (size_t i = 0; i < n - 1; ++i)
-		{
-			hash += (u32)characters[i];
-			hash += (hash << 10);
-			hash ^= (hash >> 6);
-		}
-		hash += hash << 3;
-		hash ^= hash >> 11;
-		hash += hash << 15;
-		return hash;
-	}
-
 	constexpr inline u32 string_hash(str characters, size_t n)
 	{
 		u32 hash = 0;
@@ -67,6 +51,12 @@ namespace Vultr
 		hash ^= hash >> 11;
 		hash += hash << 15;
 		return hash;
+	}
+
+	template <u32 n>
+	inline consteval u32 string_hash(const char (&characters)[n])
+	{
+		return string_hash(characters, n - 1);
 	}
 
 	template <u32 n>

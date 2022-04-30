@@ -13,3 +13,6 @@ cmake-build-debug/
 .vs/
 out/
 .vimspector.json
+
+# TODO(Brandon): Figure out a better solution to this
+vendor/libs/LINUX/libshaderc_combined.a

@@ -7,6 +7,7 @@
 #include <filesystem/filesystem.h>
 #include <imgui/imgui.h>
 #include <core/resource_allocator/resource_allocator.h>
+#include <core/reflection/reflection.h>
 
 namespace Vultr
 {
@@ -156,30 +157,12 @@ namespace Vultr
 		void destroy_framebuffer(RenderContext *c, Framebuffer *framebuffer);
 
 		struct Shader;
-		enum struct UniformType
-		{
-			Vec2,
-			Vec3,
-			Vec4,
-			Mat3,
-			Mat4,
-			f32,
-			f64,
-			s8,
-			s16,
-			s32,
-			s64,
-			u8,
-			u16,
-			u32,
-			u64,
-		};
 
 		struct UniformMember
 		{
 			String name{};
-			UniformType type = UniformType::Vec3;
-			u32 offset       = 0;
+			Type type  = init_type<Vec3>();
+			u32 offset = 0;
 		};
 		enum struct SamplerType
 		{
@@ -432,5 +415,30 @@ namespace Vultr
 		void imgui_end_frame(CmdBuffer *cmd, ImGuiContext *c);
 		ImTextureID imgui_get_texture_id(Texture *texture);
 		void destroy_imgui(RenderContext *c, ImGuiContext *imgui_c);
+
 	} // namespace Platform
+
+	template <>
+	constexpr Type init_type<Resource<Platform::Material *>>()
+	{
+		return {PrimitiveType::MATERIAL_RESOURCE, "Material"};
+	}
+
+	template <>
+	constexpr Type init_type<Resource<Platform::Texture *>>()
+	{
+		return {PrimitiveType::TEXTURE_RESOURCE, "Texture"};
+	}
+
+	template <>
+	constexpr Type init_type<Resource<Platform::Shader *>>()
+	{
+		return {PrimitiveType::SHADER_RESOURCE, "Shader"};
+	}
+
+	template <>
+	constexpr Type init_type<Resource<Platform::Mesh *>>()
+	{
+		return {PrimitiveType::MESH_RESOURCE, "Mesh"};
+	}
 } // namespace Vultr

@@ -1,13 +1,11 @@
 #pragma once
+#include <ecs/component.h>
 #include <filesystem/filesystem.h>
-#include <core/resource_allocator/resource_allocator.h>
 #include <platform/rendering.h>
 
 namespace Vultr
 {
-	struct Material
-	{
-		Resource<Platform::Material *> source{};
-	};
-
+	VCOMPONENT_BEGIN(Material)
+	VCOMPONENT_FIELD(Resource<Platform::Material *>, source, {})
+	VCOMPONENT_END()
 } // namespace Vultr

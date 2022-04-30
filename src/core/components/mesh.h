@@ -5,8 +5,7 @@
 
 namespace Vultr
 {
-	struct Mesh
-	{
-		Resource<Platform::Mesh *> source{};
-	};
+	VCOMPONENT_BEGIN(Mesh)
+	VCOMPONENT_FIELD(Resource<Platform::Mesh *>, source, {})
+	VCOMPONENT_END()
 } // namespace Vultr

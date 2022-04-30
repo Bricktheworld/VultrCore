@@ -1,63 +1,76 @@
 #pragma once
 #include <types/types.h>
 #include <types/bitfield.h>
+#include <types/tuple.h>
+#include <core/reflection/reflection.h>
 
 namespace Vultr
 {
 	static constexpr size_t MAX_COMPONENTS = 128;
 	typedef Bitfield<MAX_COMPONENTS> Signature;
 
-	enum struct PrimitiveType
+#define VCOMPONENT_BEGIN(name)                                                                                                                                                                                        \
+	struct name                                                                                                                                                                                                       \
+	{                                                                                                                                                                                                                 \
+		static constexpr StringView __REFL_NAME = #name;                                                                                                                                                              \
+		static constexpr u32 __REFL_START_COUNT = __COUNTER__ + 1;                                                                                                                                                    \
+		template <size_t i>                                                                                                                                                                                           \
+		static constexpr Field __REFL_GET_FIELD;                                                                                                                                                                      \
+		static constexpr name *__REFL_CAST(void *ptr) { return static_cast<name *>(ptr); }
+
+#define VCOMPONENT_FIELD(T, name, val)                                                                                                                                                                                \
+	T name = val;                                                                                                                                                                                                     \
+	static constexpr void *__REFL_##name##_GET_ADDR(void *component) { return &__REFL_CAST(component)->name; }                                                                                                        \
+	template <>                                                                                                                                                                                                       \
+	static constexpr Field __REFL_GET_FIELD<__COUNTER__ - __REFL_START_COUNT> = init_field(#name, init_type<T>(), __REFL_##name##_GET_ADDR);
+
+#define VCOMPONENT_END()                                                                                                                                                                                              \
+	static constexpr u32 __REFL_MEMBER_COUNT = __COUNTER__ - __REFL_START_COUNT;                                                                                                                                      \
+	template <size_t... S>                                                                                                                                                                                            \
+	static constexpr void __REFL_GET_FIELDS_IMPL(Field *out, Sequence<S...>)                                                                                                                                          \
+	{                                                                                                                                                                                                                 \
+		((out[S] = __REFL_GET_FIELD<S>), ...);                                                                                                                                                                        \
+	}                                                                                                                                                                                                                 \
+	static constexpr void __REFL_GET_FIELDS(Field *out) { __REFL_GET_FIELDS_IMPL(out, typename SequenceImpl<__REFL_MEMBER_COUNT>::type()); }                                                                          \
+	static constexpr Type __REFL_TYPE = init_type(__REFL_NAME, __REFL_MEMBER_COUNT, __REFL_GET_FIELDS);                                                                                                               \
+	}                                                                                                                                                                                                                 \
+	;
+
+	struct EditorField
 	{
-		U8,
-		U16,
-		U32,
-		U64,
-		S8,
-		S16,
-		S32,
-		S64,
-		F32,
-		F64,
-		CHAR,
-		BYTE,
-		BOOL,
-		STRING_VIEW,
-		STRING,
-		VOID_PTR,
-		VEC2,
-		VEC3,
-		VEC4,
-		COLOR,
-		QUAT,
-		PATH,
-		OPTIONAL_PATH,
-		TEXTURE_RESOURCE,
-		MESH_RESOURCE,
-		SHADER_RESOURCE,
-		MATERIAL_RESOURCE,
-		OTHER,
+		EditorField() = default;
+		EditorField(const Field &field, void *addr) : field(field), addr(addr) {}
+
+		template <typename T>
+		T *get_addr() const
+		{
+			return static_cast<T *>(addr);
+		}
+
+		Field field{};
+		void *addr = nullptr;
 	};
 
-	struct ComponentMember
+	struct EditorType
 	{
-		StringView name    = nullptr;
-		PrimitiveType type = PrimitiveType::OTHER;
-		void *addr         = nullptr;
+		EditorType() = default;
+		EditorType(const Type &type, void *data) : type(type)
+		{
+			for (auto &field : type.get_fields())
+			{
+				fields.push_back({field, field.get_addr<void>(data)});
+			}
+		}
+		EditorType(const Type &type, const Vector<EditorField> &fields) : type(type), fields(fields) {}
+
+		Type type{};
+		Vector<EditorField> fields{};
 	};
 
 	template <typename T>
-	struct ComponentTraits : public ReflTraits<T>
+	inline EditorType get_editor_type(T *component)
 	{
-		static Vector<ComponentMember> members(T *component);
-		static consteval u32 component_id() { return ReflTraits<T>::type_id(); }
-	};
+		return EditorType(Refl::get_type<T>(), component);
+	}
 
-	//#define COMPONENT_TRAITS(Type)                                                                                                                                                                                        \
-//	template <>                                                                                                                                                                                                       \
-//	struct ReflTraits<Type> : public Traits<Type>                                                                                                                                                                     \
-//	{                                                                                                                                                                                                                 \
-//		static consteval StringView type_name() { return #Type; }                                                                                                                                                     \
-//	}
-	//
 } // namespace Vultr

@@ -129,38 +129,41 @@ namespace Vultr
 	{
 		auto offset     = member.offset;
 		const byte *src = uniform_data + offset;
-		switch (member.type)
+		switch (member.type.primitive_type)
 		{
-			case Platform::UniformType::Vec2:
+			case PrimitiveType::VEC2:
 				return serialize_bytes<f32>(src, 2);
-			case Platform::UniformType::Vec3:
+			case PrimitiveType::VEC3:
 				return serialize_bytes<f32>(src, 3);
-			case Platform::UniformType::Vec4:
+			case PrimitiveType::VEC4:
+			case PrimitiveType::COLOR:
 				return serialize_bytes<f32>(src, 4);
-			case Platform::UniformType::Mat3:
+			case PrimitiveType::MAT3:
 				return serialize_bytes<f32>(src, 3 * 3);
-			case Platform::UniformType::Mat4:
+			case PrimitiveType::MAT4:
 				return serialize_bytes<f32>(src, 4 * 4);
-			case Platform::UniformType::f32:
+			case PrimitiveType::F32:
 				return serialize_bytes<f32>(src, 1);
-			case Platform::UniformType::f64:
+			case PrimitiveType::F64:
 				return serialize_bytes<f64>(src, 1);
-			case Platform::UniformType::s8:
+			case PrimitiveType::S8:
 				return serialize_bytes<s8>(src, 1);
-			case Platform::UniformType::s16:
+			case PrimitiveType::S16:
 				return serialize_bytes<s16>(src, 1);
-			case Platform::UniformType::s32:
+			case PrimitiveType::S32:
 				return serialize_bytes<s32>(src, 1);
-			case Platform::UniformType::s64:
+			case PrimitiveType::S64:
 				return serialize_bytes<s64>(src, 1);
-			case Platform::UniformType::u8:
+			case PrimitiveType::U8:
 				return serialize_bytes<u8>(src, 1);
-			case Platform::UniformType::u16:
+			case PrimitiveType::U16:
 				return serialize_bytes<u16>(src, 1);
-			case Platform::UniformType::u32:
+			case PrimitiveType::U32:
 				return serialize_bytes<u32>(src, 1);
-			case Platform::UniformType::u64:
+			case PrimitiveType::U64:
 				return serialize_bytes<u64>(src, 1);
+			default:
+				THROW("Invalid uniform member type!");
 		}
 		return {};
 	}
@@ -297,10 +300,10 @@ namespace Vultr
 	}
 
 	template <typename T>
-	static void draw_resource_target(Project *project, const ComponentMember &member)
+	static void draw_resource_target(Project *project, const EditorField &editor_field)
 	{
-		ImGui::PushID(member.name);
-		auto *resource = static_cast<Resource<T> *>(member.addr);
+		ImGui::PushID(editor_field.field.name);
+		auto *resource = editor_field.get_addr<Resource<T>>();
 		ImGui::Selectable("##", false, 0, ImVec2(20, 20));
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -314,7 +317,7 @@ namespace Vultr
 					auto payload_type = get_resource_type(file);
 
 					bool matches      = false;
-					switch (member.type)
+					switch (editor_field.field.type.primitive_type)
 					{
 						case PrimitiveType::TEXTURE_RESOURCE:
 							matches = payload_type == ResourceType::TEXTURE;
@@ -349,11 +352,11 @@ namespace Vultr
 		if (!resource->empty())
 		{
 			auto path = resource_allocator<T>()->get_resource_path(ResourceId(*resource).id);
-			ImGui::Text("%s: %s", member.name.c_str(), path.c_str());
+			ImGui::Text("%s: %s", editor_field.field.name.c_str(), path.c_str());
 		}
 		else
 		{
-			ImGui::Text("%s", member.name.c_str());
+			ImGui::Text("%s", editor_field.field.name.c_str());
 		}
 
 		ImGui::SameLine();
@@ -371,74 +374,79 @@ namespace Vultr
 		if (state->selected_entity)
 		{
 			ImGui::Text("%s", get_label(state->selected_entity.value())->c_str());
-			auto info = world()->component_manager.get_component_information(state->selected_entity.value());
-			for (auto [component_name, members] : info)
+			auto info = world()->component_manager.get_component_editor_rtti(state->selected_entity.value());
+			for (auto [type, fields] : info)
 			{
-				if (ImGui::CollapsingHeader(component_name))
+				if (ImGui::CollapsingHeader(type.name.c_str()))
 				{
-					ImGui::PushID(component_name);
-					for (auto member : members)
+					ImGui::PushID(type.name.c_str());
+					for (auto editor_field : fields)
 					{
-						switch (member.type)
+						auto &field = editor_field.field;
+						auto *addr  = editor_field.addr;
+						switch (field.type.primitive_type)
 						{
 							case PrimitiveType::U8:
-								ImGui::DragScalar(member.name, ImGuiDataType_U8, member.addr, 1);
+								ImGui::DragScalar(field.name, ImGuiDataType_U8, addr, 1);
 								break;
 							case PrimitiveType::U16:
-								ImGui::DragScalar(member.name, ImGuiDataType_U16, member.addr, 1);
+								ImGui::DragScalar(field.name, ImGuiDataType_U16, addr, 1);
 								break;
 							case PrimitiveType::U32:
-								ImGui::DragScalar(member.name, ImGuiDataType_U32, member.addr, 1);
+								ImGui::DragScalar(field.name, ImGuiDataType_U32, addr, 1);
 								break;
 							case PrimitiveType::U64:
-								ImGui::DragScalar(member.name, ImGuiDataType_U64, member.addr, 1);
+								ImGui::DragScalar(field.name, ImGuiDataType_U64, addr, 1);
 								break;
 							case PrimitiveType::S8:
-								ImGui::DragScalar(member.name, ImGuiDataType_S8, member.addr, 1);
+								ImGui::DragScalar(field.name, ImGuiDataType_S8, addr, 1);
 								break;
 							case PrimitiveType::S16:
-								ImGui::DragScalar(member.name, ImGuiDataType_S16, member.addr, 1);
+								ImGui::DragScalar(field.name, ImGuiDataType_S16, addr, 1);
 								break;
 							case PrimitiveType::S32:
-								ImGui::DragScalar(member.name, ImGuiDataType_S32, member.addr, 1);
+								ImGui::DragScalar(field.name, ImGuiDataType_S32, addr, 1);
 								break;
 							case PrimitiveType::S64:
-								ImGui::DragScalar(member.name, ImGuiDataType_S64, member.addr, 1);
+								ImGui::DragScalar(field.name, ImGuiDataType_S64, addr, 1);
 								break;
 							case PrimitiveType::F32:
-								ImGui::DragScalar(member.name, ImGuiDataType_Float, member.addr, 0.02f);
+								ImGui::DragScalar(field.name, ImGuiDataType_Float, addr, 0.02f);
 								break;
 							case PrimitiveType::F64:
-								ImGui::DragScalar(member.name, ImGuiDataType_Double, member.addr, 0.02f);
+								ImGui::DragScalar(field.name, ImGuiDataType_Double, addr, 0.02f);
+								break;
+							case PrimitiveType::MAT3:
+							case PrimitiveType::MAT4:
 								break;
 							case PrimitiveType::CHAR:
-								ImGui::Text("%s Char %c", member.name.c_str(), *static_cast<char *>(member.addr));
+								ImGui::Text("%s Char %c", field.name.c_str(), *static_cast<char *>(addr));
 								break;
 							case PrimitiveType::BYTE:
-								ImGui::Text("%s Byte %u", member.name.c_str(), *static_cast<byte *>(member.addr));
+								ImGui::Text("%s Byte %u", field.name.c_str(), *static_cast<byte *>(addr));
 								break;
 							case PrimitiveType::BOOL:
-								ImGui::Checkbox(member.name, static_cast<bool *>(member.addr));
+								ImGui::Checkbox(field.name, static_cast<bool *>(addr));
 								break;
 							case PrimitiveType::STRING_VIEW:
-								ImGui::Text("%s String %s", member.name.c_str(), static_cast<StringView *>(member.addr)->c_str());
+								ImGui::Text("%s String %s", field.name.c_str(), static_cast<StringView *>(addr)->c_str());
 								break;
-							case PrimitiveType::VOID_PTR:
-								ImGui::Text("%s void * %p", member.name.c_str(), member.addr);
+							case PrimitiveType::PTR:
+								ImGui::Text("%s void * %p", field.name.c_str(), addr);
 								break;
 							case PrimitiveType::VEC2:
 							{
-								Vec2 *vec2 = static_cast<Vec2 *>(member.addr);
-								ImGui::Text("%s", member.name.c_str());
+								Vec2 *vec2 = static_cast<Vec2 *>(addr);
+								ImGui::Text("%s", field.name.c_str());
 								ImGui::SameLine();
 
-								ImGui::PushID((member.name + ".x").c_str());
+								ImGui::PushID((field.name + ".x").c_str());
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &vec2->x, 0.02f);
 								ImGui::SameLine();
 								ImGui::PopID();
 
-								ImGui::PushID((member.name + ".y").c_str());
+								ImGui::PushID((field.name + ".y").c_str());
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &vec2->y, 0.02f);
 								ImGui::SameLine();
@@ -447,22 +455,22 @@ namespace Vultr
 							}
 							case PrimitiveType::VEC3:
 							{
-								Vec3 *vec3 = static_cast<Vec3 *>(member.addr);
-								ImGui::PushID((member.name + ".x").c_str());
-								ImGui::Text("%s", member.name.c_str());
+								Vec3 *vec3 = static_cast<Vec3 *>(addr);
+								ImGui::PushID((field.name + ".x").c_str());
+								ImGui::Text("%s", field.name.c_str());
 								ImGui::SameLine();
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &vec3->x, 0.02f);
 								ImGui::SameLine();
 								ImGui::PopID();
 
-								ImGui::PushID((member.name + ".y").c_str());
+								ImGui::PushID((field.name + ".y").c_str());
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &vec3->y, 0.02f);
 								ImGui::SameLine();
 								ImGui::PopID();
 
-								ImGui::PushID((member.name + ".z").c_str());
+								ImGui::PushID((field.name + ".z").c_str());
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &vec3->z, 0.02f);
 								ImGui::PopID();
@@ -470,28 +478,28 @@ namespace Vultr
 							}
 							case PrimitiveType::VEC4:
 							{
-								Vec4 *vec4 = static_cast<Vec4 *>(member.addr);
-								ImGui::PushID((member.name + ".x").c_str());
-								ImGui::Text("%s", member.name.c_str());
+								Vec4 *vec4 = static_cast<Vec4 *>(addr);
+								ImGui::PushID((field.name + ".x").c_str());
+								ImGui::Text("%s", field.name.c_str());
 								ImGui::SameLine();
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &vec4->x, 0.02f);
 								ImGui::SameLine();
 								ImGui::PopID();
 
-								ImGui::PushID((member.name + ".y").c_str());
+								ImGui::PushID((field.name + ".y").c_str());
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &vec4->y, 0.02f);
 								ImGui::SameLine();
 								ImGui::PopID();
 
-								ImGui::PushID((member.name + ".z").c_str());
+								ImGui::PushID((field.name + ".z").c_str());
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &vec4->z, 0.02f);
 								ImGui::SameLine();
 								ImGui::PopID();
 
-								ImGui::PushID((member.name + ".w").c_str());
+								ImGui::PushID((field.name + ".w").c_str());
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &vec4->w, 0.02f);
 								ImGui::PopID();
@@ -499,34 +507,34 @@ namespace Vultr
 							}
 							case PrimitiveType::COLOR:
 							{
-								f32 *val = glm::value_ptr(*static_cast<Vec4 *>(member.addr));
-								ImGui::ColorEdit4(member.name, val);
+								f32 *val = glm::value_ptr(*static_cast<Vec4 *>(addr));
+								ImGui::ColorEdit4(field.name, val);
 								break;
 							}
 							case PrimitiveType::QUAT:
 							{
-								Quat *quat = static_cast<Quat *>(member.addr);
-								ImGui::PushID((member.name + ".x").c_str());
-								ImGui::Text("%s", member.name.c_str());
+								Quat *quat = static_cast<Quat *>(addr);
+								ImGui::PushID((field.name + ".x").c_str());
+								ImGui::Text("%s", field.name.c_str());
 								ImGui::SameLine();
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &quat->x, 0.02f);
 								ImGui::SameLine();
 								ImGui::PopID();
 
-								ImGui::PushID((member.name + ".y").c_str());
+								ImGui::PushID((field.name + ".y").c_str());
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &quat->y, 0.02f);
 								ImGui::SameLine();
 								ImGui::PopID();
 
-								ImGui::PushID((member.name + ".z").c_str());
+								ImGui::PushID((field.name + ".z").c_str());
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &quat->z, 0.02f);
 								ImGui::SameLine();
 								ImGui::PopID();
 
-								ImGui::PushID((member.name + ".w").c_str());
+								ImGui::PushID((field.name + ".w").c_str());
 								ImGui::SetNextItemWidth(150);
 								ImGui::DragFloat("", &quat->w, 0.02f);
 								ImGui::PopID();
@@ -534,24 +542,21 @@ namespace Vultr
 							}
 							case PrimitiveType::PATH:
 								break;
-							case PrimitiveType::OPTIONAL_PATH:
-								ImGui::Text("OPTIONAL_PATH");
-								break;
-							case PrimitiveType::OTHER:
-								break;
 							case PrimitiveType::STRING:
 								break;
 							case PrimitiveType::TEXTURE_RESOURCE:
-								draw_resource_target<Platform::Texture *>(project, member);
+								draw_resource_target<Platform::Texture *>(project, editor_field);
 								break;
 							case PrimitiveType::MESH_RESOURCE:
-								draw_resource_target<Platform::Mesh *>(project, member);
+								draw_resource_target<Platform::Mesh *>(project, editor_field);
 								break;
 							case PrimitiveType::SHADER_RESOURCE:
-								draw_resource_target<Platform::Shader *>(project, member);
+								draw_resource_target<Platform::Shader *>(project, editor_field);
 								break;
 							case PrimitiveType::MATERIAL_RESOURCE:
-								draw_resource_target<Platform::Material *>(project, member);
+								draw_resource_target<Platform::Material *>(project, editor_field);
+								break;
+							case PrimitiveType::NONE:
 								break;
 						}
 					}
