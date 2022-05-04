@@ -49,6 +49,9 @@ namespace Vultr
 		g_game_memory->world = linear_alloc(g_game_memory->persistent_storage, sizeof(World));
 		ASSERT(g_game_memory->world != nullptr, "Failed to allocate ECS world!");
 		new (g_game_memory->world) World();
+		//		g_game_memory->system_manager = linear_alloc(g_game_memory->persistent_storage, sizeof(SystemManager));
+		//		ASSERT(g_game_memory->system_manager != nullptr, "Failed to allocate system manager!");
+		//		new (g_game_memory->system_manager) SystemManager();
 		g_game_memory->engine = linear_alloc(g_game_memory->persistent_storage, sizeof(Engine));
 		ASSERT(g_game_memory->engine != nullptr, "Failed to allocate engine!");
 		new (g_game_memory->engine) Engine();

@@ -15,10 +15,8 @@ namespace Vultr
 	};
 
 	template <>
-	consteval Type init_type<Color>()
-	{
-		return {PrimitiveType::COLOR, "Color"};
-	}
+	inline constexpr Type get_type<Color> = {PrimitiveType::COLOR, []() { return sizeof(Vec4); }, generic_type_serializer<Vec4>, generic_type_deserializer<Vec4>, "Color"};
+
 	namespace Platform
 	{
 #define ENTRY_NAME "main"
@@ -129,11 +127,11 @@ namespace Vultr
 					switch (member.traits.numeric.vector.component_count)
 					{
 						case 2:
-							return init_type<Vec2>();
+							return get_type<Vec2>;
 						case 3:
-							return init_type<Vec3>();
+							return get_type<Vec3>;
 						case 4:
-							return init_type<Color>();
+							return get_type<Color>;
 						default:
 							return Error("Unsupported vector size!");
 					}
@@ -146,11 +144,11 @@ namespace Vultr
 					{
 						case 3:
 						{
-							return init_type<Mat3>();
+							return get_type<Mat3>;
 						}
 						case 4:
 						{
-							return init_type<Mat4>();
+							return get_type<Mat4>;
 						}
 						default:
 							return Error("Unsupported matrix size!");
@@ -161,9 +159,9 @@ namespace Vultr
 					switch (member.traits.numeric.scalar.width)
 					{
 						case 32:
-							return init_type<f32>();
+							return get_type<f32>;
 						case 64:
-							return init_type<f64>();
+							return get_type<f64>;
 						default:
 							return Error("Unsupported float size!");
 					}
@@ -175,13 +173,13 @@ namespace Vultr
 						switch (member.traits.numeric.scalar.width)
 						{
 							case 8:
-								return init_type<s8>();
+								return get_type<s8>;
 							case 16:
-								return init_type<s16>();
+								return get_type<s16>;
 							case 32:
-								return init_type<s32>();
+								return get_type<s32>;
 							case 64:
-								return init_type<s64>();
+								return get_type<s64>;
 							default:
 								return Error("Unsupported int size!");
 						}
@@ -191,13 +189,13 @@ namespace Vultr
 						switch (member.traits.numeric.scalar.width)
 						{
 							case 8:
-								return init_type<u8>();
+								return get_type<u8>;
 							case 16:
-								return init_type<u16>();
+								return get_type<u16>;
 							case 32:
-								return init_type<u32>();
+								return get_type<u32>;
 							case 64:
-								return init_type<u64>();
+								return get_type<u64>;
 							default:
 								return Error("Unsupported unsigned int size!");
 						}

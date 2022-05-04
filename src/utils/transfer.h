@@ -77,5 +77,6 @@ namespace Vultr
 			}
 			return count;
 		}
+
 	} // namespace Utils
 } // namespace Vultr

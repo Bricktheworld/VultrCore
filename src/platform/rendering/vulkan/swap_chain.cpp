@@ -420,6 +420,7 @@ namespace Vultr
 			{
 				THROW("Failed to acquire swap chain images!");
 			}
+			ASSERT(image_index != 256, "Image index is 256??");
 
 			if (sc->images_in_flight[image_index] != VK_NULL_HANDLE)
 			{
@@ -502,7 +503,7 @@ namespace Vultr
 
 		void wait_resource_not_in_use(SwapChain *sc, void *resource)
 		{
-			sc->cmd_buffer_resource_semaphore.acquire();
+			Platform::Lock lock(sc->cmd_buffer_resource_mutex);
 			VkFence fences[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
 			u32 count = 0;
 			for (auto &fence : sc->in_flight_fences)
@@ -525,7 +526,6 @@ namespace Vultr
 			{
 				fence.mutex.unlock();
 			}
-			sc->cmd_buffer_resource_semaphore.release();
 		}
 
 	} // namespace Vulkan

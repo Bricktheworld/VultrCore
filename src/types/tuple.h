@@ -41,8 +41,22 @@ namespace Vultr
 			return m_value;
 		}
 
+		template <typename U>
+		const U &get() const
+		{
+			static_assert(is_same<U, T>, "Invalid tuple access");
+			return m_value;
+		}
+
 		template <typename U, size_t i>
 		U &get_with_index()
+		{
+			static_assert(is_same<U, T> && i == 0, "Invalid tuple access");
+			return m_value;
+		}
+
+		template <typename U, size_t i>
+		const U &get_with_index() const
 		{
 			static_assert(is_same<U, T> && i == 0, "Invalid tuple access");
 			return m_value;
@@ -69,8 +83,34 @@ namespace Vultr
 			}
 		}
 
+		template <typename U>
+		const U &get() const
+		{
+			if constexpr (is_same<T, U>)
+			{
+				return m_value;
+			}
+			else
+			{
+				return TupleImpl<TRest...>::template get<U>();
+			}
+		}
+
 		template <typename U, size_t i>
 		U &get_with_index()
+		{
+			if constexpr (is_same<T, U> && i == 0)
+			{
+				return m_value;
+			}
+			else
+			{
+				return TupleImpl<TRest...>::template get_with_index<U, i - 1>();
+			}
+		}
+
+		template <typename U, size_t i>
+		const U &get_with_index() const
 		{
 			if constexpr (is_same<T, U> && i == 0)
 			{
@@ -97,8 +137,20 @@ namespace Vultr
 			return TupleImpl<Ts...>::template get<T>();
 		}
 
+		template <typename T>
+		const auto &get() const
+		{
+			return TupleImpl<Ts...>::template get<T>();
+		}
+
 		template <size_t i>
 		auto &get()
+		{
+			return TupleImpl<Ts...>::template get_with_index<typename Types::template Type<i>, i>();
+		}
+
+		template <size_t i>
+		const auto &get() const
 		{
 			return TupleImpl<Ts...>::template get_with_index<typename Types::template Type<i>, i>();
 		}

@@ -68,8 +68,8 @@ namespace Vultr
 		void virtual_free(PlatformMemoryBlock *block);
 
 		typedef std::thread Thread;
-		typedef std::mutex Mutex;
-		typedef std::condition_variable ConditionVar;
+		typedef std::recursive_mutex Mutex;
+		typedef std::condition_variable_any ConditionVar;
 		typedef std::unique_lock<Mutex> Lock;
 
 		template <size_t max>

@@ -17,6 +17,7 @@ namespace Vultr
 		SlabAllocator *slab_allocator        = nullptr;
 		PoolAllocator *pool_allocator        = nullptr;
 		void *world                          = nullptr;
+		void *system_manager                 = nullptr;
 		void *engine                         = nullptr;
 		void *resource_allocator             = nullptr;
 		void *memory                         = nullptr;

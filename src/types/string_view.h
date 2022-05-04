@@ -114,11 +114,4 @@ namespace Vultr
 		static constexpr u32 equals(const StringView &a, const StringView &b) { return a == b; }
 		static constexpr u32 equals(const StringView &a, str b) { return a == b; }
 	};
-
-	template <typename T>
-	struct ReflTraits : public Traits<T>
-	{
-		static consteval StringView type_name();
-		static consteval u32 type_id() { return string_hash(type_name(), type_name().length()); }
-	};
 } // namespace Vultr

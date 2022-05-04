@@ -1,10 +1,14 @@
 #pragma once
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <cstddef>
 #include <type_traits>
 #include <atomic>
 #include <string.h>
+#include <execinfo.h>
+#include <sys/wait.h>
+#include <sys/prctl.h>
 
 typedef unsigned int uint;
 typedef uint64_t u64;
@@ -68,6 +72,7 @@ using std::move;
 #define DEBUG_BREAK() DebugBreak()
 #elif __linux__
 #include <signal.h>
+#include <execinfo.h>
 #define DEBUG_BREAK() raise(SIGTRAP)
 #else
 #define DEBUG_BREAK()
@@ -79,6 +84,28 @@ using std::move;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#if 0
+#define PRINT_STACKTRACE()                                                                                                                                                                                            \
+	{                                                                                                                                                                                                                 \
+		char pid_buf[30];                                                                                                                                                                                             \
+		sprintf(pid_buf, "%d", getpid());                                                                                                                                                                             \
+		char name_buf[512];                                                                                                                                                                                           \
+		name_buf[readlink("/proc/self/exe", name_buf, 511)] = 0;                                                                                                                                                      \
+		prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0);                                                                                                                                                           \
+		int child_pid = fork();                                                                                                                                                                                       \
+		if (!child_pid)                                                                                                                                                                                               \
+		{                                                                                                                                                                                                             \
+			dup2(2, 1);                                                                                                                                                                                               \
+			execl("/usr/bin/gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, nullptr);                                                                                                  \
+			abort();                                                                                                                                                                                                  \
+		}                                                                                                                                                                                                             \
+		else                                                                                                                                                                                                          \
+		{                                                                                                                                                                                                             \
+			waitpid(child_pid, nullptr, 0);                                                                                                                                                                           \
+		}                                                                                                                                                                                                             \
+	}
+#endif
+
 #ifdef DEBUG
 #define ASSERT(condition, message, ...)                                                                                                                                                                               \
 	if (!(condition))                                                                                                                                                                                                 \
@@ -87,7 +114,7 @@ using std::move;
 		fprintf(stderr, message __VA_OPT__(, ) __VA_ARGS__);                                                                                                                                                          \
 		fprintf(stderr, "' failed.\n");                                                                                                                                                                               \
 		fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
-		DEBUG_BREAK();                                                                                                                                                                                                \
+		assert(false);                                                                                                                                                                                                \
 	}
 // clang-format on
 #else
@@ -105,7 +132,7 @@ using std::move;
 		fprintf(stderr, message __VA_OPT__(, ) __VA_ARGS__);                                                                                                                                                          \
 		fprintf(stderr, "' failed.\n");                                                                                                                                                                               \
 		fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
-		abort();                                                                                                                                                                                                      \
+		assert(false);                                                                                                                                                                                                \
 	}
 #else
 #define PRODUCTION_ASSERT(condition, message)
@@ -121,7 +148,7 @@ using std::move;
 		fprintf(stderr, message __VA_OPT__(, ) __VA_ARGS__);                                                                                                                                                          \
 		fprintf(stderr, "' failed.\n");                                                                                                                                                                               \
 		fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
-		abort();                                                                                                                                                                                                      \
+		assert(false);                                                                                                                                                                                                \
 	}
 #else
 #define PRODUCTION_ASSERT(condition, message)

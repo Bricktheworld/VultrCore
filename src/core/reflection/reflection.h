@@ -1,10 +1,431 @@
 #pragma once
+#include <types/queue.h>
+#include <types/string_hash.h>
+#include <types/bitfield.h>
+#include <types/array.h>
 #include <types/string_view.h>
 #include <types/string.h>
+#include <filesystem/filesystem.h>
 #include <glm/glm.hpp>
+#include <yaml-cpp/yaml.h>
+#include <core/resource_allocator/resource_allocator.h>
+
+namespace YAML
+{
+	template <>
+	struct convert<Vultr::String>
+	{
+		static Node encode(const Vultr::String &rhs)
+		{
+			Node node;
+			node = rhs.c_str();
+			return node;
+		}
+
+		static bool decode(const Node &node, Vultr::String &rhs)
+		{
+			if (!node)
+				return false;
+			rhs = Vultr::String(node.Scalar().c_str(), node.Scalar().size());
+			return true;
+		}
+	};
+
+	template <>
+	struct convert<Vultr::Path>
+	{
+		static Node encode(const Vultr::Path &rhs)
+		{
+			Node node;
+			node = rhs.c_str();
+			return node;
+		}
+
+		static bool decode(const Node &node, Vultr::Path &rhs)
+		{
+			if (!node)
+				return false;
+			rhs = Vultr::Path(node.Scalar().c_str());
+			return true;
+		}
+	};
+
+	template <typename T>
+	struct convert<Vultr::Resource<T>>
+	{
+		static Node encode(const Vultr::Resource<T> &rhs)
+		{
+			auto *allocator = resource_allocator<T>();
+			Node node;
+			node = allocator->get_resource_path(ResourceId(rhs).id).c_str();
+			return node;
+		}
+
+		static bool decode(const Node &node, Vultr::Resource<T> &rhs)
+		{
+			if (node.IsNull())
+			{
+				rhs = {};
+			}
+			else
+			{
+				rhs = Vultr::Resource<T>(node.as<Vultr::Path>());
+			}
+			return true;
+		}
+	};
+
+	template <>
+	struct convert<Vec2>
+	{
+		static Node encode(const Vec2 &rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			return node;
+		}
+
+		static bool decode(const Node &node, Vec2 &rhs)
+		{
+			if (!node.IsSequence() || node.size() != 2)
+				return false;
+
+			rhs.x = node[0].as<f32>();
+			rhs.y = node[1].as<f32>();
+			return true;
+		}
+	};
+
+	template <>
+	struct convert<Vec3>
+	{
+		static Node encode(const Vec3 &rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			return node;
+		}
+
+		static bool decode(const Node &node, Vec3 &rhs)
+		{
+			if (!node.IsSequence() || node.size() != 3)
+				return false;
+
+			rhs.x = node[0].as<f32>();
+			rhs.y = node[1].as<f32>();
+			rhs.z = node[2].as<f32>();
+			return true;
+		}
+	};
+
+	template <>
+	struct convert<Vec4>
+	{
+		static Node encode(const Vec4 &rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			node.push_back(rhs.w);
+			return node;
+		}
+
+		static bool decode(const Node &node, Vec4 &rhs)
+		{
+			if (!node.IsSequence() || node.size() != 4)
+				return false;
+
+			rhs.x = node[0].as<f32>();
+			rhs.y = node[1].as<f32>();
+			rhs.z = node[2].as<f32>();
+			rhs.w = node[3].as<f32>();
+			return true;
+		}
+	};
+
+	template <>
+	struct convert<Quat>
+	{
+		static Node encode(const Quat &rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			node.push_back(rhs.w);
+			return node;
+		}
+
+		static bool decode(const Node &node, Quat &rhs)
+		{
+			if (!node.IsSequence() || node.size() != 4)
+				return false;
+
+			rhs.x = node[0].as<f32>();
+			rhs.y = node[1].as<f32>();
+			rhs.z = node[2].as<f32>();
+			rhs.w = node[3].as<f32>();
+			return true;
+		}
+	};
+
+	template <typename T, size_t len>
+	struct convert<Vultr::Array<T, len>>
+	{
+		static Node encode(const Vultr::Array<T, len> &rhs)
+		{
+			Node node;
+			for (auto &i : rhs)
+				node.push_back(i);
+			return node;
+		}
+
+		static bool decode(const Node &node, Vultr::Array<T, len> &rhs)
+		{
+			if (!node.IsSequence() || node.size() != len)
+				return false;
+
+			for (u32 i = 0; i < len; i++)
+				rhs[i] = node[i].as<T>();
+			return true;
+		}
+	};
+
+	template <typename T>
+	struct convert<Vultr::Vector<T>>
+	{
+		static Node encode(const Vultr::Vector<T> &rhs)
+		{
+			Node node;
+			for (auto &i : rhs)
+				node.push_back(i);
+			return node;
+		}
+
+		static bool decode(const Node &node, Vultr::Vector<T> &rhs)
+		{
+			if (!node.IsSequence())
+				return false;
+
+			rhs.resize(node.size());
+			for (u32 i = 0; i < rhs.size(); i++)
+				rhs[i] = node[i].as<T>();
+
+			return true;
+		}
+	};
+
+	template <typename T>
+	struct convert<Vultr::HashTable<T>>
+	{
+		static Node encode(const Vultr::HashTable<T> &rhs)
+		{
+			Node node;
+			for (auto &i : rhs)
+				node.push_back(i);
+			return node;
+		}
+
+		static bool decode(const Node &node, Vultr::HashTable<T> &rhs)
+		{
+			if (!node.IsSequence())
+				return false;
+
+			for (auto &child : node)
+			{
+				if (rhs.contains(child.as<T>()))
+					return false;
+				rhs.set(child.as<T>());
+			}
+
+			return true;
+		}
+	};
+
+	template <size_t len>
+	struct convert<Vultr::Bitfield<len>>
+	{
+		static Node encode(const Vultr::Bitfield<len> &rhs)
+		{
+			Node node;
+
+			char bits[len + 1];
+
+			for (size_t i = 0; i < len; i++)
+				bits[i] = rhs.at(i);
+
+			node = bits;
+
+			return node;
+		}
+
+		static bool decode(const Node &node, Vultr::Bitfield<len> &rhs)
+		{
+			if (!node)
+				return false;
+
+			const char *bits = node.Scalar().c_str();
+			u32 bits_len     = node.Scalar().size();
+
+			if (bits_len != len)
+				return false;
+
+			for (u32 i = 0; i < len; i++)
+			{
+				if (bits[i] != '0' && bits[i] != '1')
+					return false;
+
+				rhs.set(i, bits[i] == '1');
+			}
+
+			return true;
+		}
+	};
+
+	template <>
+	struct convert<Vultr::Buffer>
+	{
+		static Node encode(const Vultr::Buffer &rhs)
+		{
+			Node node;
+
+			node = YAML::Binary(rhs.storage, rhs.size());
+
+			return node;
+		}
+
+		static bool decode(const Node &node, Vultr::Buffer &rhs)
+		{
+			if (!node)
+				return false;
+
+			rhs.resize(node.size());
+			rhs.fill(node.as<Binary>().data(), node.as<Binary>().size());
+
+			return true;
+		}
+	};
+
+} // namespace YAML
 
 namespace Vultr
 {
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const String &s)
+	{
+		out << s.c_str();
+		return out;
+	}
+
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const StringHash &s)
+	{
+		out << s.value();
+		return out;
+	}
+
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Path &p)
+	{
+		out << p.c_str();
+		return out;
+	}
+
+	template <typename T>
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Resource<T> &r)
+	{
+		if (r.empty())
+			return out << YAML::Null;
+		auto *allocator = resource_allocator<T>();
+		out << allocator->get_resource_path(ResourceId(r).id);
+		return out;
+	}
+
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Vec2 &v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
+		return out;
+	}
+
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Vec3 &v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
+		return out;
+	}
+
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Vec4 &v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
+		return out;
+	}
+
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Quat &q)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq << q.x << q.y << q.z << q.w << YAML::EndSeq;
+		return out;
+	}
+
+	template <typename T, size_t len>
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Array<T, len> &a)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq;
+
+		for (auto &i : a)
+			out << i;
+
+		out << YAML::EndSeq;
+		return out;
+	}
+
+	template <typename T>
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Vector<T> &v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq;
+
+		for (auto &i : v)
+			out << i;
+
+		out << YAML::EndSeq;
+		return out;
+	}
+
+	template <typename T>
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const HashTable<T> &v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq;
+
+		for (auto &i : v)
+			out << i;
+
+		out << YAML::EndSeq;
+		return out;
+	}
+
+	template <size_t len>
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Bitfield<len> &b)
+	{
+		char bits[len + 1];
+		for (size_t i = 0; i < len; i++)
+			bits[i] = b.at(i);
+
+		out << bits;
+		return out;
+	}
+
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Buffer &b)
+	{
+		out << YAML::Binary(b.storage, b.size());
+		return out;
+	}
+
 	enum struct PrimitiveType
 	{
 		U8,
@@ -20,8 +441,16 @@ namespace Vultr
 		CHAR,
 		BYTE,
 		BOOL,
-		STRING_VIEW,
+		ARRAY,
+		BITFIELD,
+		BUFFER,
+		VECTOR,
+		HASHMAP,
+		HASHTABLE,
+		QUEUE,
 		STRING,
+		STRING_VIEW,
+		STRING_HASH,
 		PTR,
 		VEC2,
 		VEC3,
@@ -43,10 +472,13 @@ namespace Vultr
 	struct Type
 	{
 		typedef void (*GetFieldsApi)(Field *out);
+		typedef size_t (*GetSizeApi)();
+		typedef void (*DeserializeApi)(const YAML::Node &node, const Field *field, void *data);
+		typedef YAML::Emitter &(*SerializeApi)(YAML::Emitter &, const Tuple<Field, void *> &);
 
 		constexpr Type() = default;
-		constexpr Type(PrimitiveType primitive_type, StringView name, GetFieldsApi get_fields = nullptr, u32 field_count = 0)
-			: primitive_type(primitive_type), name(name), m_get_fields(get_fields), field_count(field_count), id(name.hash())
+		constexpr Type(PrimitiveType primitive_type, GetSizeApi get_size, SerializeApi serialize, DeserializeApi deserialize, StringView name, GetFieldsApi get_fields = nullptr, u32 field_count = 0)
+			: primitive_type(primitive_type), size(get_size), name(name), m_get_fields(get_fields), m_deserialize(deserialize), serialize(serialize), field_count(field_count), id(name.hash())
 		{
 		}
 
@@ -54,163 +486,28 @@ namespace Vultr
 
 		PrimitiveType primitive_type = PrimitiveType::NONE;
 		StringView name{};
-		u32 id                    = 0;
-		GetFieldsApi m_get_fields = nullptr;
-		u32 field_count           = 0;
+		u32 id                       = 0;
+		GetFieldsApi m_get_fields    = nullptr;
+		SerializeApi serialize       = nullptr;
+		GetSizeApi size              = nullptr;
+		DeserializeApi m_deserialize = nullptr;
+		u32 field_count              = 0;
 	};
 
-	consteval Type init_type(StringView name, u32 field_count, Type::GetFieldsApi get_fields) { return {PrimitiveType::NONE, name, get_fields, field_count}; }
+	consteval Type init_type(StringView name, Type::GetSizeApi get_size, u32 field_count, Type::GetFieldsApi get_fields) { return {PrimitiveType::NONE, get_size, nullptr, nullptr, name, get_fields, field_count}; }
 
 	template <typename T>
-	consteval Type init_type()
-	{
-		if constexpr (is_pointer<T>)
-		{
-			return {PrimitiveType::PTR, "pointer"};
-		}
-
-		static_assert(
-			requires() { T::__REFL_TYPE; }, "Cannot get reflection type because __REFL_TYPE does not exist!");
-
-		return {
-			.primitive_type = T::__REFL_TYPE.primitive_type,
-			.name           = T::__REFL_TYPE.name,
-			.get_fields     = T::__REFL_TYPE.get_fields,
-			.field_count    = T::__REFL_TYPE.field_count,
-		};
-	}
-
-	template <>
-	consteval Type init_type<u8>()
-	{
-		return {PrimitiveType::U8, "u8"};
-	}
-
-	template <>
-	consteval Type init_type<u16>()
-	{
-		return {PrimitiveType::U16, "u16"};
-	}
-
-	template <>
-	consteval Type init_type<u32>()
-	{
-		return {PrimitiveType::U32, "u32"};
-	}
-
-	template <>
-	consteval Type init_type<u64>()
-	{
-		return {PrimitiveType::U64, "u64"};
-	}
-
-	template <>
-	consteval Type init_type<s8>()
-	{
-		return {PrimitiveType::S8, "s8"};
-	}
-
-	template <>
-	consteval Type init_type<s16>()
-	{
-		return {PrimitiveType::S16, "s16"};
-	}
-
-	template <>
-	consteval Type init_type<s32>()
-	{
-		return {PrimitiveType::S32, "s32"};
-	}
-
-	template <>
-	consteval Type init_type<s64>()
-	{
-		return {PrimitiveType::S64, "s64"};
-	}
-
-	template <>
-	consteval Type init_type<f32>()
-	{
-		return {PrimitiveType::F32, "f32"};
-	}
-
-	template <>
-	consteval Type init_type<f64>()
-	{
-		return {PrimitiveType::F64, "f64"};
-	}
-
-	template <>
-	consteval Type init_type<char>()
-	{
-		return {PrimitiveType::CHAR, "char"};
-	}
-
-	template <>
-	consteval Type init_type<bool>()
-	{
-		return {PrimitiveType::BOOL, "byte"};
-	}
-
-	template <>
-	consteval Type init_type<StringView>()
-	{
-		return {PrimitiveType::STRING_VIEW, "StringView"};
-	}
-
-	template <>
-	consteval Type init_type<String>()
-	{
-		return {PrimitiveType::STRING, "String"};
-	}
-
-	template <>
-	consteval Type init_type<Vec2>()
-	{
-		return {PrimitiveType::VEC2, "Vec2"};
-	}
-
-	template <>
-	consteval Type init_type<Vec3>()
-	{
-		return {PrimitiveType::VEC3, "Vec3"};
-	}
-
-	template <>
-	consteval Type init_type<Vec4>()
-	{
-		return {PrimitiveType::VEC4, "Vec4"};
-	}
-
-	template <>
-	consteval Type init_type<Quat>()
-	{
-		return {PrimitiveType::QUAT, "Quat"};
-	}
-
-	template <>
-	consteval Type init_type<Mat3>()
-	{
-		return {PrimitiveType::MAT3, "Mat3"};
-	}
-
-	template <>
-	consteval Type init_type<Mat4>()
-	{
-		return {PrimitiveType::MAT4, "Mat4"};
-	}
-
-	template <>
-	consteval Type init_type<Path>()
-	{
-		return {PrimitiveType::PATH, "Path"};
-	}
+	inline constexpr Type get_type;
 
 	struct Field
 	{
 		typedef void *(*GetAddrApi)(void *);
+		typedef void (*InitializeDefaultApi)(void *);
 		constexpr Field() {}
-		constexpr Field(StringView name, Type type, GetAddrApi get_addr) : name(name), type(type), m_get_addr(get_addr) {}
+		constexpr Field(StringView name, Type type, GetAddrApi get_addr, InitializeDefaultApi initialize_default)
+			: name(name), type(type), m_get_addr(get_addr), m_initialize_default(initialize_default), id(name.hash())
+		{
+		}
 
 		template <typename T>
 		explicit consteval Field(StringView name, T *t) : name(name)
@@ -224,12 +521,24 @@ namespace Vultr
 			return static_cast<T *>(m_get_addr(data));
 		}
 
+		ErrorOr<void> deserialize(const YAML::Node &node, void *data) const
+		{
+			if (type.m_deserialize == nullptr)
+				return Error("No deserialization function found!");
+			type.m_deserialize(node, this, data);
+			return Success;
+		}
+
+		void initialize_default(void *data) const { m_initialize_default(get_addr<void *>(data)); }
+
 		StringView name = "INVALID_FIELD";
+		u32 id          = 0;
 		Type type{};
-		GetAddrApi m_get_addr = nullptr;
+		GetAddrApi m_get_addr                     = nullptr;
+		InitializeDefaultApi m_initialize_default = nullptr;
 	};
 
-	consteval Field init_field(StringView name, Type type, Field::GetAddrApi get_addr) { return {name, type, get_addr}; }
+	consteval Field init_field(StringView name, Type type, Field::GetAddrApi get_addr, Field::InitializeDefaultApi initialize_default) { return {name, type, get_addr, initialize_default}; }
 
 	inline Vector<Field> Type::get_fields() const
 	{
@@ -238,10 +547,111 @@ namespace Vultr
 		return {fields, field_count};
 	}
 
-	namespace Refl
+	template <typename T>
+	YAML::Emitter &generic_type_serializer(YAML::Emitter &out, const Tuple<Field, void *> &field_data)
 	{
-		template <typename T>
-		requires(requires() { T::__REFL_TYPE; }) constexpr Type get_type() { return T::__REFL_TYPE; }
+		auto &[field, data] = field_data;
+		out << *field.get_addr<T>(data);
+		return out;
+	}
 
-	} // namespace Refl
+	template <typename T>
+	void generic_type_deserializer(const YAML::Node &node, const Field *field, void *data)
+	{
+		*field->get_addr<T>(data) = node.as<T>();
+	}
+
+	template <typename T>
+	requires(is_pointer<T>) inline constexpr Type get_type<T> = {PrimitiveType::PTR, []() { return sizeof(T); }, generic_type_serializer<T>, "pointer"};
+
+	template <typename T>
+	requires(requires() { T::__REFL_TYPE; }) inline constexpr Type get_type<T> = T::__REFL_TYPE;
+
+	template <>
+	inline constexpr Type get_type<u8> = {PrimitiveType::U8, []() { return sizeof(u8); }, generic_type_serializer<u8>, generic_type_deserializer<u8>, "u8"};
+
+	template <>
+	inline constexpr Type get_type<u16> = {PrimitiveType::U16, []() { return sizeof(u16); }, generic_type_serializer<u16>, generic_type_deserializer<u16>, "u16"};
+
+	template <>
+	inline constexpr Type get_type<u32> = {PrimitiveType::U32, []() { return sizeof(u32); }, generic_type_serializer<u32>, generic_type_deserializer<u32>, "u32"};
+
+	template <>
+	inline constexpr Type get_type<u64> = {PrimitiveType::U64, []() { return sizeof(u64); }, generic_type_serializer<u64>, generic_type_deserializer<u64>, "u64"};
+
+	template <>
+	inline constexpr Type get_type<s8> = {PrimitiveType::S8, []() { return sizeof(s8); }, generic_type_serializer<s8>, generic_type_deserializer<s8>, "s8"};
+
+	template <>
+	inline constexpr Type get_type<s16> = {PrimitiveType::S16, []() { return sizeof(s16); }, generic_type_serializer<s16>, generic_type_deserializer<s16>, "s16"};
+
+	template <>
+	inline constexpr Type get_type<s32> = {PrimitiveType::S32, []() { return sizeof(s32); }, generic_type_serializer<s32>, generic_type_deserializer<s32>, "s32"};
+
+	template <>
+	inline constexpr Type get_type<s64> = {PrimitiveType::S64, []() { return sizeof(s64); }, generic_type_serializer<s64>, generic_type_deserializer<s64>, "s64"};
+
+	template <>
+	inline constexpr Type get_type<f32> = {PrimitiveType::F32, []() { return sizeof(f32); }, generic_type_serializer<f32>, generic_type_deserializer<f32>, "f32"};
+
+	template <>
+	inline constexpr Type get_type<f64> = {PrimitiveType::F64, []() { return sizeof(f64); }, generic_type_serializer<f64>, generic_type_deserializer<f64>, "f64"};
+
+	template <>
+	inline constexpr Type get_type<char> = {PrimitiveType::CHAR, []() { return sizeof(char); }, generic_type_serializer<char>, generic_type_deserializer<char>, "char"};
+
+	template <>
+	inline constexpr Type get_type<bool> = {PrimitiveType::BOOL, []() { return sizeof(byte); }, generic_type_serializer<byte>, generic_type_deserializer<byte>, "byte"};
+
+	template <typename T, size_t len>
+	inline constexpr Type get_type<Array<T, len>> = {PrimitiveType::ARRAY, []() { return sizeof(Array<T, len>); }, generic_type_serializer<Array<T, len>>, generic_type_deserializer<Array<T, len>>, "Array"};
+
+	template <size_t len>
+	inline constexpr Type get_type<Bitfield<len>> = {PrimitiveType::BITFIELD, []() { return sizeof(Bitfield<len>); }, generic_type_serializer<Bitfield>, generic_type_deserializer<Bitfield>, "Bitfield"};
+
+	template <>
+	inline constexpr Type get_type<Buffer> = {PrimitiveType::BUFFER, []() { return sizeof(Buffer); }, generic_type_serializer<Buffer>, generic_type_deserializer<Buffer>, "Buffer"};
+
+	template <typename T>
+	inline constexpr Type get_type<Vector<T>> = {PrimitiveType::VECTOR, []() { return sizeof(Vector<T>); }, generic_type_serializer<Vector<T>>, generic_type_deserializer<Vector<T>>, "Vector"};
+
+	template <typename K, typename V>
+	inline constexpr Type get_type<Hashmap<K, V>> = {PrimitiveType::HASHMAP, []() { return sizeof(Hashmap<K, V>); }, generic_type_serializer<Hashmap<K, V>>, generic_type_deserializer<Hashmap<K, V>>, "Hashmap"};
+
+	template <typename T>
+	inline constexpr Type get_type<HashTable<T>> = {PrimitiveType::HASHTABLE, []() { return sizeof(HashTable<T>); }, generic_type_serializer<HashTable<T>>, generic_type_deserializer<HashTable<T>>, "HashTable"};
+
+	template <typename T>
+	inline constexpr Type get_type<Queue<T>> = {PrimitiveType::QUEUE, []() { return sizeof(Queue<T>); }, generic_type_serializer<Queue<T>>, generic_type_deserializer<Queue<T>>, "Queue"};
+
+	template <>
+	inline constexpr Type get_type<StringView> = {PrimitiveType::STRING_VIEW, []() { return sizeof(StringView); }, generic_type_serializer<StringView>, nullptr, "StringView"};
+
+	template <>
+	inline constexpr Type get_type<String> = {PrimitiveType::STRING, []() { return sizeof(String); }, generic_type_serializer<String>, generic_type_deserializer<String>, "String"};
+
+	template <>
+	inline constexpr Type get_type<StringHash> = {PrimitiveType::STRING_HASH, []() { return sizeof(StringHash); }, generic_type_serializer<StringHash>, nullptr, "StringHash"};
+
+	template <>
+	inline constexpr Type get_type<Vec2> = {PrimitiveType::VEC2, []() { return sizeof(Vec2); }, generic_type_serializer<Vec2>, generic_type_deserializer<Vec2>, "Vec2"};
+
+	template <>
+	inline constexpr Type get_type<Vec3> = {PrimitiveType::VEC3, []() { return sizeof(Vec3); }, generic_type_serializer<Vec3>, generic_type_deserializer<Vec3>, "Vec3"};
+
+	template <>
+	inline constexpr Type get_type<Vec4> = {PrimitiveType::VEC4, []() { return sizeof(Vec4); }, generic_type_serializer<Vec4>, generic_type_deserializer<Vec4>, "Vec4"};
+
+	template <>
+	inline constexpr Type get_type<Quat> = {PrimitiveType::QUAT, []() { return sizeof(Quat); }, generic_type_serializer<Quat>, generic_type_deserializer<Quat>, "Quat"};
+
+	template <>
+	inline constexpr Type get_type<Mat3> = {PrimitiveType::MAT3, []() { return sizeof(Mat3); }, generic_type_serializer<Mat3>, nullptr, "Mat3"};
+
+	template <>
+	inline constexpr Type get_type<Mat4> = {PrimitiveType::MAT4, []() { return sizeof(Mat4); }, generic_type_serializer<Mat4>, nullptr, "Mat4"};
+
+	template <>
+	inline constexpr Type get_type<Path> = {PrimitiveType::PATH, []() { return sizeof(Path); }, generic_type_serializer<Path>, generic_type_deserializer<Path>, "Path"};
+
 } // namespace Vultr

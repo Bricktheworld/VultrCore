@@ -99,25 +99,34 @@ namespace Vultr
 	{
 		typedef void (*GetRttiApi)(IComponentArray *, Entity, Vector<Tuple<Type, void *>> *);
 		typedef void (*GetEditorRttiApi)(IComponentArray *, Entity, Vector<EditorType> *);
-		typedef ErrorOr<void> (*TryRemoveEntity)(IComponentArray *arr, Entity entity);
-		TryRemoveEntity m_try_remove_entity;
-		explicit IComponentArray(TryRemoveEntity try_remove_entity, GetRttiApi get_rtti, GetEditorRttiApi get_editor_rtti)
-			: m_try_remove_entity(try_remove_entity), m_get_rtti(get_rtti), m_get_editor_rtti(get_editor_rtti)
+		typedef ErrorOr<void> (*TryRemoveEntityApi)(IComponentArray *arr, Entity entity);
+		typedef void (*DestroyApi)(IComponentArray *arr);
+		explicit IComponentArray(TryRemoveEntityApi try_remove_entity, DestroyApi destroy_api, const Type &rtti_type, GetRttiApi get_rtti, GetEditorRttiApi get_editor_rtti)
+			: m_try_remove_entity(try_remove_entity), m_destroy(destroy_api), rtti_type(rtti_type), m_get_rtti(get_rtti), m_get_editor_rtti(get_editor_rtti)
 		{
 		}
 
+		void destroy() { m_destroy(this); }
 		void get_rtti(Entity entity, Vector<Tuple<Type, void *>> *rtti) { m_get_rtti(this, entity, rtti); }
 		void get_editor_rtti(Entity entity, Vector<EditorType> *rtti) { m_get_editor_rtti(this, entity, rtti); }
 
 		ErrorOr<void> try_remove_entity(Entity entity) { return m_try_remove_entity(this, entity); }
-		GetRttiApi m_get_rtti              = nullptr;
-		GetEditorRttiApi m_get_editor_rtti = nullptr;
+		TryRemoveEntityApi m_try_remove_entity = nullptr;
+		DestroyApi m_destroy                   = nullptr;
+		GetRttiApi m_get_rtti                  = nullptr;
+		GetEditorRttiApi m_get_editor_rtti     = nullptr;
+
+		Type rtti_type{};
+		Hashmap<Entity, size_t> m_entity_to_index{};
+		Hashmap<size_t, Entity> m_index_to_entity{};
+		size_t m_size = 0;
+		void *m_array = nullptr;
 	};
 
 	template <typename T>
 	struct ComponentArray : IComponentArray
 	{
-		ComponentArray() : IComponentArray(try_remove_entity_impl, get_rtti_impl, get_editor_rtti_impl) { m_array = v_alloc<T>(MAX_ENTITIES); }
+		ComponentArray() : IComponentArray(try_remove_entity_impl, destroy_impl, get_type<T>, get_rtti_impl, get_editor_rtti_impl) { m_array = v_alloc<T>(MAX_ENTITIES); }
 		ErrorOr<void> add_entity(Entity entity, const T &component)
 		{
 			if (m_entity_to_index.contains(entity))
@@ -143,6 +152,17 @@ namespace Vultr
 
 		bool has_component(Entity entity) { return m_entity_to_index.contains(entity); }
 
+		static void destroy_impl(IComponentArray *p_arr)
+		{
+			auto *arr = static_cast<ComponentArray<T> *>(p_arr);
+			for (size_t i = 0; i < arr->m_size; i++)
+				arr->storage()[i].~T();
+
+			arr->m_entity_to_index.clear();
+			arr->m_index_to_entity.clear();
+			arr->m_size = 0;
+		}
+
 		static ErrorOr<void> try_remove_entity_impl(IComponentArray *p_arr, Entity entity)
 		{
 			auto *arr = static_cast<ComponentArray<T> *>(p_arr);
@@ -150,8 +170,8 @@ namespace Vultr
 			{
 				size_t last_index = arr->m_size - 1;
 
-				arr->m_array[removed_index].~T();
-				Utils::move(arr->m_array + removed_index, arr->m_array + last_index, 1);
+				arr->storage()[removed_index].~T();
+				Utils::move(arr->storage() + removed_index, arr->storage() + last_index, 1);
 
 				Entity last_entity = arr->m_index_to_entity.get(last_index);
 				arr->m_entity_to_index.set(last_entity, removed_index);
@@ -175,7 +195,7 @@ namespace Vultr
 			if (!arr->has_component(entity))
 				return;
 
-			rtti->push_back(Tuple<Type, void *>(Refl::get_type<T>(), &arr->get_component(entity).value()));
+			rtti->push_back(Tuple<Type, void *>(get_type<T>, &arr->get_component(entity).value()));
 		}
 
 		static void get_editor_rtti_impl(IComponentArray *p_arr, Entity entity, Vector<EditorType> *editor_rtti)
@@ -189,17 +209,13 @@ namespace Vultr
 		}
 
 		T *storage() { return static_cast<T *>(m_array); }
-
-		T *m_array = nullptr;
-		Hashmap<Entity, size_t> m_entity_to_index{};
-		Hashmap<size_t, Entity> m_index_to_entity{};
-		size_t m_size = 0;
 	};
 
 	template <typename T>
-	void init_component_array(IComponentArray **out)
+	void init_component_array(IComponentArray **out, Hashmap<u32, size_t> *type_to_index, u32 index)
 	{
 		*out = v_alloc<ComponentArray<T>>();
+		type_to_index->set(get_type<T>.id, index);
 	}
 
 	template <typename... DefaultComponent>
@@ -218,7 +234,7 @@ namespace Vultr
 		template <typename T>
 		void register_component()
 		{
-			constexpr u32 type_id = get_component_type<T>().id;
+			constexpr u32 type_id = get_type<T>.id;
 			ASSERT(!type_to_index.contains(type_id), "Component already registered!");
 			size_t index = component_arrays.size();
 			component_arrays.push_back(v_alloc<ComponentArray<T>>());
@@ -231,7 +247,7 @@ namespace Vultr
 			if constexpr (Types::template contains<T>())
 				return Types::template index_of<T>();
 			else
-				type_to_index.get(ReflTraits<T>::type_id());
+				type_to_index.get(get_type<T>.id);
 		}
 
 		template <typename... Ts>
@@ -303,10 +319,19 @@ namespace Vultr
 			}
 		}
 
+		Vector<Tuple<Type, u32>> get_component_rtti()
+		{
+			Vector<Tuple<Type, u32>> types{};
+			for (auto &[type_id, index] : type_to_index)
+			{
+				types.push_back(Tuple<Type, u32>(component_arrays[index]->rtti_type, index));
+			}
+			return types;
+		}
+
 		Vector<Tuple<Type, void *>> get_component_rtti(Entity entity)
 		{
 			Vector<Tuple<Type, void *>> types{};
-			(get_component_array<DefaultComponent>()->get_rtti(entity, &types), ...);
 			for (auto &[type_id, index] : type_to_index)
 			{
 				component_arrays[index]->get_rtti(entity, &types);
@@ -317,7 +342,6 @@ namespace Vultr
 		Vector<EditorType> get_component_editor_rtti(Entity entity)
 		{
 			Vector<EditorType> editor_types{};
-			(get_component_array<DefaultComponent>()->get_editor_rtti(entity, &editor_types), ...);
 			for (auto &[type_id, index] : type_to_index)
 			{
 				component_arrays[index]->get_editor_rtti(entity, &editor_types);
@@ -325,54 +349,19 @@ namespace Vultr
 			return editor_types;
 		}
 
+		void destroy_component_arrays()
+		{
+			for (auto *component_array : component_arrays)
+			{
+				component_array->destroy();
+			}
+		}
+
 	  private:
 		template <size_t... S>
 		void m_init(Sequence<S...>)
 		{
-			(init_component_array<DefaultComponent>(&component_arrays[S]), ...);
-		}
-	};
-
-	struct SystemManager
-	{
-		Vector<System> systems{};
-
-		void register_system(const System &system) { systems.push_back(system); }
-		void entity_created(Entity entity, const Signature &signature)
-		{
-			for (auto &system : systems)
-			{
-				if ((system.component_signature & signature) == system.component_signature)
-				{
-					system.m_created(system.component, entity);
-				}
-			}
-		}
-		void entity_destroyed(Entity entity, const Signature &signature)
-		{
-			for (auto &system : systems)
-			{
-				if ((system.component_signature & signature) == system.component_signature)
-				{
-					system.m_destroyed(system.component, entity);
-				}
-			}
-		}
-		void entity_signature_changed(Entity entity, const Signature &old_signature, const Signature &new_signature)
-		{
-			ASSERT(old_signature != new_signature, "Entity signature has not actually changed!");
-
-			for (auto &system : systems)
-			{
-				if ((system.component_signature & new_signature) == system.component_signature)
-				{
-					system.m_created(system.component, entity);
-				}
-				else if ((system.component_signature & old_signature) == system.component_signature)
-				{
-					system.m_destroyed(system.component, entity);
-				}
-			}
+			(init_component_array<DefaultComponent>(&component_arrays[S], &type_to_index, S), ...);
 		}
 	};
 
@@ -381,7 +370,6 @@ namespace Vultr
 	{
 		EntityManager entity_manager{};
 		ComponentManager<Component...> component_manager{};
-		SystemManager system_manager{};
 
 		template <typename... Ts>
 		struct IteratorContainer

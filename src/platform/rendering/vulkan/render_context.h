@@ -18,6 +18,7 @@ namespace Vultr
 			Texture *black_texture  = nullptr;
 			Texture *white_texture  = nullptr;
 			Texture *normal_texture = nullptr;
+			CmdBuffer cmd{};
 		};
 
 	} // namespace Platform

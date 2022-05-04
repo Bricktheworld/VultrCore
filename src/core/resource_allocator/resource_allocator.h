@@ -71,6 +71,7 @@ namespace Vultr
 			resources.remove(id);
 			if (info.load_state == ResourceLoadState::LOADED)
 			{
+				printf("Removing loaded resource %s at %p\n", info.path.c_str(), info.data);
 				free_queue.push(info.data);
 				if (free_queue_listener != nullptr)
 				{
@@ -336,7 +337,7 @@ namespace Vultr
 			}
 		}
 
-		bool empty() { return !id.has_value(); }
+		bool empty() const { return !id.has_value(); }
 
 		constexpr operator ResourceId() { return ResourceId(id.value_or(0)); }
 

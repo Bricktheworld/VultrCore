@@ -1,5 +1,6 @@
 #pragma once
 #include "memory_impl.h"
+#include <platform/platform.h>
 
 namespace Vultr
 {
@@ -9,6 +10,7 @@ namespace Vultr
 		size_t max_slab_size = 0;
 		Slab **slabs         = nullptr;
 		u32 num_slabs        = 0;
+		Platform::Mutex mutex{};
 
 		SlabAllocator() : Allocator(AllocatorType::Slab) {}
 	};

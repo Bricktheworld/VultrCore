@@ -33,7 +33,7 @@ namespace Vultr
 	template <>
 	inline EditorType get_editor_type<Material>(Material *component)
 	{
-		EditorType type = {Refl::get_type<Material>(), component};
+		EditorType type = {get_type<Material>, component};
 		if (!component->source.loaded())
 			return type;
 
@@ -44,14 +44,14 @@ namespace Vultr
 
 		for (auto &uniform_member : reflection->uniform_members)
 		{
-			auto field = Field(uniform_member.name, uniform_member.type, nullptr);
+			auto field = Field(uniform_member.name, uniform_member.type, nullptr, [](void *data) {});
 			type.fields.push_back({field, &mat->uniform_data[uniform_member.offset]});
 		}
 
 		u32 i = 0;
 		for (auto &sampler : reflection->samplers)
 		{
-			auto field = Field(sampler.name, init_type<Resource<Platform::Texture *>>(), nullptr);
+			auto field = Field(sampler.name, get_type<Resource<Platform::Texture *>>, nullptr, [](void *data) { new (data) Resource<Platform::Texture *>(); });
 			type.fields.push_back({field, &mat->samplers[i]});
 			i++;
 		}

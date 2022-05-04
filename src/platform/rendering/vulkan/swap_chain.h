@@ -71,7 +71,7 @@ namespace Vultr
 			VkDescriptorSetLayout default_descriptor_set_layout{};
 			DefaultDescriptorBinding camera_binding{};
 			DefaultDescriptorBinding directional_light_binding{};
-			Platform::Semaphore<1> cmd_buffer_resource_semaphore = Platform::Semaphore<1>(1);
+			Platform::Mutex cmd_buffer_resource_mutex{};
 		};
 
 		void init_swapchain(Device *device, const Platform::Window *window, SwapChain *out);

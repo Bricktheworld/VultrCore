@@ -13,8 +13,8 @@ namespace Vultr
 			raw  = StringView(string, n);
 		}
 
-		constexpr StringView c_str() { return raw; }
-		constexpr u32 value() { return hash; }
+		constexpr StringView c_str() const { return raw; }
+		constexpr u32 value() const { return hash; }
 
 	  private:
 		u32 hash = 0;

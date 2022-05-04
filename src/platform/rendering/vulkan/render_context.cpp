@@ -51,13 +51,15 @@ namespace Vultr
 			if (res.has_value())
 			{
 				auto [image_index, frame, framebuffer] = res.value();
-				auto *cmd_pool                         = &frame->cmd_pool;
+				ASSERT(image_index != 256, "Image index is 256??");
+				auto *cmd_pool = &frame->cmd_pool;
 
 				Vulkan::recycle_cmd_pool(Vulkan::get_device(c), cmd_pool);
-				Vulkan::get_swapchain(c)->cmd_buffer_resource_semaphore.acquire();
+				Vulkan::get_swapchain(c)->cmd_buffer_resource_mutex.lock();
 				auto cmd             = Vulkan::begin_cmd_buffer(Vulkan::get_device(c), cmd_pool);
 
-				auto *buf            = v_alloc<CmdBuffer>();
+				c->cmd               = {};
+				auto *buf            = &c->cmd;
 				buf->render_context  = c;
 				buf->cmd_buffer      = cmd;
 				buf->frame           = frame;
@@ -142,8 +144,7 @@ namespace Vultr
 			auto *c = cmd->render_context;
 			Vulkan::end_cmd_buffer(cmd->cmd_buffer, &cmd->frame->cmd_pool);
 			Vulkan::submit_swapchain(Vulkan::get_swapchain(c), cmd->image_index, 1, &cmd->cmd_buffer);
-			Vulkan::get_swapchain(c)->cmd_buffer_resource_semaphore.release();
-			v_free(cmd);
+			Vulkan::get_swapchain(c)->cmd_buffer_resource_mutex.unlock();
 		}
 		void wait_idle(RenderContext *c) { wait_idle(Vulkan::get_device(c)); }
 

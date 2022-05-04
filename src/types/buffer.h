@@ -150,4 +150,5 @@ namespace Vultr
 	};
 
 	typedef BufferT<byte> Buffer;
+
 } // namespace Vultr

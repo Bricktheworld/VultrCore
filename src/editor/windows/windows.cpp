@@ -4,6 +4,7 @@
 #include <ImGuizmo/ImGuizmo.h>
 #include <math/decompose_transform.h>
 #include <editor/res/resources.h>
+#include <ecs/serialization.h>
 
 namespace Vultr
 {
@@ -288,6 +289,23 @@ namespace Vultr
 
 			render_entity_hierarchy(entity, state, project);
 		}
+
+		auto scene_path = project->resource_dir / "test_save.vultr";
+		if (ImGui::Button("Save Scene"))
+		{
+			auto out = FileOutputStream(scene_path, StreamFormat::BINARY, StreamWriteMode::OVERWRITE);
+			CHECK(serialize_world_yaml(world(), &out));
+		}
+		if (ImGui::Button("Load Scene"))
+		{
+			String src;
+			fread_all(scene_path, &src);
+			printf("Freeing scene......................\n");
+			world()->component_manager.destroy_component_arrays();
+			world()->entity_manager = EntityManager();
+			printf("Initializing new scene.............\n");
+			CHECK(read_world_yaml(src, world()));
+		}
 		ImGui::End();
 	}
 
@@ -416,6 +434,14 @@ namespace Vultr
 							case PrimitiveType::F64:
 								ImGui::DragScalar(field.name, ImGuiDataType_Double, addr, 0.02f);
 								break;
+							case PrimitiveType::VECTOR:
+							case PrimitiveType::BITFIELD:
+							case PrimitiveType::ARRAY:
+							case PrimitiveType::HASHMAP:
+							case PrimitiveType::HASHTABLE:
+							case PrimitiveType::STRING_HASH:
+							case PrimitiveType::BUFFER:
+							case PrimitiveType::QUEUE:
 							case PrimitiveType::MAT3:
 							case PrimitiveType::MAT4:
 								break;

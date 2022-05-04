@@ -161,7 +161,7 @@ namespace Vultr
 		struct UniformMember
 		{
 			String name{};
-			Type type  = init_type<Vec3>();
+			Type type  = get_type<Vec3>;
 			u32 offset = 0;
 		};
 		enum struct SamplerType
@@ -312,11 +312,14 @@ namespace Vultr
 			Utils::move((byte *)mesh->indices, index_buffer.storage, index_buffer.size());
 
 			mesh->index_buffer = init_index_buffer(c, mesh->indices, sizeof(u16) * mesh->index_count);
+			ASSERT((void *)mesh->index_buffer != (void *)mesh->vertex_buffer, "Allocated at same location %p??", mesh->index_buffer);
+			printf("Mesh %p loaded { index_buffer = %p, vertex_buffer = %p, vertices = %p, indices = %p }\n", mesh, mesh->index_buffer, mesh->vertex_buffer, mesh->vertices, mesh->index_buffer);
 			return mesh;
 		}
 
 		inline void destroy_mesh(RenderContext *c, Mesh *mesh)
 		{
+			printf("Destroying mesh %p { index_buffer = %p, vertex_buffer = %p, vertices = %p, indices = %p }\n", mesh, mesh->index_buffer, mesh->vertex_buffer, mesh->vertices, mesh->index_buffer);
 			destroy_index_buffer(c, mesh->index_buffer);
 			destroy_vertex_buffer(c, mesh->vertex_buffer);
 			v_free(mesh->vertices);
@@ -419,26 +422,18 @@ namespace Vultr
 	} // namespace Platform
 
 	template <>
-	constexpr Type init_type<Resource<Platform::Material *>>()
-	{
-		return {PrimitiveType::MATERIAL_RESOURCE, "Material"};
-	}
+	inline constexpr Type get_type<Resource<Platform::Material *>> = {PrimitiveType::MATERIAL_RESOURCE, []() { return sizeof(Resource<Platform::Material *>); },
+																	  generic_type_serializer<Resource<Platform::Material *>>, generic_type_deserializer<Resource<Platform::Material *>>, "Material"};
 
 	template <>
-	constexpr Type init_type<Resource<Platform::Texture *>>()
-	{
-		return {PrimitiveType::TEXTURE_RESOURCE, "Texture"};
-	}
+	inline constexpr Type get_type<Resource<Platform::Texture *>> = {PrimitiveType::TEXTURE_RESOURCE, []() { return sizeof(Resource<Platform::Texture *>); }, generic_type_serializer<Resource<Platform::Texture *>>,
+																	 generic_type_deserializer<Resource<Platform::Texture *>>, "Texture"};
 
 	template <>
-	constexpr Type init_type<Resource<Platform::Shader *>>()
-	{
-		return {PrimitiveType::SHADER_RESOURCE, "Shader"};
-	}
+	inline constexpr Type get_type<Resource<Platform::Shader *>> = {PrimitiveType::SHADER_RESOURCE, []() { return sizeof(Resource<Platform::Shader *>); }, generic_type_serializer<Resource<Platform::Shader *>>,
+																	generic_type_deserializer<Resource<Platform::Shader *>>, "Shader"};
 
 	template <>
-	constexpr Type init_type<Resource<Platform::Mesh *>>()
-	{
-		return {PrimitiveType::MESH_RESOURCE, "Mesh"};
-	}
+	inline constexpr Type get_type<Resource<Platform::Mesh *>> = {PrimitiveType::MESH_RESOURCE, []() { return sizeof(Resource<Platform::Mesh *>); }, generic_type_serializer<Resource<Platform::Mesh *>>,
+																  generic_type_deserializer<Resource<Platform::Mesh *>>, "Mesh"};
 } // namespace Vultr

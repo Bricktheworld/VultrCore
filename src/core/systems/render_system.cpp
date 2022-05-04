@@ -6,22 +6,12 @@ namespace Vultr
 {
 	namespace RenderSystem
 	{
-
-		struct MaterialUBO
-		{
-			Vec4 albedo{};
-			f32 metallic;
-			f32 ambient_occlusion;
-			f32 roughness;
-		};
-
 		static Component *component(void *component) { return static_cast<Component *>(component); }
 		Component *init()
 		{
-			auto *c        = v_alloc<Component>();
+			auto *c               = v_alloc<Component>();
 
-			auto signature = signature_from_components<Transform, Mesh, Material>();
-			register_system(c, signature, entity_created, entity_destroyed);
+			auto signature        = signature_from_components<Transform, Mesh, Material>();
 
 			c->output_framebuffer = nullptr;
 			reinitialize(c);
@@ -30,11 +20,10 @@ namespace Vultr
 
 			return c;
 		}
-		void entity_created(void *system, Entity entity) {}
-		void entity_destroyed(void *system, Entity entity) {}
 
 		static void render(Platform::CameraUBO camera_ubo, Component *system, Platform::CmdBuffer *cmd)
 		{
+			// TODO(Brandon): Make this not in the render function because it causes a dup lock.
 			while (!system->free_queue_listener.empty())
 			{
 				auto shader = ResourceId(system->free_queue_listener.pop());

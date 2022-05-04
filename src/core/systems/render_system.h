@@ -17,8 +17,6 @@ namespace Vultr
 		};
 
 		Component *init();
-		void entity_created(void *system, Entity entity);
-		void entity_destroyed(void *system, Entity entity);
 		void update(const Camera &camera, const Transform &transform, Platform::CmdBuffer *cmd_buffer, Component *system);
 		void update(Platform::CmdBuffer *cmd_buffer, Component *system);
 		void update(Component *system);

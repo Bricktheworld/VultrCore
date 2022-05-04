@@ -16,13 +16,14 @@ namespace Vultr
 		static constexpr u32 __REFL_START_COUNT = __COUNTER__ + 1;                                                                                                                                                    \
 		template <size_t i>                                                                                                                                                                                           \
 		static constexpr Field __REFL_GET_FIELD;                                                                                                                                                                      \
-		static constexpr name *__REFL_CAST(void *ptr) { return static_cast<name *>(ptr); }
+		static constexpr name *__REFL_CAST(void *ptr) { return static_cast<name *>(ptr); }                                                                                                                            \
+		static constexpr size_t __REFL_GET_SIZE() { return sizeof(name); }
 
 #define VCOMPONENT_FIELD(T, name, val)                                                                                                                                                                                \
 	T name = val;                                                                                                                                                                                                     \
 	static constexpr void *__REFL_##name##_GET_ADDR(void *component) { return &__REFL_CAST(component)->name; }                                                                                                        \
 	template <>                                                                                                                                                                                                       \
-	static constexpr Field __REFL_GET_FIELD<__COUNTER__ - __REFL_START_COUNT> = init_field(#name, init_type<T>(), __REFL_##name##_GET_ADDR);
+	static constexpr Field __REFL_GET_FIELD<__COUNTER__ - __REFL_START_COUNT> = init_field(#name, get_type<T>, __REFL_##name##_GET_ADDR, [](void *data) { new (data) T(); });
 
 #define VCOMPONENT_END()                                                                                                                                                                                              \
 	static constexpr u32 __REFL_MEMBER_COUNT = __COUNTER__ - __REFL_START_COUNT;                                                                                                                                      \
@@ -32,7 +33,7 @@ namespace Vultr
 		((out[S] = __REFL_GET_FIELD<S>), ...);                                                                                                                                                                        \
 	}                                                                                                                                                                                                                 \
 	static constexpr void __REFL_GET_FIELDS(Field *out) { __REFL_GET_FIELDS_IMPL(out, typename SequenceImpl<__REFL_MEMBER_COUNT>::type()); }                                                                          \
-	static constexpr Type __REFL_TYPE = init_type(__REFL_NAME, __REFL_MEMBER_COUNT, __REFL_GET_FIELDS);                                                                                                               \
+	static constexpr Type __REFL_TYPE = init_type(__REFL_NAME, __REFL_GET_SIZE, __REFL_MEMBER_COUNT, __REFL_GET_FIELDS);                                                                                              \
 	}                                                                                                                                                                                                                 \
 	;
 
@@ -70,7 +71,7 @@ namespace Vultr
 	template <typename T>
 	inline EditorType get_editor_type(T *component)
 	{
-		return EditorType(Refl::get_type<T>(), component);
+		return EditorType(get_type<T>, component);
 	}
 
 } // namespace Vultr

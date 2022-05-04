@@ -69,6 +69,7 @@ namespace Vultr
 
 		void free_buffer(SwapChain *sc, GpuBuffer *buffer)
 		{
+			ASSERT(buffer->buffer != nullptr && buffer->memory != nullptr, "Double gpu buffer free detected!");
 			Vulkan::wait_resource_not_in_use(sc, buffer);
 			auto *d = Vulkan::get_device(sc);
 			vmaDestroyBuffer(d->allocator, buffer->buffer, buffer->memory);
