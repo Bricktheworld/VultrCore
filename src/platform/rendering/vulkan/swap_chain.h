@@ -8,12 +8,6 @@
 
 namespace Vultr
 {
-	template <>
-	struct Traits<void *> : GenericTraits<void *>
-	{
-		static u32 hash(const void *p) { return ptr_hash(p); }
-	};
-
 	namespace Vulkan
 	{
 		struct Frame

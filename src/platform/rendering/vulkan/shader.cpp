@@ -653,7 +653,7 @@ namespace Vultr
 			auto buffer      = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 			void *mapped     = map_buffer(d, &buffer);
 			descriptor_set->uniform_buffer_binding = {.buffer = buffer, .mapped = mapped};
-			descriptor_set->updated                = 0;
+			descriptor_set->updated                = U8Max;
 			descriptor_set->sampler_bindings.resize(shader->reflection.samplers.size());
 
 			return descriptor_set;

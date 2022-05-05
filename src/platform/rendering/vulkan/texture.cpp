@@ -118,6 +118,7 @@ namespace Vultr
 
 			texture->cached_texture_id = nullptr;
 
+			printf("Created texture %p, sampler %p\n", texture, &texture->sampler);
 			return texture;
 		}
 
@@ -128,7 +129,7 @@ namespace Vultr
 		{
 			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8);
 			byte data[4]  = {255, 255, 255, 255};
-			fill_texture(c, texture, data);
+			fill_texture(c, texture, data, get_pixel_size(texture->format));
 			return texture;
 		}
 
@@ -136,7 +137,7 @@ namespace Vultr
 		{
 			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8);
 			byte data[4]  = {0};
-			fill_texture(c, texture, data);
+			fill_texture(c, texture, data, get_pixel_size(texture->format));
 			return texture;
 		}
 
@@ -144,42 +145,17 @@ namespace Vultr
 		{
 			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8);
 			byte data[4]  = {128, 128, 255, 0};
-			fill_texture(c, texture, data);
+			fill_texture(c, texture, data, get_pixel_size(texture->format));
 			return texture;
 		}
 
-		void fill_texture(UploadContext *c, Texture *texture, byte *data)
+		void fill_texture(UploadContext *c, Texture *texture, byte *data, u32 size)
 		{
-			auto *d = Vulkan::get_device(c);
-			size_t size;
-			switch (texture->format)
-			{
-				case TextureFormat::RGB8:
-					size = 3 * 2;
-					break;
-				case TextureFormat::RGB16:
-					size = 3;
-					break;
-				case TextureFormat::RGBA8:
-					size = 4;
-					break;
-				case TextureFormat::RGBA16:
-					size = 4 * 2;
-					break;
-				case TextureFormat::SRGB8:
-					size = 3;
-					break;
-				case TextureFormat::SRGBA8:
-					size = 4;
-					break;
-				case TextureFormat::DEPTH:
-					size = 1;
-					break;
-			}
+			auto *d             = Vulkan::get_device(c);
 
-			auto staging_buffer = alloc_buffer(d, texture->width * texture->height * size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+			auto staging_buffer = alloc_buffer(d, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
-			fill_buffer(d, &staging_buffer, data, texture->width * texture->height * size);
+			fill_buffer(d, &staging_buffer, data, size);
 
 			VkImageSubresourceRange range{
 				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -253,13 +229,15 @@ namespace Vultr
 		{
 			ASSERT(texture != nullptr, "Cannot destroy invalid texture!");
 			Vulkan::wait_resource_not_in_use(sc, texture);
+			printf("Destroying texture %p\n", texture);
 
 			auto *d = Vulkan::get_device(sc);
 
 			vkDestroyImageView(d->device, texture->image_view, nullptr);
 			vkDestroySampler(d->device, texture->sampler, nullptr);
 			vmaDestroyImage(d->allocator, texture->image, texture->allocation);
-			*texture = {};
+			texture->sampler = nullptr;
+			texture->image   = nullptr;
 			v_free(texture);
 		}
 

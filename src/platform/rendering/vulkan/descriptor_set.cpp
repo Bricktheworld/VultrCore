@@ -53,7 +53,7 @@ namespace Vultr
 		void update_descriptor_set(DescriptorSet *set, const Option<ResourceId> &texture, u32 binding)
 		{
 			auto &existing_texture = set->sampler_bindings[binding - 1];
-			if (existing_texture.has_value() && texture.has_value() && texture.value() == existing_texture.value())
+			if (existing_texture.has_value() && texture.has_value() && texture.value().id == existing_texture.value().id)
 				return;
 
 			if (!existing_texture.has_value() && !texture.has_value())

@@ -117,12 +117,12 @@ namespace Vultr
 
 		void clear() { flush(); }
 
-		void fill(const T *data, size_t len)
+		void fill(const T *data, size_t len, size_t offset = 0)
 		{
 			ASSERT(len != 0, "Cannot fill buffer with a length of 0.");
 			ASSERT(storage != nullptr, "Cannot fill buffer with invalid source");
-			ASSERT(len <= m_size, "Not enough space to fill buffer!");
-			memcpy(storage, data, len);
+			ASSERT(len + offset <= m_size, "Not enough space to fill buffer!");
+			memcpy(storage + offset, data, len);
 		}
 
 		~BufferT() { flush(); }

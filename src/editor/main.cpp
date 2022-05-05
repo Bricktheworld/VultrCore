@@ -6,6 +6,17 @@
 #include <core/systems/render_system.h>
 #include <filesystem/filestream.h>
 #include <vultr_resource_allocator.h>
+#include <platform/rendering/vulkan/texture.h>
+
+// static void print_texture_resources(int line)
+//{
+//		auto *texture_allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
+//		for (auto &[_, info] : texture_allocator->resources)
+//		{
+//			if (info.load_state == Vultr::ResourceLoadState::LOADED)
+//				printf("(%d) Sampler location for texture %p is %p\n", line, info.data, info.data->sampler);
+//		}
+// }
 
 static void mesh_loader_thread(const Vultr::Path &resource_dir)
 {
@@ -187,7 +198,10 @@ static void texture_loader_thread(const Vultr::Path &resource_dir)
 
 		printf("Loading texture %u, from path %s\n", resource, path.c_str());
 
-		CHECK_UNWRAP(auto *texture, Vultr::Platform::load_texture_file(c, resource_dir / path, Vultr::Platform::TextureFormat::SRGBA8));
+		Vultr::Buffer src;
+		Vultr::fread_all((resource_dir) / (path.string() + ".texture"), &src);
+		auto *texture = Vultr::Platform::init_texture(c, *(f64 *)&src[0], *(f64 *)&src[sizeof(f64)], Vultr::Platform::TextureFormat::RGBA8);
+		Vultr::Platform::fill_texture(c, texture, &src[sizeof(f64) * 2], src.size() - 2 * sizeof(f64));
 
 		if (allocator->add_loaded_resource(resource, texture).is_error())
 		{

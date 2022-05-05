@@ -597,8 +597,22 @@ namespace Vultr
 		return new_block;
 	}
 
+	static void print_mb_list(FreeListAllocator *allocator)
+	{
+#ifdef FREE_LIST_VERBOSE
+		FreeListMemoryBlock *current = allocator->block_head;
+		while (current)
+		{
+			printf("(%p)->", current);
+			current = current->next;
+		}
+		printf("\n");
+#endif
+	}
+
 	static void check_mb_valid(FreeListAllocator *allocator, FreeListMemoryBlock *b = nullptr)
 	{
+		print_mb_list(allocator);
 		FreeListMemoryBlock *prev    = nullptr;
 		FreeListMemoryBlock *current = allocator->block_head;
 		bool found                   = b == nullptr;
@@ -613,19 +627,6 @@ namespace Vultr
 			current = current->next;
 		}
 		ASSERT(found, "Invalid memory block!");
-	}
-
-	static void print_mb_list(FreeListAllocator *allocator)
-	{
-#ifdef FREE_LIST_VERBOSE
-		FreeListMemoryBlock *current = allocator->block_head;
-		while (current)
-		{
-			printf("(%p)->", current);
-			current = current->next;
-		}
-		printf("\n");
-#endif
 	}
 
 	static void coalesce_mbs(FreeListAllocator *allocator, FreeListMemoryBlock *b)
@@ -708,6 +709,7 @@ namespace Vultr
 			RBT_DEBUG_TRACE();
 			insert_free_mb(allocator, b);
 		}
+		check_mb_valid(allocator);
 	}
 	static void *free_list_alloc_no_lock(FreeListAllocator *allocator, size_t size)
 	{
@@ -728,6 +730,7 @@ namespace Vultr
 		RBT_DEBUG_PRINT("Allocated %zu bytes at %p\n", size, data);
 		free_list_print(allocator);
 		ASSERT(test_rbt(allocator), "Something went wrong with the RBT tree!");
+		check_mb_valid(allocator);
 		return data;
 	}
 
@@ -751,6 +754,7 @@ namespace Vultr
 		allocator->used -= size;
 		free_list_print(allocator);
 		ASSERT(test_rbt(allocator), "Something went wrong with the RBT tree!");
+		check_mb_valid(allocator);
 	}
 	void free_list_free(FreeListAllocator *allocator, void *data)
 	{
@@ -1031,6 +1035,7 @@ namespace Vultr
 		RBT_DEBUG_TRACE();
 		set_mb_black(allocator->free_root);
 		ASSERT(test_rbt(allocator), "Something went wrong with the RBT insert!");
+		free_list_print(allocator);
 	}
 
 	static void mb_replace_child(FreeListAllocator *allocator, FreeListMemoryBlock *n, FreeListMemoryBlock *child)
@@ -1301,6 +1306,7 @@ namespace Vultr
 		RBT_DEBUG_TRACE();
 		set_mb_black(allocator->free_root);
 		ASSERT(test_rbt(allocator), "Something went wrong with the RBT deletion!");
+		free_list_print(allocator);
 	}
 
 	void rbt_update(FreeListAllocator *allocator, FreeListMemoryBlock *n, size_t new_size)

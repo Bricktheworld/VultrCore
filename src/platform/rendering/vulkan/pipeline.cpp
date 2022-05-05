@@ -251,55 +251,56 @@ namespace Vultr
 			Platform::Lock lock(shader->mutex);
 			for (auto &set : shader->allocated_descriptor_sets)
 			{
-				if (set->updated.at(cmd->image_index))
-				{
-					set->updated.set(cmd->image_index, false);
-					auto *vk_set = set->vk_frame_descriptor_sets[cmd->image_index];
+				if (!set->updated.at(cmd->image_index))
+					continue;
 
-					auto &info   = ubo_info.push_back({
-						  .buffer = set->uniform_buffer_binding.buffer.buffer,
-						  .offset = 0,
-						  .range  = pad_size(d, set->shader->reflection.uniform_size),
-                    });
+				set->updated.set(cmd->image_index, false);
+				auto *vk_set = set->vk_frame_descriptor_sets[cmd->image_index];
+
+				auto &info   = ubo_info.push_back({
+					  .buffer = set->uniform_buffer_binding.buffer.buffer,
+					  .offset = 0,
+					  .range  = pad_size(d, set->shader->reflection.uniform_size),
+                });
+				write_sets.push_back({
+					.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					.pNext           = nullptr,
+					.dstSet          = vk_set,
+					.dstBinding      = 0,
+					.descriptorCount = 1,
+					.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.pBufferInfo     = &info,
+				});
+
+				u32 i = 1;
+				for (auto &sampler : set->sampler_bindings)
+				{
+					auto type                  = shader->reflection.samplers[i - 1].type;
+					Platform::Texture *texture = get_placeholder_texture(c, type);
+
+					if (sampler.has_value())
+					{
+						if (!sampler.value().loaded<Platform::Texture *>())
+							continue;
+						texture = sampler.value().value<Platform::Texture *>();
+					}
+
+					//					printf("Updating descriptor set with texture %p sampler %p\n", texture, texture->sampler);
+					auto &info = tex_info.push_back({
+						.sampler     = texture->sampler,
+						.imageView   = texture->image_view,
+						.imageLayout = texture->layout,
+					});
 					write_sets.push_back({
 						.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 						.pNext           = nullptr,
 						.dstSet          = vk_set,
-						.dstBinding      = 0,
+						.dstBinding      = i,
 						.descriptorCount = 1,
-						.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-						.pBufferInfo     = &info,
+						.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+						.pImageInfo      = &info,
 					});
-
-					u32 i = 1;
-					for (auto &sampler : set->sampler_bindings)
-					{
-						auto type                  = shader->reflection.samplers[i - 1].type;
-						Platform::Texture *texture = get_placeholder_texture(c, type);
-
-						if (sampler.has_value())
-						{
-							if (!sampler.value().loaded<Platform::Texture *>())
-								continue;
-							texture = sampler.value().value<Platform::Texture *>();
-						}
-
-						auto &info = tex_info.push_back({
-							.sampler     = texture->sampler,
-							.imageView   = texture->image_view,
-							.imageLayout = texture->layout,
-						});
-						write_sets.push_back({
-							.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-							.pNext           = nullptr,
-							.dstSet          = vk_set,
-							.dstBinding      = i,
-							.descriptorCount = 1,
-							.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-							.pImageInfo      = &info,
-						});
-						i++;
-					}
+					i++;
 				}
 			}
 

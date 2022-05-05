@@ -95,6 +95,17 @@ namespace Vultr
 				}
 				break;
 			}
+			case ResourceType::TEXTURE:
+			{
+				auto out = out_dir / (local_src.basename() + ".texture");
+				if (needs_reimport(full_src, out))
+				{
+					Buffer imported{};
+					TRY(Platform::import_texture_file(full_src, &imported));
+					TRY(try_fwrite_all(out, imported, StreamWriteMode::OVERWRITE));
+				}
+				break;
+			}
 			default:
 			{
 				auto out = out_dir / local_src.basename();

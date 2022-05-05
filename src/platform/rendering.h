@@ -110,12 +110,33 @@ namespace Vultr
 			DEPTH,
 		};
 
+		inline u32 get_pixel_size(TextureFormat format)
+		{
+			switch (format)
+			{
+				case TextureFormat::RGB8:
+					return 3 * 2;
+				case TextureFormat::RGB16:
+					return 3;
+				case TextureFormat::RGBA8:
+					return 4;
+				case TextureFormat::RGBA16:
+					return 4 * 2;
+				case TextureFormat::SRGB8:
+					return 3;
+				case TextureFormat::SRGBA8:
+					return 4;
+				case TextureFormat::DEPTH:
+					return 1;
+			}
+		}
+
 		Texture *init_texture(RenderContext *c, u32 width, u32 height, TextureFormat format);
 		Texture *init_texture(UploadContext *c, u32 width, u32 height, TextureFormat format);
 
-		void fill_texture(UploadContext *c, Texture *texture, byte *data);
-		ErrorOr<Texture *> load_texture_file(UploadContext *c, const Path &path, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
-		ErrorOr<Texture *> load_texture_memory(UploadContext *c, byte *data, u64 size, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
+		void fill_texture(UploadContext *c, Texture *texture, byte *data, u32 size);
+		ErrorOr<void> import_texture_file(const Path &path, Buffer *out, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
+		ErrorOr<void> import_texture_memory(byte *data, u64 size, Buffer *out, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
 		Texture *init_white_texture(UploadContext *c);
 		Texture *init_black_texture(UploadContext *c);
 		Texture *init_normal_texture(UploadContext *c);

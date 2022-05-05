@@ -794,12 +794,18 @@ namespace Vultr
 	void init_windows(EditorRuntime *runtime, Project *project, EditorWindowState *state)
 	{
 		resource_window_init(project, state);
-		CHECK_UNWRAP(state->texture, Platform::load_texture_memory(runtime->upload_context, EditorResources::TEXTURE_PNG, EditorResources::TEXTURE_PNG_LEN));
-		CHECK_UNWRAP(state->cpp_source, Platform::load_texture_memory(runtime->upload_context, EditorResources::CPP_PNG, EditorResources::CPP_PNG_LEN));
-		CHECK_UNWRAP(state->shader, Platform::load_texture_memory(runtime->upload_context, EditorResources::SHADER_PNG, EditorResources::SHADER_PNG_LEN));
-		CHECK_UNWRAP(state->file, Platform::load_texture_memory(runtime->upload_context, EditorResources::FILE_PNG, EditorResources::FILE_PNG_LEN));
-		CHECK_UNWRAP(state->folder, Platform::load_texture_memory(runtime->upload_context, EditorResources::FOLDER_PNG, EditorResources::FOLDER_PNG_LEN, Platform::TextureFormat::SRGBA8, false));
-		CHECK_UNWRAP(state->mesh, Platform::load_texture_memory(runtime->upload_context, EditorResources::MESH_3D_PNG, EditorResources::MESH_3D_PNG_LEN));
+		state->texture = Platform::init_texture(runtime->upload_context, EditorResources::TEXTURE_PNG_WIDTH, EditorResources::TEXTURE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(runtime->upload_context, state->texture, EditorResources::TEXTURE_PNG, EditorResources::TEXTURE_PNG_LEN);
+		state->cpp_source = Platform::init_texture(runtime->upload_context, EditorResources::CPP_PNG_WIDTH, EditorResources::CPP_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(runtime->upload_context, state->cpp_source, EditorResources::CPP_PNG, EditorResources::CPP_PNG_LEN);
+		state->shader = Platform::init_texture(runtime->upload_context, EditorResources::SHADER_PNG_WIDTH, EditorResources::SHADER_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(runtime->upload_context, state->shader, EditorResources::SHADER_PNG, EditorResources::SHADER_PNG_LEN);
+		state->file = Platform::init_texture(runtime->upload_context, EditorResources::FILE_PNG_WIDTH, EditorResources::FILE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(runtime->upload_context, state->file, EditorResources::FILE_PNG, EditorResources::FILE_PNG_LEN);
+		state->folder = Platform::init_texture(runtime->upload_context, EditorResources::FOLDER_PNG_WIDTH, EditorResources::FOLDER_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(runtime->upload_context, state->folder, EditorResources::FOLDER_PNG, EditorResources::FOLDER_PNG_LEN);
+		state->mesh = Platform::init_texture(runtime->upload_context, EditorResources::MESH_PNG_WIDTH, EditorResources::MESH_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(runtime->upload_context, state->mesh, EditorResources::MESH_PNG, EditorResources::MESH_PNG_LEN);
 	}
 
 	void update_windows(EditorWindowState *state, f64 dt) { scene_window_update(state, dt); }
