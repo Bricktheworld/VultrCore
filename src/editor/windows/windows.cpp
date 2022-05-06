@@ -77,25 +77,28 @@ namespace Vultr
 
 		if (state->selected_entity.has_value())
 		{
-			auto ent           = state->selected_entity.value();
-			auto transform_mat = get_world_transform(ent);
-			auto view_mat      = view_matrix(state->editor_camera_transform);
-			auto camera_proj   = projection_matrix(state->editor_camera, window_width, window_height);
-
-			ImGuizmo::Manipulate(glm::value_ptr(view_mat), glm::value_ptr(camera_proj), (ImGuizmo::OPERATION)state->current_operation, ImGuizmo::LOCAL, glm::value_ptr(transform_mat), nullptr, nullptr);
-
-			if (ImGuizmo::IsUsing())
+			auto ent = state->selected_entity.value();
+			if (has_component<Transform>(ent))
 			{
-				auto &transform = get_component<Transform>(ent);
-				Vec3 translation;
-				Vec3 rotation;
-				Vec3 scale;
-				Math::decompose_transform(get_local_transform(transform_mat, ent), translation, rotation, scale);
+				auto transform_mat = get_world_transform(ent);
+				auto view_mat      = view_matrix(state->editor_camera_transform);
+				auto camera_proj   = projection_matrix(state->editor_camera, window_width, window_height);
 
-				Vec3 deltaRotation = rotation - glm::eulerAngles(transform.rotation);
-				transform.position = translation;
-				transform.rotation = Quat(rotation);
-				transform.scale    = scale;
+				ImGuizmo::Manipulate(glm::value_ptr(view_mat), glm::value_ptr(camera_proj), (ImGuizmo::OPERATION)state->current_operation, ImGuizmo::LOCAL, glm::value_ptr(transform_mat), nullptr, nullptr);
+
+				if (ImGuizmo::IsUsing())
+				{
+					auto &transform = get_component<Transform>(ent);
+					Vec3 translation;
+					Vec3 rotation;
+					Vec3 scale;
+					Math::decompose_transform(get_local_transform(transform_mat, ent), translation, rotation, scale);
+
+					Vec3 deltaRotation = rotation - glm::eulerAngles(transform.rotation);
+					transform.position = translation;
+					transform.rotation = Quat(rotation);
+					transform.scale    = scale;
+				}
 			}
 		}
 
@@ -264,11 +267,38 @@ namespace Vultr
 			}
 		}
 
+		bool deleted = false;
+		if (ImGui::BeginPopupContextItem())
+		{
+			if (has_parent(entity))
+			{
+				if (ImGui::Selectable("Unparent"))
+				{
+					unparent(entity);
+					ImGui::CloseCurrentPopup();
+				}
+			}
+			if (ImGui::Selectable("Delete"))
+			{
+				if (state->selected_entity == entity)
+				{
+					state->selected_entity = None;
+				}
+				destroy_entity(entity);
+				ImGui::CloseCurrentPopup();
+				deleted = true;
+			}
+			ImGui::EndPopup();
+		}
+
 		if (open)
 		{
-			for (auto child : get_children(entity))
+			if (!deleted)
 			{
-				render_entity_hierarchy(child, state, project);
+				for (auto child : get_children(entity))
+				{
+					render_entity_hierarchy(child, state, project);
+				}
 			}
 			ImGui::TreePop();
 		}
@@ -288,6 +318,27 @@ namespace Vultr
 				continue;
 
 			render_entity_hierarchy(entity, state, project);
+		}
+
+		if (ImGui::Button("Create Entity"))
+		{
+			ImGui::OpenPopup("EntityCreationPopup");
+		}
+
+		if (ImGui::BeginPopup("EntityCreationPopup"))
+		{
+			if (ImGui::Selectable("Mesh"))
+			{
+				create_entity("Mesh Entity", Transform{}, Material{}, Mesh{});
+				ImGui::CloseCurrentPopup();
+			}
+
+			if (ImGui::Selectable("Empty"))
+			{
+				create_entity("Empty Entity");
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
 		}
 
 		auto scene_path = project->resource_dir / "test_save.vultr";
@@ -391,13 +442,45 @@ namespace Vultr
 		ImGui::Begin("Inspector");
 		if (state->selected_entity)
 		{
-			ImGui::Text("%s", get_label(state->selected_entity.value())->c_str());
-			auto info = world()->component_manager.get_component_editor_rtti(state->selected_entity.value());
-			for (auto [type, fields] : info)
+			auto *current_label = get_label(state->selected_entity.value());
+			size_t buf_size     = current_label->size() + 256;
+			char buf[buf_size];
+			strncpy(buf, current_label->c_str(), current_label->size());
+			if (ImGui::InputText("Label", buf, buf_size))
+			{
+				printf("Updating label\n");
+				*current_label = buf;
+			}
+
+			auto *cm  = &world()->component_manager;
+			auto info = cm->get_component_editor_rtti(state->selected_entity.value());
+			for (auto [type, fields, data] : info)
 			{
 				if (ImGui::CollapsingHeader(type.name.c_str()))
 				{
 					ImGui::PushID(type.name.c_str());
+					if (ImGui::Button("Reset"))
+					{
+						for (auto &field : type.get_fields())
+						{
+							field.initialize_default(data);
+						}
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Copy"))
+					{
+						state->component_clipboard.resize(type.size());
+						state->component_clipboard.fill(static_cast<byte *>(data), type.size());
+					}
+					if (state->component_clipboard.size() == type.size())
+					{
+						ImGui::SameLine();
+						if (ImGui::Button("Paste"))
+						{
+							Utils::copy(static_cast<byte *>(data), state->component_clipboard.storage, type.size());
+						}
+					}
+
 					for (auto editor_field : fields)
 					{
 						auto &field = editor_field.field;
@@ -588,10 +671,54 @@ namespace Vultr
 					}
 					if (ImGui::Button("Remove"))
 					{
+						auto index = cm->type_to_index.get(type.id);
+						cm->component_arrays[index]->remove_entity(state->selected_entity.value());
+						Signature component_signature;
+						component_signature.set(index, true);
+						world()->entity_manager.remove_signature(state->selected_entity.value(), component_signature);
 					}
 
 					ImGui::PopID();
 				}
+			}
+
+			if (ImGui::Button("Add Component"))
+			{
+				ImGui::OpenPopup("ComponentAddPopup");
+			}
+
+			if (ImGui::BeginPopup("ComponentAddPopup"))
+			{
+				for (auto [type_id, index] : cm->type_to_index)
+				{
+					auto *array = cm->component_arrays[index];
+					auto &type  = array->rtti_type;
+
+					if (ImGui::Selectable(type.name.c_str()))
+					{
+						Signature component_signature;
+						component_signature.set(index, true);
+						const auto &signature = get_signature(state->selected_entity.value());
+
+						if (signature.at(index))
+							continue;
+
+						auto new_index = array->m_size;
+						array->m_entity_to_index.set(state->selected_entity.value(), new_index);
+						array->m_index_to_entity.set(new_index, state->selected_entity.value());
+						auto *component_memory = static_cast<byte *>(array->m_array) + (new_index * type.size());
+						array->m_size++;
+
+						for (auto &field : type.get_fields())
+						{
+							field.initialize_default(component_memory);
+						}
+
+						world()->entity_manager.add_signature(state->selected_entity.value(), component_signature);
+						ImGui::CloseCurrentPopup();
+					}
+				}
+				ImGui::EndPopup();
 			}
 		}
 		ImGui::End();
@@ -631,11 +758,7 @@ namespace Vultr
 		}
 	}
 
-	static void resource_window_init(Project *project, EditorWindowState *state)
-	{
-		state->resource_browser_state.current_dir = project->resource_dir;
-		change_dir(project->resource_dir, state);
-	}
+	static void resource_window_init(Project *project, EditorWindowState *state) { change_dir(project->resource_dir, state); }
 
 	static void path_drag_drop_src(const Path &path, str type)
 	{
@@ -684,7 +807,7 @@ namespace Vultr
 		ImGui::PopTextWrapPos();
 	}
 
-	void resource_browser_window_draw(EditorWindowState *editor_state)
+	void resource_browser_window_draw(Project *project, EditorWindowState *editor_state)
 	{
 		ImGui::Begin("Asset Browser");
 		u32 num_cols = get_num_cols();
@@ -721,6 +844,49 @@ namespace Vultr
 				if (ImGui::Selectable("##", state->selected_index.has_value() && state->selected_index.value() == i, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(WIDGET_SIZE, WIDGET_SIZE)))
 				{
 					state->selected_index = i;
+				}
+
+				if (get_resource_type(file) == ResourceType::SHADER)
+				{
+					if (ImGui::BeginPopupContextItem())
+					{
+						if (ImGui::Selectable("New Material"))
+						{
+							CHECK_UNWRAP(auto local_shader_path, local_resource_file(project, file));
+							Resource<Platform::Shader *> shader(local_shader_path);
+							shader.wait_loaded();
+
+							u32 count    = 1;
+							auto new_mat = state->current_dir / "new_material.mat";
+							while (exists(new_mat))
+							{
+								new_mat = state->current_dir / (String("new_material_") + serialize_u64(count) + String(".mat"));
+								count++;
+							}
+
+							String out_buf{};
+							out_buf += local_shader_path.string();
+
+							auto *reflection = Platform::get_reflection_data(shader.value());
+
+							byte buf[Platform::MAX_MATERIAL_SIZE];
+							for (auto &uniform_member : reflection->uniform_members)
+							{
+								out_buf += "\n" + uniform_member.name + ":" + serialize_member(buf, uniform_member);
+							}
+
+							for (auto &sampler_refl : reflection->samplers)
+							{
+								out_buf += "\n" + sampler_refl.name + ":" + Platform::VULTR_NULL_FILE_HANDLE;
+							}
+
+							fwrite_all(new_mat, out_buf, StreamWriteMode::OVERWRITE);
+							change_dir(state->current_dir, editor_state);
+
+							ImGui::CloseCurrentPopup();
+						}
+						ImGui::EndPopup();
+					}
 				}
 
 				path_drag_drop_src(file, "File");
@@ -844,7 +1010,7 @@ namespace Vultr
 		component_inspector_window_draw(project, state);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
-		resource_browser_window_draw(state);
+		resource_browser_window_draw(project, state);
 
 		ImGui::End();
 

@@ -79,7 +79,7 @@ namespace Vultr
 			if (current_parent != INVALID_ENTITY)
 			{
 				m_living_entities.get(entity).parent = INVALID_ENTITY;
-				m_living_entities.get(current_parent).children.set<Entity>(entity);
+				m_living_entities.get(current_parent).children.remove<Entity>(entity);
 			}
 		}
 
@@ -89,6 +89,11 @@ namespace Vultr
 
 		void destroy_entity(Entity entity)
 		{
+			auto parent = m_living_entities.get(entity).parent;
+			if (parent != INVALID_ENTITY)
+			{
+				m_living_entities.get(parent).children.remove(entity);
+			}
 			auto res = m_living_entities.remove(entity);
 			ASSERT(res, "Entity has already been destroyed!");
 			m_queue.push(entity);
@@ -110,6 +115,7 @@ namespace Vultr
 		void get_rtti(Entity entity, Vector<Tuple<Type, void *>> *rtti) { m_get_rtti(this, entity, rtti); }
 		void get_editor_rtti(Entity entity, Vector<EditorType> *rtti) { m_get_editor_rtti(this, entity, rtti); }
 
+		void remove_entity(Entity entity) { CHECK(try_remove_entity(entity)); }
 		ErrorOr<void> try_remove_entity(Entity entity) { return m_try_remove_entity(this, entity); }
 		TryRemoveEntityApi m_try_remove_entity = nullptr;
 		DestroyApi m_destroy                   = nullptr;

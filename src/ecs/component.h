@@ -23,7 +23,10 @@ namespace Vultr
 	T name = val;                                                                                                                                                                                                     \
 	static constexpr void *__REFL_##name##_GET_ADDR(void *component) { return &__REFL_CAST(component)->name; }                                                                                                        \
 	template <>                                                                                                                                                                                                       \
-	static constexpr Field __REFL_GET_FIELD<__COUNTER__ - __REFL_START_COUNT> = init_field(#name, get_type<T>, __REFL_##name##_GET_ADDR, [](void *data) { new (data) T(); });
+	static constexpr Field __REFL_GET_FIELD<__COUNTER__ - __REFL_START_COUNT> = init_field(#name, get_type<T>, __REFL_##name##_GET_ADDR, [](void *data) {                                                             \
+		new (data) T();                                                                                                                                                                                               \
+		*static_cast<T *>(data) = val;                                                                                                                                                                                \
+	});
 
 #define VCOMPONENT_END()                                                                                                                                                                                              \
 	static constexpr u32 __REFL_MEMBER_COUNT = __COUNTER__ - __REFL_START_COUNT;                                                                                                                                      \
@@ -55,17 +58,18 @@ namespace Vultr
 	struct EditorType
 	{
 		EditorType() = default;
-		EditorType(const Type &type, void *data) : type(type)
+		EditorType(const Type &type, void *data) : type(type), data(data)
 		{
 			for (auto &field : type.get_fields())
 			{
 				fields.push_back({field, field.get_addr<void>(data)});
 			}
 		}
-		EditorType(const Type &type, const Vector<EditorField> &fields) : type(type), fields(fields) {}
+		EditorType(const Type &type, void *data, const Vector<EditorField> &fields) : type(type), data(data), fields(fields) {}
 
 		Type type{};
 		Vector<EditorField> fields{};
+		void *data = nullptr;
 	};
 
 	template <typename T>

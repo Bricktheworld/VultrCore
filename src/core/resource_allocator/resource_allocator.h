@@ -96,6 +96,7 @@ namespace Vultr
 
 		bool is_loaded(u32 id)
 		{
+			Platform::Lock lock(mutex);
 			ASSERT(resources.contains(id), "Cannot get invalid resources %u", id);
 			return resources.get(id).load_state == ResourceLoadState::LOADED;
 		}
@@ -157,7 +158,11 @@ namespace Vultr
 			}
 		}
 
-		Path get_resource_path(u32 id) { return resources.get(id).path; }
+		Path get_resource_path(u32 id)
+		{
+			Platform::Lock lock(mutex);
+			return resources.get(id).path;
+		}
 
 		Hashmap<u32, ResourceInfo<T>> resources{};
 		Queue<u32, 1024> load_queue{};

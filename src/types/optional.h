@@ -102,7 +102,6 @@ namespace Vultr
 
 		template <typename U = T>
 		requires(!is_same<U, bool>) operator bool() const { return has_value(); }
-		// operator T() = delete;
 
 		bool operator==(const Option &other) const
 		{
@@ -113,6 +112,13 @@ namespace Vultr
 			if (!other.has_value())
 				return false;
 			return value() == other.value();
+		}
+
+		bool operator==(const T &other) const
+		{
+			if (!has_value())
+				return false;
+			return value() == other;
 		}
 
 	  private:

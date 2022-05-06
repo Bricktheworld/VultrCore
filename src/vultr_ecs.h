@@ -125,7 +125,7 @@ namespace Vultr
 	template <typename T>
 	void remove_component(Entity entity)
 	{
-		remove_component<T>(world(), entity);
+		world_remove_component<T>(world(), entity);
 	}
 
 	template <typename... Ts>
@@ -182,9 +182,6 @@ namespace Vultr
 
 	inline String *world_get_label(World *w, Entity entity) { return w->entity_manager.get_label(entity); }
 	inline String *get_label(Entity entity) { return world()->entity_manager.get_label(entity); }
-
-	inline void world_unparent(World *w, Entity entity) { w->entity_manager.unparent(entity); }
-	inline void unparent(Entity entity) { world_unparent(world(), entity); }
 
 	inline Option<Entity> world_get_parent(World *w, Entity entity) { return w->entity_manager.get_parent(entity); }
 	inline Option<Entity> get_parent(Entity entity) { return world_get_parent(world(), entity); }
@@ -248,13 +245,31 @@ namespace Vultr
 		Vec3 scale;
 		Math::decompose_transform(local_transform, translation, rotation, scale);
 
-		Vec3 deltaRotation = rotation - glm::eulerAngles(transform.rotation);
 		transform.position = translation;
 		transform.rotation = Quat(rotation);
 		transform.scale    = scale;
 	}
 
 	inline void reparent_entity(Entity entity, Entity parent) { world_reparent_entity(world(), entity, parent); }
+
+	inline void world_unparent(World *w, Entity entity)
+	{
+		if (world_has_component<Transform>(w, entity))
+		{
+			Mat4 world_transform = world_get_world_transform(w, entity);
+			auto &transform      = world_get_component<Transform>(w, entity);
+
+			Vec3 translation;
+			Vec3 rotation;
+			Vec3 scale;
+			Math::decompose_transform(world_transform, translation, rotation, scale);
+			transform.position = translation;
+			transform.rotation = Quat(rotation);
+			transform.scale    = scale;
+		}
+		w->entity_manager.unparent(entity);
+	}
+	inline void unparent(Entity entity) { world_unparent(world(), entity); }
 
 	inline void world_destroy_entity(World *w, Entity entity)
 	{
