@@ -240,14 +240,7 @@ namespace Vultr
 		Mat4 local_transform = world_get_local_transform(w, world_transform, entity);
 
 		auto &transform      = world_get_component<Transform>(w, entity);
-		Vec3 translation;
-		Vec3 rotation;
-		Vec3 scale;
-		Math::decompose_transform(local_transform, translation, rotation, scale);
-
-		transform.position = translation;
-		transform.rotation = Quat(rotation);
-		transform.scale    = scale;
+		Math::decompose_transform(local_transform, &transform.position, &transform.rotation, &transform.scale);
 	}
 
 	inline void reparent_entity(Entity entity, Entity parent) { world_reparent_entity(world(), entity, parent); }
@@ -259,13 +252,7 @@ namespace Vultr
 			Mat4 world_transform = world_get_world_transform(w, entity);
 			auto &transform      = world_get_component<Transform>(w, entity);
 
-			Vec3 translation;
-			Vec3 rotation;
-			Vec3 scale;
-			Math::decompose_transform(world_transform, translation, rotation, scale);
-			transform.position = translation;
-			transform.rotation = Quat(rotation);
-			transform.scale    = scale;
+			Math::decompose_transform(world_transform, &transform.position, &transform.rotation, &transform.scale);
 		}
 		w->entity_manager.unparent(entity);
 	}

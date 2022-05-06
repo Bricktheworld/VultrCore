@@ -6,9 +6,10 @@ namespace Vultr
 	ErrorOr<Project> load_game(const Path &build_dir, const Path &resource_dir)
 	{
 		Project project{};
-		auto dll_location    = build_dir / VULTR_GAMEPLAY_NAME;
-		project.build_dir    = build_dir;
-		project.resource_dir = resource_dir;
+		auto dll_location          = build_dir / VULTR_GAMEPLAY_NAME;
+		project.build_dir          = build_dir;
+		project.resource_dir       = resource_dir;
+		project.build_resource_dir = build_dir / "res";
 		printf("Opening %s\n", dll_location.c_str());
 		TRY_UNWRAP(project.dll, Platform::dl_open(dll_location.c_str()));
 
@@ -53,6 +54,10 @@ namespace Vultr
 			{
 				return ResourceType::CPP_SRC;
 			}
+			else if (extension == ".vultr")
+			{
+				return ResourceType::SCENE;
+			}
 			else
 			{
 				return ResourceType::OTHER;
@@ -63,6 +68,15 @@ namespace Vultr
 			return ResourceType::OTHER;
 		}
 	}
+
+	Path get_texture_resource(const Project *project, const Path &local) { return project->build_resource_dir / (local.string() + ".texture"); }
+	Tuple<Path, Path> get_shader_resource(const Project *project, const Path &local)
+	{
+		return {project->build_resource_dir / (local.string() + ".vert_spv"), project->build_resource_dir / (local.string() + ".frag_spv")};
+	}
+	Path get_material_resource(const Project *project, const Path &local) { return project->build_resource_dir / local; }
+	Tuple<Path, Path> get_mesh_resource(const Project *project, const Path &local) { return {project->build_resource_dir / (local.string() + ".vertex"), project->build_resource_dir / (local.string() + ".index")}; }
+	Path get_scene_resource(const Project *project, const Path &local) { return project->build_resource_dir / local; }
 
 	static ErrorOr<void> import_resource_file(const Path &out_dir, const Path &local_src, const Path &full_src)
 	{

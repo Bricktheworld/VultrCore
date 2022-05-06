@@ -18,7 +18,7 @@
 //		}
 // }
 
-static void mesh_loader_thread(const Vultr::Path &resource_dir)
+static void mesh_loader_thread(const Vultr::Project *project)
 {
 	auto *c         = Vultr::Platform::init_upload_context(Vultr::engine()->context);
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Mesh *>();
@@ -36,11 +36,13 @@ static void mesh_loader_thread(const Vultr::Path &resource_dir)
 
 		printf("Loading mesh %u, from path %s\n", resource, path.c_str());
 
+		auto [vert, index] = Vultr::get_mesh_resource(project, path);
+
 		Vultr::Buffer vertex_buffer;
-		Vultr::fread_all(resource_dir / (path.string() + ".vertex"), &vertex_buffer);
+		Vultr::fread_all(vert, &vertex_buffer);
 
 		Vultr::Buffer index_buffer;
-		Vultr::fread_all(resource_dir / (path.string() + ".index"), &index_buffer);
+		Vultr::fread_all(index, &index_buffer);
 
 		auto *mesh = Vultr::Platform::load_mesh_memory(c, vertex_buffer, index_buffer);
 		printf("Loaded mesh %p from path %s\n", mesh, path.c_str());
@@ -72,7 +74,7 @@ static void mesh_free_thread()
 	}
 }
 
-static void material_loader_thread(const Vultr::Path &resource_dir)
+static void material_loader_thread(const Vultr::Project *project)
 {
 	auto *c         = Vultr::Platform::init_upload_context(Vultr::engine()->context);
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Material *>();
@@ -91,7 +93,7 @@ static void material_loader_thread(const Vultr::Path &resource_dir)
 		printf("Loading material %u, from path %s\n", resource, path.c_str());
 
 		Vultr::String material_src;
-		Vultr::fread_all(resource_dir / path, &material_src);
+		Vultr::fread_all(Vultr::get_material_resource(project, path), &material_src);
 
 		auto shader_path = Vultr::split(material_src, "\n")[0];
 		auto shader      = Vultr::Resource<Vultr::Platform::Shader *>(Vultr::Path(shader_path));
@@ -126,7 +128,7 @@ static void material_free_thread()
 	}
 }
 
-static void shader_loader_thread(const Vultr::Path &resource_dir)
+static void shader_loader_thread(const Vultr::Project *project)
 {
 	auto *c         = Vultr::Platform::init_upload_context(Vultr::engine()->context);
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Shader *>();
@@ -145,9 +147,9 @@ static void shader_loader_thread(const Vultr::Path &resource_dir)
 		printf("Loading shader %u, from path %s\n", resource, path.c_str());
 
 		Vultr::Platform::CompiledShaderSrc shader_src{};
-		Vultr::fread_all(resource_dir / (path.string() + ".vert_spv"), &shader_src.vert_src);
-
-		Vultr::fread_all(resource_dir / (path.string() + ".frag_spv"), &shader_src.frag_src);
+		auto [vert, frag] = Vultr::get_shader_resource(project, path);
+		Vultr::fread_all(vert, &shader_src.vert_src);
+		Vultr::fread_all(frag, &shader_src.frag_src);
 
 		CHECK_UNWRAP(auto reflection, Vultr::Platform::try_reflect_shader(shader_src));
 
@@ -180,7 +182,7 @@ static void shader_free_thread()
 	}
 }
 
-static void texture_loader_thread(const Vultr::Path &resource_dir)
+static void texture_loader_thread(const Vultr::Project *project)
 {
 	auto *c         = Vultr::Platform::init_upload_context(Vultr::engine()->context);
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
@@ -199,7 +201,7 @@ static void texture_loader_thread(const Vultr::Path &resource_dir)
 		printf("Loading texture %u, from path %s\n", resource, path.c_str());
 
 		Vultr::Buffer src;
-		Vultr::fread_all((resource_dir) / (path.string() + ".texture"), &src);
+		Vultr::fread_all(Vultr::get_texture_resource(project, path), &src);
 		auto *texture = Vultr::Platform::init_texture(c, *(f64 *)&src[0], *(f64 *)&src[sizeof(f64)], Vultr::Platform::TextureFormat::RGBA8);
 		Vultr::Platform::fill_texture(c, texture, &src[sizeof(f64) * 2], src.size() - 2 * sizeof(f64));
 
@@ -252,19 +254,19 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 			Vultr::init_resource_allocators();
 
-			Platform::Thread mesh_loading_thread(mesh_loader_thread, build_dir / "res");
+			Platform::Thread mesh_loading_thread(mesh_loader_thread, &project);
 			mesh_loading_thread.detach();
 			Platform::Thread mesh_freeing_thread(mesh_free_thread);
 			mesh_freeing_thread.detach();
-			Platform::Thread material_loading_thread(material_loader_thread, build_dir / "res");
+			Platform::Thread material_loading_thread(material_loader_thread, &project);
 			material_loading_thread.detach();
 			Platform::Thread material_freeing_thread(material_free_thread);
 			material_freeing_thread.detach();
-			Platform::Thread shader_loading_thread(shader_loader_thread, build_dir / "res");
+			Platform::Thread shader_loading_thread(shader_loader_thread, &project);
 			shader_loading_thread.detach();
 			Platform::Thread shader_freeing_thread(shader_free_thread);
 			shader_freeing_thread.detach();
-			Platform::Thread texture_loading_thread(texture_loader_thread, build_dir / "res");
+			Platform::Thread texture_loading_thread(texture_loader_thread, &project);
 			texture_loading_thread.detach();
 			Platform::Thread texture_freeing_thread(texture_free_thread);
 			texture_freeing_thread.detach();

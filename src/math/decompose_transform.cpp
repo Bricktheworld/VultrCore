@@ -6,7 +6,7 @@
 
 namespace Vultr::Math
 {
-	bool decompose_transform(const Mat4 &transform, Vec3 &translation, Vec3 &rotation, Vec3 &scale)
+	bool decompose_transform(const Mat4 &transform, Vec3 *translation, Quat *rotation, Vec3 *scale)
 	{
 		using namespace glm;
 		using T = float;
@@ -27,7 +27,7 @@ namespace Vultr::Math
 		}
 
 		// Next take care of translation (easy).
-		translation    = vec3(LocalMatrix[3]);
+		*translation   = Vec3(LocalMatrix[3]);
 		LocalMatrix[3] = vec4(0, 0, 0, LocalMatrix[3].w);
 
 		vec3 Row[3], Pdum3;
@@ -38,24 +38,26 @@ namespace Vultr::Math
 				Row[i][j] = LocalMatrix[i][j];
 
 		// Compute X scale factor and normalize first row.
-		scale.x    = length(Row[0]);
-		Row[0]     = detail::scale(Row[0], static_cast<T>(1));
-		scale.y    = length(Row[1]);
-		Row[1]     = detail::scale(Row[1], static_cast<T>(1));
-		scale.z    = length(Row[2]);
-		Row[2]     = detail::scale(Row[2], static_cast<T>(1));
+		scale->x = length(Row[0]);
+		Row[0]   = detail::scale(Row[0], static_cast<T>(1));
+		scale->y = length(Row[1]);
+		Row[1]   = detail::scale(Row[1], static_cast<T>(1));
+		scale->z = length(Row[2]);
+		Row[2]   = detail::scale(Row[2], static_cast<T>(1));
 
-		rotation.y = asin(-Row[0][2]);
-		if (cos(rotation.y) != 0)
+		Vec3 euler_rotation{};
+		euler_rotation.y = asin(-Row[0][2]);
+		if (cos(euler_rotation.y) != 0)
 		{
-			rotation.x = atan2(Row[1][2], Row[2][2]);
-			rotation.z = atan2(Row[0][1], Row[0][0]);
+			euler_rotation.x = atan2(Row[1][2], Row[2][2]);
+			euler_rotation.z = atan2(Row[0][1], Row[0][0]);
 		}
 		else
 		{
-			rotation.x = atan2(-Row[2][0], Row[1][1]);
-			rotation.z = 0;
+			euler_rotation.x = atan2(-Row[2][0], Row[1][1]);
+			euler_rotation.z = 0;
 		}
+		*rotation = Quat(euler_rotation);
 
 		return true;
 	}

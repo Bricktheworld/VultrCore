@@ -6,6 +6,34 @@
 #include <editor/res/resources.h>
 #include <ecs/serialization.h>
 
+namespace ImGui
+{
+	bool InputText(const Vultr::StringView &label, Vultr::String *string)
+	{
+		size_t buf_size = string->size() + 256;
+		char buf[buf_size];
+		strncpy(buf, string->c_str(), string->size());
+		if (ImGui::InputText(label.c_str(), buf, buf_size))
+		{
+			printf("Updating label\n");
+			*string = buf;
+			return true;
+		}
+		return false;
+	}
+
+	void ErrorModal(const Vultr::StringView &label, const Vultr::StringView &message)
+	{
+		if (ImGui::BeginPopupModal(label.c_str()))
+		{
+			ImGui::Text("An error has occurred!");
+			ImGui::Text("%s", message.c_str());
+			if (ImGui::Button("OK"))
+				ImGui::CloseCurrentPopup();
+			ImGui::EndPopup();
+		}
+	}
+} // namespace ImGui
 namespace Vultr
 {
 	void scene_window_update(EditorWindowState *state, f64 dt)
@@ -45,12 +73,91 @@ namespace Vultr
 		}
 	}
 
+	static ErrorOr<Path> local_resource_file(Project *project, const Path &full_path)
+	{
+		if (starts_with(full_path.string(), project->resource_dir.string()))
+		{
+			return Path(full_path.string().substr(project->resource_dir.string().length()));
+		}
+		else if (starts_with(full_path.string(), project->build_resource_dir.string()))
+		{
+			return Path(full_path.string().substr(project->build_resource_dir.string().length()));
+		}
+		else
+		{
+			return Error("Not a valid resource!");
+		}
+	}
+
+	static bool resource_is_imported(Project *project, const Path &full_path)
+	{
+		if check (local_resource_file(project, full_path), auto path, auto err)
+		{
+			switch (get_resource_type(path))
+			{
+				case ResourceType::TEXTURE:
+				{
+					return exists(get_texture_resource(project, path));
+				}
+				case ResourceType::SHADER:
+				{
+					auto [vert, frag] = get_shader_resource(project, path);
+					return exists(vert) && exists(frag);
+				}
+				case ResourceType::MATERIAL:
+				{
+					return exists(get_material_resource(project, path));
+				}
+				case ResourceType::MESH:
+				{
+					auto [vert, index] = get_mesh_resource(project, path);
+					return exists(vert) && exists(index);
+				}
+				case ResourceType::SCENE:
+					return exists(get_scene_resource(project, path));
+				case ResourceType::CPP_SRC:
+				case ResourceType::OTHER:
+					return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+
 	void scene_window_draw(EditorWindowState *state, EditorRuntime *runtime)
 	{
 		ImGui::Begin("Game");
 		ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
 		auto output_texture        = Platform::imgui_get_texture_id(Platform::get_attachment_texture(runtime->render_system->output_framebuffer, 0));
 		ImGui::Image(output_texture, viewport_panel_size);
+		if (ImGui::BeginDragDropTarget())
+		{
+			const auto *payload = ImGui::AcceptDragDropPayload("File");
+
+			if (payload != nullptr)
+			{
+				auto file = Path(static_cast<char *>(payload->Data));
+				if (get_resource_type(file) == ResourceType::SCENE)
+				{
+					String src;
+					fread_all(file, &src);
+					printf("Freeing scene......................\n");
+					world()->component_manager.destroy_component_arrays();
+					world()->entity_manager = EntityManager();
+					printf("Initializing new scene.............\n");
+					CHECK(read_world_yaml(src, world()));
+				}
+				else
+				{
+					ImGui::OpenPopup("Invalid Resource");
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		ImGui::ErrorModal("Invalid Resource", "Resource provided is invalid!");
 
 		if (Platform::mouse_down(engine()->window, Platform::Input::MOUSE_RIGHT))
 		{
@@ -89,15 +196,7 @@ namespace Vultr
 				if (ImGuizmo::IsUsing())
 				{
 					auto &transform = get_component<Transform>(ent);
-					Vec3 translation;
-					Vec3 rotation;
-					Vec3 scale;
-					Math::decompose_transform(get_local_transform(transform_mat, ent), translation, rotation, scale);
-
-					Vec3 deltaRotation = rotation - glm::eulerAngles(transform.rotation);
-					transform.position = translation;
-					transform.rotation = Quat(rotation);
-					transform.scale    = scale;
+					Math::decompose_transform(get_local_transform(transform_mat, ent), &transform.position, &transform.rotation, &transform.scale);
 				}
 			}
 		}
@@ -347,25 +446,7 @@ namespace Vultr
 			auto out = FileOutputStream(scene_path, StreamFormat::BINARY, StreamWriteMode::OVERWRITE);
 			CHECK(serialize_world_yaml(world(), &out));
 		}
-		if (ImGui::Button("Load Scene"))
-		{
-			String src;
-			fread_all(scene_path, &src);
-			printf("Freeing scene......................\n");
-			world()->component_manager.destroy_component_arrays();
-			world()->entity_manager = EntityManager();
-			printf("Initializing new scene.............\n");
-			CHECK(read_world_yaml(src, world()));
-		}
 		ImGui::End();
-	}
-
-	static ErrorOr<Path> local_resource_file(Project *project, const Path &full_path)
-	{
-		if (!starts_with(full_path.string(), project->resource_dir.string()))
-			return Error("Not a valid resource!");
-
-		return Path(full_path.string().substr(project->resource_dir.string().length()));
 	}
 
 	template <typename T>
@@ -404,10 +485,21 @@ namespace Vultr
 							break;
 					}
 
-					if (matches)
+					if (resource_is_imported(project, Path(full_path)))
 					{
-						auto new_res = Resource<T>(file);
-						*resource    = new_res;
+						if (matches)
+						{
+							auto new_res = Resource<T>(file);
+							*resource    = new_res;
+						}
+						else
+						{
+							ImGui::OpenPopup("Invalid Resource");
+						}
+					}
+					else
+					{
+						ImGui::OpenPopup("Resource Not Imported");
 					}
 				}
 				else
@@ -416,6 +508,9 @@ namespace Vultr
 			}
 			ImGui::EndDragDropTarget();
 		}
+
+		ImGui::ErrorModal("Invalid Resource", "Resource provided is invalid!");
+		ImGui::ErrorModal("Resource Not Imported", "Resource provided has not been imported, please reimport assets!");
 
 		ImGui::SameLine();
 		if (!resource->empty())
@@ -442,16 +537,7 @@ namespace Vultr
 		ImGui::Begin("Inspector");
 		if (state->selected_entity)
 		{
-			auto *current_label = get_label(state->selected_entity.value());
-			size_t buf_size     = current_label->size() + 256;
-			char buf[buf_size];
-			strncpy(buf, current_label->c_str(), current_label->size());
-			if (ImGui::InputText("Label", buf, buf_size))
-			{
-				printf("Updating label\n");
-				*current_label = buf;
-			}
-
+			ImGui::InputText("Label", get_label(state->selected_entity.value()));
 			auto *cm  = &world()->component_manager;
 			auto info = cm->get_component_editor_rtti(state->selected_entity.value());
 			for (auto [type, fields, data] : info)
@@ -740,9 +826,10 @@ namespace Vultr
 
 	static void draw_directory(const Path &path) {}
 
-	static void change_dir(Path dir, EditorWindowState *state)
+	static void change_dir(Project *project, Path dir, EditorWindowState *state)
 	{
-		state->resource_browser_state.current_dir = dir;
+		state->resource_browser_state.selected_index = None;
+		state->resource_browser_state.current_dir    = dir;
 		state->resource_browser_state.dirs.clear();
 		state->resource_browser_state.files.clear();
 		for (auto path : DirectoryIterator(dir))
@@ -753,12 +840,13 @@ namespace Vultr
 			}
 			else
 			{
-				state->resource_browser_state.files.push_back(path);
+				if (resource_is_imported(project, path))
+					state->resource_browser_state.files.push_back(path);
 			}
 		}
 	}
 
-	static void resource_window_init(Project *project, EditorWindowState *state) { change_dir(project->resource_dir, state); }
+	static void resource_window_init(Project *project, EditorWindowState *state) { change_dir(project, project->resource_dir, state); }
 
 	static void path_drag_drop_src(const Path &path, str type)
 	{
@@ -784,6 +872,9 @@ namespace Vultr
 				return state->mesh;
 			case ResourceType::CPP_SRC:
 				return state->cpp_source;
+			case ResourceType::SCENE:
+				// TODO(Brandon): Get an actual icon for scenes.
+				return state->file;
 			case ResourceType::OTHER:
 				return state->file;
 		}
@@ -813,17 +904,36 @@ namespace Vultr
 		u32 num_cols = get_num_cols();
 		auto *state  = &editor_state->resource_browser_state;
 
-		if (ImGui::Button("BACK"))
+		if (ImGui::Button("Back"))
 		{
 			if check (get_parent(state->current_dir), auto parent, auto err)
 			{
-				change_dir(parent, editor_state);
+				change_dir(project, parent, editor_state);
 				ImGui::End();
 				return;
 			}
 			else
 			{
 			}
+		}
+		ImGui::SameLine();
+
+		{
+			String reimport_error_message;
+			if (ImGui::Button("Reimport"))
+			{
+				auto res = import_resource_dir(project);
+				if (res.is_error())
+				{
+					ImGui::OpenPopup("Reimport-Error");
+					reimport_error_message = res.get_error().message;
+				}
+				change_dir(project, state->current_dir, editor_state);
+				ImGui::End();
+				return;
+			}
+
+			ImGui::ErrorModal("Reimport-Error", reimport_error_message);
 		}
 
 		if (ImGui::BeginTable("Asset Table", static_cast<s32>(num_cols)))
@@ -846,48 +956,63 @@ namespace Vultr
 					state->selected_index = i;
 				}
 
-				if (get_resource_type(file) == ResourceType::SHADER)
+				if (ImGui::BeginPopupContextItem())
 				{
-					if (ImGui::BeginPopupContextItem())
+					if (get_resource_type(file) == ResourceType::SHADER)
 					{
 						if (ImGui::Selectable("New Material"))
 						{
-							CHECK_UNWRAP(auto local_shader_path, local_resource_file(project, file));
-							Resource<Platform::Shader *> shader(local_shader_path);
-							shader.wait_loaded();
-
-							u32 count    = 1;
-							auto new_mat = state->current_dir / "new_material.mat";
-							while (exists(new_mat))
+							if (resource_is_imported(project, file))
 							{
-								new_mat = state->current_dir / (String("new_material_") + serialize_u64(count) + String(".mat"));
-								count++;
+								CHECK_UNWRAP(auto local_shader_path, local_resource_file(project, file));
+								Resource<Platform::Shader *> shader(local_shader_path);
+								shader.wait_loaded();
+
+								u32 count    = 1;
+								auto new_mat = state->current_dir / "new_material.mat";
+								while (exists(new_mat))
+								{
+									new_mat = state->current_dir / (String("new_material_") + serialize_u64(count) + String(".mat"));
+									count++;
+								}
+
+								String out_buf{};
+								out_buf += local_shader_path.string();
+
+								auto *reflection = Platform::get_reflection_data(shader.value());
+
+								byte buf[Platform::MAX_MATERIAL_SIZE];
+								for (auto &uniform_member : reflection->uniform_members)
+								{
+									out_buf += "\n" + uniform_member.name + ":" + serialize_member(buf, uniform_member);
+								}
+
+								for (auto &sampler_refl : reflection->samplers)
+								{
+									out_buf += "\n" + sampler_refl.name + ":" + Platform::VULTR_NULL_FILE_HANDLE;
+								}
+
+								fwrite_all(new_mat, out_buf, StreamWriteMode::OVERWRITE);
+								change_dir(project, state->current_dir, editor_state);
+
+								ImGui::CloseCurrentPopup();
 							}
-
-							String out_buf{};
-							out_buf += local_shader_path.string();
-
-							auto *reflection = Platform::get_reflection_data(shader.value());
-
-							byte buf[Platform::MAX_MATERIAL_SIZE];
-							for (auto &uniform_member : reflection->uniform_members)
-							{
-								out_buf += "\n" + uniform_member.name + ":" + serialize_member(buf, uniform_member);
-							}
-
-							for (auto &sampler_refl : reflection->samplers)
-							{
-								out_buf += "\n" + sampler_refl.name + ":" + Platform::VULTR_NULL_FILE_HANDLE;
-							}
-
-							fwrite_all(new_mat, out_buf, StreamWriteMode::OVERWRITE);
-							change_dir(state->current_dir, editor_state);
-
-							ImGui::CloseCurrentPopup();
 						}
-						ImGui::EndPopup();
 					}
+					//					if (ImGui::Selectable("Rename"))
+					//					{
+					//						ImGui::CloseCurrentPopup();
+					//						ImGui::OpenPopup("RenameFilePopup");
+					//					}
+					ImGui::EndPopup();
 				}
+
+				//				if (ImGui::BeginPopup("RenameFilePopup"))
+				//				{
+				//					String name = String(file.basename());
+				//					ImGui::InputText("", &name);
+				//					ImGui::EndPopup();
+				//				}
 
 				path_drag_drop_src(file, "File");
 
@@ -926,7 +1051,7 @@ namespace Vultr
 					{
 						auto *path = static_cast<char *>(payload->Data);
 
-						change_dir(state->current_dir, editor_state);
+						change_dir(project, state->current_dir, editor_state);
 
 						ImGui::PopID();
 						ImGui::EndTable();
@@ -938,7 +1063,7 @@ namespace Vultr
 
 				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
 				{
-					change_dir(dir, editor_state);
+					change_dir(project, dir, editor_state);
 					ImGui::PopID();
 					ImGui::EndTable();
 					ImGui::End();
@@ -961,17 +1086,17 @@ namespace Vultr
 	{
 		resource_window_init(project, state);
 		state->texture = Platform::init_texture(runtime->upload_context, EditorResources::TEXTURE_PNG_WIDTH, EditorResources::TEXTURE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->texture, EditorResources::TEXTURE_PNG, EditorResources::TEXTURE_PNG_LEN);
+		Platform::fill_texture(runtime->upload_context, state->texture, EditorResources::GET_TEXTURE_PNG(), EditorResources::TEXTURE_PNG_LEN);
 		state->cpp_source = Platform::init_texture(runtime->upload_context, EditorResources::CPP_PNG_WIDTH, EditorResources::CPP_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->cpp_source, EditorResources::CPP_PNG, EditorResources::CPP_PNG_LEN);
+		Platform::fill_texture(runtime->upload_context, state->cpp_source, EditorResources::GET_CPP_PNG(), EditorResources::CPP_PNG_LEN);
 		state->shader = Platform::init_texture(runtime->upload_context, EditorResources::SHADER_PNG_WIDTH, EditorResources::SHADER_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->shader, EditorResources::SHADER_PNG, EditorResources::SHADER_PNG_LEN);
+		Platform::fill_texture(runtime->upload_context, state->shader, EditorResources::GET_SHADER_PNG(), EditorResources::SHADER_PNG_LEN);
 		state->file = Platform::init_texture(runtime->upload_context, EditorResources::FILE_PNG_WIDTH, EditorResources::FILE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->file, EditorResources::FILE_PNG, EditorResources::FILE_PNG_LEN);
+		Platform::fill_texture(runtime->upload_context, state->file, EditorResources::GET_FILE_PNG(), EditorResources::FILE_PNG_LEN);
 		state->folder = Platform::init_texture(runtime->upload_context, EditorResources::FOLDER_PNG_WIDTH, EditorResources::FOLDER_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->folder, EditorResources::FOLDER_PNG, EditorResources::FOLDER_PNG_LEN);
+		Platform::fill_texture(runtime->upload_context, state->folder, EditorResources::GET_FOLDER_PNG(), EditorResources::FOLDER_PNG_LEN);
 		state->mesh = Platform::init_texture(runtime->upload_context, EditorResources::MESH_PNG_WIDTH, EditorResources::MESH_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->mesh, EditorResources::MESH_PNG, EditorResources::MESH_PNG_LEN);
+		Platform::fill_texture(runtime->upload_context, state->mesh, EditorResources::GET_MESH_PNG(), EditorResources::MESH_PNG_LEN);
 	}
 
 	void update_windows(EditorWindowState *state, f64 dt) { scene_window_update(state, dt); }
