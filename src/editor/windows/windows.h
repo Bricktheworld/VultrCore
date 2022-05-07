@@ -22,6 +22,8 @@ namespace Vultr
 		ResourceBrowserState resource_browser_state{};
 
 		Buffer component_clipboard{};
+		Option<Path> scene_path = None;
+		Platform::CallbackHandle key_listener{};
 
 		Platform::Texture *texture    = nullptr;
 		Platform::Texture *cpp_source = nullptr;

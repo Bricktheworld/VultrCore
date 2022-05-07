@@ -15,7 +15,7 @@ namespace Vultr
 	};
 
 	template <>
-	inline constexpr Type get_type<Color> = {PrimitiveType::COLOR, []() { return sizeof(Vec4); }, generic_type_serializer<Vec4>, generic_type_deserializer<Vec4>, "Color"};
+	inline constexpr Type get_type<Color> = {PrimitiveType::COLOR, []() { return sizeof(Vec4); }, generic_type_serializer<Vec4>, generic_type_deserializer<Vec4>, generic_copy_constructor<Vec4>, "Color"};
 
 	namespace Platform
 	{

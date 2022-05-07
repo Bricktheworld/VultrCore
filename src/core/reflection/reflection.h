@@ -474,11 +474,14 @@ namespace Vultr
 		typedef void (*GetFieldsApi)(Field *out);
 		typedef size_t (*GetSizeApi)();
 		typedef void (*DeserializeApi)(const YAML::Node &node, const Field *field, void *data);
+		typedef void (*CopyConstructorApi)(void *dest, const void *src);
 		typedef YAML::Emitter &(*SerializeApi)(YAML::Emitter &, const Tuple<Field, void *> &);
 
 		constexpr Type() = default;
-		constexpr Type(PrimitiveType primitive_type, GetSizeApi get_size, SerializeApi serialize, DeserializeApi deserialize, StringView name, GetFieldsApi get_fields = nullptr, u32 field_count = 0)
-			: primitive_type(primitive_type), size(get_size), name(name), m_get_fields(get_fields), m_deserialize(deserialize), serialize(serialize), field_count(field_count), id(name.hash())
+		constexpr Type(PrimitiveType primitive_type, GetSizeApi get_size, SerializeApi serialize, DeserializeApi deserialize, CopyConstructorApi copy_constructor, StringView name, GetFieldsApi get_fields = nullptr,
+					   u32 field_count = 0)
+			: primitive_type(primitive_type), size(get_size), name(name), m_get_fields(get_fields), m_deserialize(deserialize), serialize(serialize), copy_constructor(copy_constructor), field_count(field_count),
+			  id(name.hash())
 		{
 		}
 
@@ -486,15 +489,19 @@ namespace Vultr
 
 		PrimitiveType primitive_type = PrimitiveType::NONE;
 		StringView name{};
-		u32 id                       = 0;
-		GetFieldsApi m_get_fields    = nullptr;
-		SerializeApi serialize       = nullptr;
-		GetSizeApi size              = nullptr;
-		DeserializeApi m_deserialize = nullptr;
-		u32 field_count              = 0;
+		u32 id                              = 0;
+		GetFieldsApi m_get_fields           = nullptr;
+		SerializeApi serialize              = nullptr;
+		CopyConstructorApi copy_constructor = nullptr;
+		GetSizeApi size                     = nullptr;
+		DeserializeApi m_deserialize        = nullptr;
+		u32 field_count                     = 0;
 	};
 
-	consteval Type init_type(StringView name, Type::GetSizeApi get_size, u32 field_count, Type::GetFieldsApi get_fields) { return {PrimitiveType::NONE, get_size, nullptr, nullptr, name, get_fields, field_count}; }
+	consteval Type init_type(StringView name, Type::GetSizeApi get_size, u32 field_count, Type::GetFieldsApi get_fields, Type::CopyConstructorApi copy_constructor)
+	{
+		return {PrimitiveType::NONE, get_size, nullptr, nullptr, copy_constructor, name, get_fields, field_count};
+	}
 
 	template <typename T>
 	inline constexpr Type get_type;
@@ -562,96 +569,108 @@ namespace Vultr
 	}
 
 	template <typename T>
+	void generic_copy_constructor(void *dest, const void *src)
+	{
+		*static_cast<T *>(dest) = *static_cast<const T *>(src);
+	}
+
+	template <typename T>
 	requires(is_pointer<T>) inline constexpr Type get_type<T> = {PrimitiveType::PTR, []() { return sizeof(T); }, generic_type_serializer<T>, "pointer"};
 
 	template <typename T>
 	requires(requires() { T::__REFL_TYPE; }) inline constexpr Type get_type<T> = T::__REFL_TYPE;
 
 	template <>
-	inline constexpr Type get_type<u8> = {PrimitiveType::U8, []() { return sizeof(u8); }, generic_type_serializer<u8>, generic_type_deserializer<u8>, "u8"};
+	inline constexpr Type get_type<u8> = {PrimitiveType::U8, []() { return sizeof(u8); }, generic_type_serializer<u8>, generic_type_deserializer<u8>, generic_copy_constructor<u8>, "u8"};
 
 	template <>
-	inline constexpr Type get_type<u16> = {PrimitiveType::U16, []() { return sizeof(u16); }, generic_type_serializer<u16>, generic_type_deserializer<u16>, "u16"};
+	inline constexpr Type get_type<u16> = {PrimitiveType::U16, []() { return sizeof(u16); }, generic_type_serializer<u16>, generic_type_deserializer<u16>, generic_copy_constructor<u16>, "u16"};
 
 	template <>
-	inline constexpr Type get_type<u32> = {PrimitiveType::U32, []() { return sizeof(u32); }, generic_type_serializer<u32>, generic_type_deserializer<u32>, "u32"};
+	inline constexpr Type get_type<u32> = {PrimitiveType::U32, []() { return sizeof(u32); }, generic_type_serializer<u32>, generic_type_deserializer<u32>, generic_copy_constructor<u32>, "u32"};
 
 	template <>
-	inline constexpr Type get_type<u64> = {PrimitiveType::U64, []() { return sizeof(u64); }, generic_type_serializer<u64>, generic_type_deserializer<u64>, "u64"};
+	inline constexpr Type get_type<u64> = {PrimitiveType::U64, []() { return sizeof(u64); }, generic_type_serializer<u64>, generic_type_deserializer<u64>, generic_copy_constructor<u64>, "u64"};
 
 	template <>
-	inline constexpr Type get_type<s8> = {PrimitiveType::S8, []() { return sizeof(s8); }, generic_type_serializer<s8>, generic_type_deserializer<s8>, "s8"};
+	inline constexpr Type get_type<s8> = {PrimitiveType::S8, []() { return sizeof(s8); }, generic_type_serializer<s8>, generic_type_deserializer<s8>, generic_copy_constructor<s8>, "s8"};
 
 	template <>
-	inline constexpr Type get_type<s16> = {PrimitiveType::S16, []() { return sizeof(s16); }, generic_type_serializer<s16>, generic_type_deserializer<s16>, "s16"};
+	inline constexpr Type get_type<s16> = {PrimitiveType::S16, []() { return sizeof(s16); }, generic_type_serializer<s16>, generic_type_deserializer<s16>, generic_copy_constructor<s16>, "s16"};
 
 	template <>
-	inline constexpr Type get_type<s32> = {PrimitiveType::S32, []() { return sizeof(s32); }, generic_type_serializer<s32>, generic_type_deserializer<s32>, "s32"};
+	inline constexpr Type get_type<s32> = {PrimitiveType::S32, []() { return sizeof(s32); }, generic_type_serializer<s32>, generic_type_deserializer<s32>, generic_copy_constructor<s32>, "s32"};
 
 	template <>
-	inline constexpr Type get_type<s64> = {PrimitiveType::S64, []() { return sizeof(s64); }, generic_type_serializer<s64>, generic_type_deserializer<s64>, "s64"};
+	inline constexpr Type get_type<s64> = {PrimitiveType::S64, []() { return sizeof(s64); }, generic_type_serializer<s64>, generic_type_deserializer<s64>, generic_copy_constructor<s64>, "s64"};
 
 	template <>
-	inline constexpr Type get_type<f32> = {PrimitiveType::F32, []() { return sizeof(f32); }, generic_type_serializer<f32>, generic_type_deserializer<f32>, "f32"};
+	inline constexpr Type get_type<f32> = {PrimitiveType::F32, []() { return sizeof(f32); }, generic_type_serializer<f32>, generic_type_deserializer<f32>, generic_copy_constructor<f32>, "f32"};
 
 	template <>
-	inline constexpr Type get_type<f64> = {PrimitiveType::F64, []() { return sizeof(f64); }, generic_type_serializer<f64>, generic_type_deserializer<f64>, "f64"};
+	inline constexpr Type get_type<f64> = {PrimitiveType::F64, []() { return sizeof(f64); }, generic_type_serializer<f64>, generic_type_deserializer<f64>, generic_copy_constructor<f64>, "f64"};
 
 	template <>
-	inline constexpr Type get_type<char> = {PrimitiveType::CHAR, []() { return sizeof(char); }, generic_type_serializer<char>, generic_type_deserializer<char>, "char"};
+	inline constexpr Type get_type<char> = {PrimitiveType::CHAR, []() { return sizeof(char); }, generic_type_serializer<char>, generic_type_deserializer<char>, generic_copy_constructor<char>, "char"};
 
 	template <>
-	inline constexpr Type get_type<bool> = {PrimitiveType::BOOL, []() { return sizeof(byte); }, generic_type_serializer<byte>, generic_type_deserializer<byte>, "byte"};
+	inline constexpr Type get_type<bool> = {PrimitiveType::BOOL, []() { return sizeof(byte); }, generic_type_serializer<byte>, generic_type_deserializer<byte>, generic_copy_constructor<byte>, "byte"};
 
 	template <typename T, size_t len>
-	inline constexpr Type get_type<Array<T, len>> = {PrimitiveType::ARRAY, []() { return sizeof(Array<T, len>); }, generic_type_serializer<Array<T, len>>, generic_type_deserializer<Array<T, len>>, "Array"};
+	inline constexpr Type get_type<Array<T, len>> = {
+		PrimitiveType::ARRAY, []() { return sizeof(Array<T, len>); }, generic_type_serializer<Array<T, len>>, generic_type_deserializer<Array<T, len>>, generic_copy_constructor<Array<T, len>>, "Array"};
 
 	template <size_t len>
-	inline constexpr Type get_type<Bitfield<len>> = {PrimitiveType::BITFIELD, []() { return sizeof(Bitfield<len>); }, generic_type_serializer<Bitfield>, generic_type_deserializer<Bitfield>, "Bitfield"};
+	inline constexpr Type get_type<Bitfield<len>> = {
+		PrimitiveType::BITFIELD, []() { return sizeof(Bitfield<len>); }, generic_type_serializer<Bitfield>, generic_type_deserializer<Bitfield>, generic_copy_constructor<Bitfield>, "Bitfield"};
 
 	template <>
-	inline constexpr Type get_type<Buffer> = {PrimitiveType::BUFFER, []() { return sizeof(Buffer); }, generic_type_serializer<Buffer>, generic_type_deserializer<Buffer>, "Buffer"};
+	inline constexpr Type get_type<Buffer> = {PrimitiveType::BUFFER, []() { return sizeof(Buffer); }, generic_type_serializer<Buffer>, generic_type_deserializer<Buffer>, generic_copy_constructor<Buffer>, "Buffer"};
 
 	template <typename T>
-	inline constexpr Type get_type<Vector<T>> = {PrimitiveType::VECTOR, []() { return sizeof(Vector<T>); }, generic_type_serializer<Vector<T>>, generic_type_deserializer<Vector<T>>, "Vector"};
+	inline constexpr Type get_type<Vector<T>> = {
+		PrimitiveType::VECTOR, []() { return sizeof(Vector<T>); }, generic_type_serializer<Vector<T>>, generic_type_deserializer<Vector<T>>, generic_copy_constructor<Vector<T>>, "Vector"};
 
 	template <typename K, typename V>
-	inline constexpr Type get_type<Hashmap<K, V>> = {PrimitiveType::HASHMAP, []() { return sizeof(Hashmap<K, V>); }, generic_type_serializer<Hashmap<K, V>>, generic_type_deserializer<Hashmap<K, V>>, "Hashmap"};
+	inline constexpr Type get_type<Hashmap<K, V>> = {
+		PrimitiveType::HASHMAP, []() { return sizeof(Hashmap<K, V>); }, generic_type_serializer<Hashmap<K, V>>, generic_type_deserializer<Hashmap<K, V>>, generic_copy_constructor<Hashmap<K, V>>, "Hashmap"};
 
 	template <typename T>
-	inline constexpr Type get_type<HashTable<T>> = {PrimitiveType::HASHTABLE, []() { return sizeof(HashTable<T>); }, generic_type_serializer<HashTable<T>>, generic_type_deserializer<HashTable<T>>, "HashTable"};
+	inline constexpr Type get_type<HashTable<T>> = {
+		PrimitiveType::HASHTABLE, []() { return sizeof(HashTable<T>); }, generic_type_serializer<HashTable<T>>, generic_type_deserializer<HashTable<T>>, generic_copy_constructor<HashTable<T>>, "HashTable"};
 
 	template <typename T>
-	inline constexpr Type get_type<Queue<T>> = {PrimitiveType::QUEUE, []() { return sizeof(Queue<T>); }, generic_type_serializer<Queue<T>>, generic_type_deserializer<Queue<T>>, "Queue"};
+	inline constexpr Type get_type<Queue<T>> = {
+		PrimitiveType::QUEUE, []() { return sizeof(Queue<T>); }, generic_type_serializer<Queue<T>>, generic_type_deserializer<Queue<T>>, generic_copy_constructor<Queue<T>>, "Queue"};
 
 	template <>
-	inline constexpr Type get_type<StringView> = {PrimitiveType::STRING_VIEW, []() { return sizeof(StringView); }, generic_type_serializer<StringView>, nullptr, "StringView"};
+	inline constexpr Type get_type<StringView> = {PrimitiveType::STRING_VIEW, []() { return sizeof(StringView); }, generic_type_serializer<StringView>, nullptr, generic_copy_constructor<StringView>, "StringView"};
 
 	template <>
-	inline constexpr Type get_type<String> = {PrimitiveType::STRING, []() { return sizeof(String); }, generic_type_serializer<String>, generic_type_deserializer<String>, "String"};
+	inline constexpr Type get_type<String> = {PrimitiveType::STRING, []() { return sizeof(String); }, generic_type_serializer<String>, generic_type_deserializer<String>, generic_copy_constructor<String>, "String"};
 
 	template <>
-	inline constexpr Type get_type<StringHash> = {PrimitiveType::STRING_HASH, []() { return sizeof(StringHash); }, generic_type_serializer<StringHash>, nullptr, "StringHash"};
+	inline constexpr Type get_type<StringHash> = {PrimitiveType::STRING_HASH, []() { return sizeof(StringHash); }, generic_type_serializer<StringHash>, nullptr, generic_copy_constructor<StringHash>, "StringHash"};
 
 	template <>
-	inline constexpr Type get_type<Vec2> = {PrimitiveType::VEC2, []() { return sizeof(Vec2); }, generic_type_serializer<Vec2>, generic_type_deserializer<Vec2>, "Vec2"};
+	inline constexpr Type get_type<Vec2> = {PrimitiveType::VEC2, []() { return sizeof(Vec2); }, generic_type_serializer<Vec2>, generic_type_deserializer<Vec2>, generic_copy_constructor<Vec2>, "Vec2"};
 
 	template <>
-	inline constexpr Type get_type<Vec3> = {PrimitiveType::VEC3, []() { return sizeof(Vec3); }, generic_type_serializer<Vec3>, generic_type_deserializer<Vec3>, "Vec3"};
+	inline constexpr Type get_type<Vec3> = {PrimitiveType::VEC3, []() { return sizeof(Vec3); }, generic_type_serializer<Vec3>, generic_type_deserializer<Vec3>, generic_copy_constructor<Vec3>, "Vec3"};
 
 	template <>
-	inline constexpr Type get_type<Vec4> = {PrimitiveType::VEC4, []() { return sizeof(Vec4); }, generic_type_serializer<Vec4>, generic_type_deserializer<Vec4>, "Vec4"};
+	inline constexpr Type get_type<Vec4> = {PrimitiveType::VEC4, []() { return sizeof(Vec4); }, generic_type_serializer<Vec4>, generic_type_deserializer<Vec4>, generic_copy_constructor<Vec4>, "Vec4"};
 
 	template <>
-	inline constexpr Type get_type<Quat> = {PrimitiveType::QUAT, []() { return sizeof(Quat); }, generic_type_serializer<Quat>, generic_type_deserializer<Quat>, "Quat"};
+	inline constexpr Type get_type<Quat> = {PrimitiveType::QUAT, []() { return sizeof(Quat); }, generic_type_serializer<Quat>, generic_type_deserializer<Quat>, generic_copy_constructor<Quat>, "Quat"};
 
 	template <>
-	inline constexpr Type get_type<Mat3> = {PrimitiveType::MAT3, []() { return sizeof(Mat3); }, generic_type_serializer<Mat3>, nullptr, "Mat3"};
+	inline constexpr Type get_type<Mat3> = {PrimitiveType::MAT3, []() { return sizeof(Mat3); }, generic_type_serializer<Mat3>, nullptr, generic_copy_constructor<Mat3>, "Mat3"};
 
 	template <>
-	inline constexpr Type get_type<Mat4> = {PrimitiveType::MAT4, []() { return sizeof(Mat4); }, generic_type_serializer<Mat4>, nullptr, "Mat4"};
+	inline constexpr Type get_type<Mat4> = {PrimitiveType::MAT4, []() { return sizeof(Mat4); }, generic_type_serializer<Mat4>, nullptr, generic_copy_constructor<Mat4>, "Mat4"};
 
 	template <>
-	inline constexpr Type get_type<Path> = {PrimitiveType::PATH, []() { return sizeof(Path); }, generic_type_serializer<Path>, generic_type_deserializer<Path>, "Path"};
+	inline constexpr Type get_type<Path> = {PrimitiveType::PATH, []() { return sizeof(Path); }, generic_type_serializer<Path>, generic_type_deserializer<Path>, generic_copy_constructor<Path>, "Path"};
 
 } // namespace Vultr

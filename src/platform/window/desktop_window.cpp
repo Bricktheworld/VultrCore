@@ -19,11 +19,20 @@ namespace Vultr::Platform
 		Vec2 last_mouse_pos = Vec2(0);
 		s32 cursor_mode     = GLFW_CURSOR_NORMAL;
 		bool is_focused     = true;
+		Vector<CallbackHandle> key_input_callbacks{};
 	};
 	struct Monitor
 	{
 		GLFWmonitor *glfw = nullptr;
 	};
+
+	CallbackHandle::CallbackHandle(KeyInputCallback callback, void *data) : counter_ptr(v_alloc<u32>()), callback(callback), data(data) { *counter_ptr = 1; }
+	CallbackHandle::~CallbackHandle()
+	{
+		decr();
+		if (count() == 0)
+			v_free(counter_ptr);
+	}
 
 	static GLFWmonitor *get_monitor_or_primary(Monitor *monitor)
 	{
@@ -53,6 +62,18 @@ namespace Vultr::Platform
 		window->is_focused = focused;
 		if (focused)
 			window->last_mouse_pos = get_mouse_pos(window);
+	}
+
+	static void window_key_callback(GLFWwindow *glfw, int glfw_key, int glfw_scancode, int glfw_action, int glfw_mods)
+	{
+		auto *window = reinterpret_cast<Window *>(glfwGetWindowUserPointer(glfw));
+		for (s32 i = window->key_input_callbacks.size() - 1; i >= 0; i--)
+		{
+			if (window->key_input_callbacks[i].count() == 1)
+				window->key_input_callbacks.remove(i);
+			else
+				window->key_input_callbacks[i].call(static_cast<Input::Key>(glfw_key), static_cast<Input::Action>(glfw_action), static_cast<u32>(glfw_mods));
+		}
 	}
 
 	Window *open_window(DisplayMode mode, Monitor *monitor, const char *title, bool debug, u32 width, u32 height)
@@ -129,6 +150,8 @@ namespace Vultr::Platform
 		window->render_context = init_render_context(window, debug);
 		window->last_mouse_pos = get_mouse_pos(window);
 
+		glfwSetKeyCallback(window->glfw, window_key_callback);
+
 		return window;
 	}
 	StringView get_window_title(const Window *window) { return window->title; }
@@ -182,6 +205,9 @@ namespace Vultr::Platform
 			window->last_mouse_pos = get_mouse_pos(window);
 		}
 	}
+
+	CallbackHandle register_key_callback(Window *window, void *data, KeyInputCallback callback) { return window->key_input_callbacks.push_back(CallbackHandle(callback, data)); }
+
 	Vec2 get_mouse_delta(Window *window)
 	{
 		auto current           = get_mouse_pos(window);

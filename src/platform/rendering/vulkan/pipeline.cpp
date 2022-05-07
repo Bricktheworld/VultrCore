@@ -249,28 +249,54 @@ namespace Vultr
 			auto *c      = cmd->render_context;
 			auto *d      = Vulkan::get_device(c);
 			Platform::Lock lock(shader->mutex);
+
+			u32 ubo_info_len   = 0;
+			u32 tex_info_len   = 0;
+			u32 write_sets_len = 0;
+			for (auto &set : shader->allocated_descriptor_sets)
+			{
+				if (!set->updated.at(cmd->image_index))
+					continue;
+				ubo_info_len++;
+				write_sets_len++;
+				for (auto &sampler : set->sampler_bindings)
+				{
+					tex_info_len++;
+					write_sets_len++;
+				}
+			}
+
+			write_sets.resize(write_sets_len);
+			ubo_info.resize(ubo_info_len);
+			tex_info.resize(tex_info_len);
+
+			u32 ubo_info_index  = 0;
+			u32 tex_info_index  = 0;
+			u32 write_set_index = 0;
 			for (auto &set : shader->allocated_descriptor_sets)
 			{
 				if (!set->updated.at(cmd->image_index))
 					continue;
 
 				set->updated.set(cmd->image_index, false);
-				auto *vk_set = set->vk_frame_descriptor_sets[cmd->image_index];
+				auto *vk_set             = set->vk_frame_descriptor_sets[cmd->image_index];
 
-				auto &info   = ubo_info.push_back({
-					  .buffer = set->uniform_buffer_binding.buffer.buffer,
-					  .offset = 0,
-					  .range  = pad_size(d, set->shader->reflection.uniform_size),
-                });
-				write_sets.push_back({
+				ubo_info[ubo_info_index] = {
+					.buffer = set->uniform_buffer_binding.buffer.buffer,
+					.offset = 0,
+					.range  = pad_size(d, set->shader->reflection.uniform_size),
+				};
+				write_sets[write_set_index] = {
 					.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 					.pNext           = nullptr,
 					.dstSet          = vk_set,
 					.dstBinding      = 0,
 					.descriptorCount = 1,
 					.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-					.pBufferInfo     = &info,
-				});
+					.pBufferInfo     = &ubo_info[ubo_info_index],
+				};
+				write_set_index++;
+				ubo_info_index++;
 
 				u32 i = 1;
 				for (auto &sampler : set->sampler_bindings)
@@ -285,26 +311,28 @@ namespace Vultr
 						texture = sampler.value().value<Platform::Texture *>();
 					}
 
-					//					printf("Updating descriptor set with texture %p sampler %p\n", texture, texture->sampler);
-					auto &info = tex_info.push_back({
+					tex_info[tex_info_index] = {
 						.sampler     = texture->sampler,
 						.imageView   = texture->image_view,
 						.imageLayout = texture->layout,
-					});
-					write_sets.push_back({
+					};
+
+					write_sets[write_set_index] = {
 						.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 						.pNext           = nullptr,
 						.dstSet          = vk_set,
 						.dstBinding      = i,
 						.descriptorCount = 1,
 						.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-						.pImageInfo      = &info,
-					});
+						.pImageInfo      = &tex_info[tex_info_index],
+					};
+					write_set_index++;
+					tex_info_index++;
 					i++;
 				}
 			}
 
-			vkUpdateDescriptorSets(d->device, write_sets.size(), write_sets.empty() ? nullptr : &write_sets[0], 0, nullptr);
+			vkUpdateDescriptorSets(d->device, write_sets_len, write_sets_len == 0 ? nullptr : &write_sets[0], 0, nullptr);
 
 			vkCmdBindPipeline(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_pipeline);
 			vkCmdBindDescriptorSets(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_layout, 0, 1, &cmd->frame->default_uniform_descriptor, 0, nullptr);

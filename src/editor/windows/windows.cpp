@@ -15,7 +15,6 @@ namespace ImGui
 		strncpy(buf, string->c_str(), string->size());
 		if (ImGui::InputText(label.c_str(), buf, buf_size))
 		{
-			printf("Updating label\n");
 			*string = buf;
 			return true;
 		}
@@ -141,6 +140,7 @@ namespace Vultr
 				auto file = Path(static_cast<char *>(payload->Data));
 				if (get_resource_type(file) == ResourceType::SCENE)
 				{
+					state->scene_path = file;
 					String src;
 					fread_all(file, &src);
 					printf("Freeing scene......................\n");
@@ -159,22 +159,6 @@ namespace Vultr
 
 		ImGui::ErrorModal("Invalid Resource", "Resource provided is invalid!");
 
-		if (Platform::mouse_down(engine()->window, Platform::Input::MOUSE_RIGHT))
-		{
-			if (Platform::key_down(engine()->window, Platform::Input::KEY_Q))
-			{
-				state->current_operation = ImGuizmo::OPERATION::TRANSLATE;
-			}
-			else if (Platform::key_down(engine()->window, Platform::Input::KEY_W))
-			{
-				state->current_operation = ImGuizmo::OPERATION::ROTATE;
-			}
-			else if (Platform::key_down(engine()->window, Platform::Input::KEY_E))
-			{
-				state->current_operation = ImGuizmo::OPERATION::SCALE;
-			}
-		}
-
 		ImGuizmo::SetOrthographic(false);
 		ImGuizmo::SetDrawlist();
 
@@ -191,7 +175,12 @@ namespace Vultr
 				auto view_mat      = view_matrix(state->editor_camera_transform);
 				auto camera_proj   = projection_matrix(state->editor_camera, window_width, window_height);
 
-				ImGuizmo::Manipulate(glm::value_ptr(view_mat), glm::value_ptr(camera_proj), (ImGuizmo::OPERATION)state->current_operation, ImGuizmo::LOCAL, glm::value_ptr(transform_mat), nullptr, nullptr);
+				bool snap          = Platform::key_down(engine()->window, Platform::Input::KEY_LEFT_SHIFT);
+				f32 snap_value     = state->current_operation != ImGuizmo::OPERATION::ROTATE ? 0.5f : 45.0f;
+				f32 snap_values[]  = {snap_value, snap_value, snap_value};
+
+				ImGuizmo::Manipulate(glm::value_ptr(view_mat), glm::value_ptr(camera_proj), (ImGuizmo::OPERATION)state->current_operation, ImGuizmo::LOCAL, glm::value_ptr(transform_mat), nullptr,
+									 snap ? snap_values : nullptr);
 
 				if (ImGuizmo::IsUsing())
 				{
@@ -203,6 +192,7 @@ namespace Vultr
 
 		ImGui::End();
 	}
+
 	template <typename T>
 	static String serialize_bytes(const byte *src, u32 width)
 	{
@@ -428,23 +418,50 @@ namespace Vultr
 		{
 			if (ImGui::Selectable("Mesh"))
 			{
-				create_entity("Mesh Entity", Transform{}, Material{}, Mesh{});
+				StringView label = "Mesh Entity";
+				Entity entity;
+				if let (auto parent, state->selected_entity)
+				{
+					if (has_component<Transform>(parent))
+					{
+						entity = create_parented_entity(label, parent, Transform{}, Material{}, Mesh{});
+					}
+					else
+					{
+						entity = create_entity(label, Transform{}, Material{}, Mesh{});
+					}
+				}
+				else
+				{
+					entity = create_entity(label, Transform{}, Material{}, Mesh{});
+				}
+				state->selected_entity = entity;
 				ImGui::CloseCurrentPopup();
 			}
 
 			if (ImGui::Selectable("Empty"))
 			{
-				create_entity("Empty Entity");
+				StringView label = "Empty Entity";
+				Entity entity;
+				if let (auto parent, state->selected_entity)
+				{
+					if (has_component<Transform>(parent))
+					{
+						entity = create_parented_entity(label, parent, Transform{});
+					}
+					else
+					{
+						entity = create_entity(label, Transform{});
+					}
+				}
+				else
+				{
+					entity = create_entity(label, Transform{});
+				}
+				state->selected_entity = entity;
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndPopup();
-		}
-
-		auto scene_path = project->resource_dir / "test_save.vultr";
-		if (ImGui::Button("Save Scene"))
-		{
-			auto out = FileOutputStream(scene_path, StreamFormat::BINARY, StreamWriteMode::OVERWRITE);
-			CHECK(serialize_world_yaml(world(), &out));
 		}
 		ImGui::End();
 	}
@@ -461,8 +478,8 @@ namespace Vultr
 
 			if (payload != nullptr)
 			{
-				auto *full_path = static_cast<char *>(payload->Data);
-				if check (local_resource_file(project, Path(full_path)), auto file, auto err)
+				Path full_path = Path(String(static_cast<char *>(payload->Data), payload->DataSize));
+				if check (local_resource_file(project, full_path), auto file, auto err)
 				{
 					auto payload_type = get_resource_type(file);
 
@@ -485,7 +502,7 @@ namespace Vultr
 							break;
 					}
 
-					if (resource_is_imported(project, Path(full_path)))
+					if (resource_is_imported(project, full_path))
 					{
 						if (matches)
 						{
@@ -542,7 +559,7 @@ namespace Vultr
 			auto info = cm->get_component_editor_rtti(state->selected_entity.value());
 			for (auto [type, fields, data] : info)
 			{
-				if (ImGui::CollapsingHeader(type.name.c_str()))
+				if (ImGui::CollapsingHeader(type.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 				{
 					ImGui::PushID(type.name.c_str());
 					if (ImGui::Button("Reset"))
@@ -563,7 +580,7 @@ namespace Vultr
 						ImGui::SameLine();
 						if (ImGui::Button("Paste"))
 						{
-							Utils::copy(static_cast<byte *>(data), state->component_clipboard.storage, type.size());
+							type.copy_constructor(data, state->component_clipboard.storage);
 						}
 					}
 
@@ -755,7 +772,7 @@ namespace Vultr
 								break;
 						}
 					}
-					if (ImGui::Button("Remove"))
+					if (type.id != get_type<Transform>.id && ImGui::Button("Remove"))
 					{
 						auto index = cm->type_to_index.get(type.id);
 						cm->component_arrays[index]->remove_entity(state->selected_entity.value());
@@ -918,22 +935,19 @@ namespace Vultr
 		}
 		ImGui::SameLine();
 
+		String reimport_error_message;
 		{
-			String reimport_error_message;
 			if (ImGui::Button("Reimport"))
 			{
 				auto res = import_resource_dir(project);
 				if (res.is_error())
 				{
-					ImGui::OpenPopup("Reimport-Error");
 					reimport_error_message = res.get_error().message;
 				}
 				change_dir(project, state->current_dir, editor_state);
 				ImGui::End();
 				return;
 			}
-
-			ImGui::ErrorModal("Reimport-Error", reimport_error_message);
 		}
 
 		if (ImGui::BeginTable("Asset Table", static_cast<s32>(num_cols)))
@@ -993,6 +1007,13 @@ namespace Vultr
 								}
 
 								fwrite_all(new_mat, out_buf, StreamWriteMode::OVERWRITE);
+
+								auto res = import_resource_dir(project);
+								if (res.is_error())
+								{
+									reimport_error_message = res.get_error().message;
+								}
+
 								change_dir(project, state->current_dir, editor_state);
 
 								ImGui::CloseCurrentPopup();
@@ -1079,11 +1100,112 @@ namespace Vultr
 			ImGui::EndTable();
 		}
 
+		if (!reimport_error_message.is_empty())
+			ImGui::OpenPopup("Reimport-Error");
+
+		ImGui::ErrorModal("Reimport-Error", reimport_error_message);
+
 		ImGui::End();
+	}
+
+	static void serialize_current_scene(EditorWindowState *state)
+	{
+		if let (const auto &scene_path, state->scene_path)
+		{
+			auto out = FileOutputStream(state->scene_path.value(), StreamFormat::BINARY, StreamWriteMode::OVERWRITE);
+			CHECK(serialize_world_yaml(world(), &out));
+		}
+		else
+		{
+		}
+	}
+
+	static void on_key_press(void *data, Platform::Input::Key key, Platform::Input::Action action, u32 modifiers)
+	{
+		auto *state = static_cast<EditorWindowState *>(data);
+		if (Platform::mouse_down(engine()->window, Platform::Input::MOUSE_RIGHT))
+		{
+			if (modifiers == 0)
+			{
+				if (key == Platform::Input::KEY_Q)
+				{
+					state->current_operation = ImGuizmo::OPERATION::TRANSLATE;
+				}
+				else if (Platform::key_down(engine()->window, Platform::Input::KEY_W))
+				{
+					state->current_operation = ImGuizmo::OPERATION::ROTATE;
+				}
+				else if (Platform::key_down(engine()->window, Platform::Input::KEY_E))
+				{
+					state->current_operation = ImGuizmo::OPERATION::SCALE;
+				}
+			}
+		}
+		else
+		{
+			if (action == Platform::Input::PRESS)
+			{
+				if ((modifiers & Platform::Input::CTRL_BIT) == Platform::Input::CTRL_BIT)
+				{
+					if (key == Platform::Input::KEY_S)
+					{
+						serialize_current_scene(state);
+					}
+					else if (key == Platform::Input::KEY_D)
+					{
+						if let (auto entity, state->selected_entity)
+						{
+							Entity duplicate;
+							if (has_parent(entity))
+							{
+								duplicate = create_parented_entity(*get_label(entity), get_parent(entity).value(), Transform{});
+							}
+							else
+							{
+								duplicate = create_entity(*get_label(entity));
+							}
+							auto signature = get_signature(entity);
+							auto *em       = &world()->entity_manager;
+							auto *cm       = &world()->component_manager;
+							em->add_signature(duplicate, signature);
+
+							for (auto [type_id, index] : cm->type_to_index)
+							{
+								if (!signature.at(index))
+									continue;
+
+								auto *array = cm->component_arrays[index];
+								auto type   = array->rtti_type;
+								void *dest;
+								if (!array->m_entity_to_index.contains(duplicate))
+								{
+									auto component_index = array->m_size;
+									array->m_entity_to_index.set(duplicate, component_index);
+									array->m_index_to_entity.set(component_index, duplicate);
+									dest = static_cast<byte *>(array->m_array) + (component_index * type.size());
+									array->m_size++;
+								}
+								else
+								{
+									auto component_index = array->m_entity_to_index.get(duplicate);
+									dest                 = static_cast<byte *>(array->m_array) + (component_index * type.size());
+								}
+								void *src = static_cast<byte *>(array->m_array) + (type.size() * array->m_entity_to_index.get(entity));
+								type.copy_constructor(dest, src);
+							}
+						}
+						else
+						{
+						}
+					}
+				}
+			}
+		}
 	}
 
 	void init_windows(EditorRuntime *runtime, Project *project, EditorWindowState *state)
 	{
+		state->key_listener = Platform::register_key_callback(engine()->window, state, on_key_press);
 		resource_window_init(project, state);
 		state->texture = Platform::init_texture(runtime->upload_context, EditorResources::TEXTURE_PNG_WIDTH, EditorResources::TEXTURE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
 		Platform::fill_texture(runtime->upload_context, state->texture, EditorResources::GET_TEXTURE_PNG(), EditorResources::TEXTURE_PNG_LEN);
@@ -1118,7 +1240,26 @@ namespace Vultr
 
 		ImGui::Begin("VultrDockspace", &state->dockspace_open, window_flags);
 		ImGui::PopStyleVar(3);
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+		ImGui::Text("%.3f ms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("File"))
+			{
+				if (ImGui::MenuItem("Save Scene"))
+				{
+					serialize_current_scene(state);
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Run"))
+			{
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenuBar();
+		}
+
 		auto dockspace = ImGui::GetID("HUB_DockSpace");
 		ImGui::DockSpace(dockspace, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoResize);
 

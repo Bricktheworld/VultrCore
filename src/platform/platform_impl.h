@@ -286,12 +286,78 @@ namespace Vultr
 				PRESS   = 1, // When an input is first pressed
 				REPEAT  = 2,
 			};
+
+			static constexpr u32 SHIFT_BIT = 0x1;
+			static constexpr u32 CTRL_BIT  = 0x2;
+			static constexpr u32 ATL_BIT   = 0x4;
+			static constexpr u32 SUPER_BIT = 0x8;
+			static constexpr u32 CAPS_BIT  = 0x10;
 		} // namespace Input
+
+		typedef void (*KeyInputCallback)(void *data, Input::Key key, Input::Action action, u32 modifiers);
+
+		struct CallbackHandle
+		{
+			CallbackHandle() = default;
+			CallbackHandle(KeyInputCallback callback, void *data);
+			CallbackHandle(const CallbackHandle &other)
+			{
+				if (count() != 0)
+					decr();
+
+				counter_ptr = other.counter_ptr;
+				data        = other.data;
+				callback    = other.callback;
+				incr();
+			}
+
+			CallbackHandle &operator=(const CallbackHandle &other)
+			{
+				if (&other == this)
+					return *this;
+
+				if (count() != 0)
+					decr();
+
+				counter_ptr = other.counter_ptr;
+				data        = other.data;
+				callback    = other.callback;
+				incr();
+				return *this;
+			}
+
+			~CallbackHandle();
+
+			void call(Input::Key key, Input::Action action, u32 modifiers)
+			{
+				ASSERT(count() != 0, "Attempting to call handle that no longer has any references.");
+				callback(data, key, action, modifiers);
+			}
+
+			u32 count()
+			{
+				if (counter_ptr == nullptr)
+					return 0;
+				return *counter_ptr;
+			}
+
+		  private:
+			void incr() { (*counter_ptr)++; }
+			void decr()
+			{
+				ASSERT(count() != 0, "Decrementing past 0");
+				(*counter_ptr)--;
+			}
+			u32 *counter_ptr          = nullptr;
+			KeyInputCallback callback = nullptr;
+			void *data                = nullptr;
+		};
 
 		bool key_down(Window *window, Input::Key key);
 		bool mouse_down(Window *window, Input::MouseButton button);
 		void lock_cursor(Window *window);
 		void unlock_cursor(Window *window);
+		CallbackHandle register_key_callback(Window *window, void *data, KeyInputCallback callback);
 
 		bool window_should_close(Window *window);
 		void swap_buffers(Window *window);

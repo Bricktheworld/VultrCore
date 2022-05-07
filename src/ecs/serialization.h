@@ -99,24 +99,22 @@ namespace Vultr
 			for (auto &[entity, info] : entity_manager->m_living_entities)
 			{
 				o << YAML::Key << entity;
-				{
-					o << YAML::Value << YAML::BeginMap;
+				o << YAML::Value << YAML::BeginMap;
 
-					o << YAML::Key << "Label";
-					o << YAML::Value << info.label;
+				o << YAML::Key << "Label";
+				o << YAML::Value << info.label;
 
-					o << YAML::Key << "Parent";
-					if (info.parent != INVALID_ENTITY)
-						o << YAML::Value << info.parent;
-					else
-						o << YAML::Null;
+				o << YAML::Key << "Parent";
+				if (info.parent != INVALID_ENTITY)
+					o << YAML::Value << info.parent;
+				else
+					o << YAML::Null;
 
-					o << YAML::Key << "Children";
+				o << YAML::Key << "Children";
 
-					o << YAML::Value << info.children;
+				o << YAML::Value << info.children;
 
-					o << YAML::EndMap;
-				}
+				o << YAML::EndMap;
 			}
 
 			o << YAML::EndMap;
@@ -125,6 +123,7 @@ namespace Vultr
 		o << YAML::EndMap;
 
 		TRY(output_stream->write(o.c_str(), o.size()));
+		TRY(output_stream->write(String("\n")));
 		return Success;
 	}
 

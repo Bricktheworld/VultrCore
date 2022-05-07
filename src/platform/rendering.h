@@ -443,18 +443,34 @@ namespace Vultr
 	} // namespace Platform
 
 	template <>
-	inline constexpr Type get_type<Resource<Platform::Material *>> = {PrimitiveType::MATERIAL_RESOURCE, []() { return sizeof(Resource<Platform::Material *>); },
-																	  generic_type_serializer<Resource<Platform::Material *>>, generic_type_deserializer<Resource<Platform::Material *>>, "Material"};
+	inline constexpr Type get_type<Resource<Platform::Material *>> = {PrimitiveType::MATERIAL_RESOURCE,
+																	  []() { return sizeof(Resource<Platform::Material *>); },
+																	  generic_type_serializer<Resource<Platform::Material *>>,
+																	  generic_type_deserializer<Resource<Platform::Material *>>,
+																	  generic_copy_constructor<Resource<Platform::Material *>>,
+																	  "Material"};
 
 	template <>
-	inline constexpr Type get_type<Resource<Platform::Texture *>> = {PrimitiveType::TEXTURE_RESOURCE, []() { return sizeof(Resource<Platform::Texture *>); }, generic_type_serializer<Resource<Platform::Texture *>>,
-																	 generic_type_deserializer<Resource<Platform::Texture *>>, "Texture"};
+	inline constexpr Type get_type<Resource<Platform::Texture *>> = {PrimitiveType::TEXTURE_RESOURCE,
+																	 []() { return sizeof(Resource<Platform::Texture *>); },
+																	 generic_type_serializer<Resource<Platform::Texture *>>,
+																	 generic_type_deserializer<Resource<Platform::Texture *>>,
+																	 generic_copy_constructor<Resource<Platform::Texture *>>,
+																	 "Texture"};
 
 	template <>
-	inline constexpr Type get_type<Resource<Platform::Shader *>> = {PrimitiveType::SHADER_RESOURCE, []() { return sizeof(Resource<Platform::Shader *>); }, generic_type_serializer<Resource<Platform::Shader *>>,
-																	generic_type_deserializer<Resource<Platform::Shader *>>, "Shader"};
+	inline constexpr Type get_type<Resource<Platform::Shader *>> = {PrimitiveType::SHADER_RESOURCE,
+																	[]() { return sizeof(Resource<Platform::Shader *>); },
+																	generic_type_serializer<Resource<Platform::Shader *>>,
+																	generic_type_deserializer<Resource<Platform::Shader *>>,
+																	generic_copy_constructor<Resource<Platform::Shader *>>,
+																	"Shader"};
 
 	template <>
-	inline constexpr Type get_type<Resource<Platform::Mesh *>> = {PrimitiveType::MESH_RESOURCE, []() { return sizeof(Resource<Platform::Mesh *>); }, generic_type_serializer<Resource<Platform::Mesh *>>,
-																  generic_type_deserializer<Resource<Platform::Mesh *>>, "Mesh"};
+	inline constexpr Type get_type<Resource<Platform::Mesh *>> = {PrimitiveType::MESH_RESOURCE,
+																  []() { return sizeof(Resource<Platform::Mesh *>); },
+																  generic_type_serializer<Resource<Platform::Mesh *>>,
+																  generic_type_deserializer<Resource<Platform::Mesh *>>,
+																  generic_copy_constructor<Resource<Platform::Mesh *>>,
+																  "Mesh"};
 } // namespace Vultr

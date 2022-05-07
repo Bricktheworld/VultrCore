@@ -296,12 +296,15 @@ namespace Vultr
 				}
 				else
 				{
-					m_size = new_size;
-					if (m_size > m_capacity || get_usage(m_size, m_capacity) < decay_threshold)
+					if (new_size > m_capacity || get_usage(new_size, m_capacity) < decay_threshold)
 					{
-						m_capacity = get_capacity(m_size);
-						m_storage  = v_realloc(m_storage, m_size);
+						m_capacity        = get_capacity(new_size);
+						auto *new_storage = v_alloc<T>(new_size);
+						Utils::move(new_storage, m_storage, m_size);
+						v_free(m_storage);
+						m_storage = new_storage;
 					}
+					m_size = new_size;
 				}
 			}
 		}

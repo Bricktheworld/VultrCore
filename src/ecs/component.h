@@ -17,7 +17,8 @@ namespace Vultr
 		template <size_t i>                                                                                                                                                                                           \
 		static constexpr Field __REFL_GET_FIELD;                                                                                                                                                                      \
 		static constexpr name *__REFL_CAST(void *ptr) { return static_cast<name *>(ptr); }                                                                                                                            \
-		static constexpr size_t __REFL_GET_SIZE() { return sizeof(name); }
+		static constexpr size_t __REFL_GET_SIZE() { return sizeof(name); }                                                                                                                                            \
+		static constexpr void __REFL_COPY_CONSTRUCTOR(void *dest, const void *src) { *static_cast<name *>(dest) = *static_cast<const name *>(src); }
 
 #define VCOMPONENT_FIELD(T, name, val)                                                                                                                                                                                \
 	T name = val;                                                                                                                                                                                                     \
@@ -36,7 +37,7 @@ namespace Vultr
 		((out[S] = __REFL_GET_FIELD<S>), ...);                                                                                                                                                                        \
 	}                                                                                                                                                                                                                 \
 	static constexpr void __REFL_GET_FIELDS(Field *out) { __REFL_GET_FIELDS_IMPL(out, typename SequenceImpl<__REFL_MEMBER_COUNT>::type()); }                                                                          \
-	static constexpr Type __REFL_TYPE = init_type(__REFL_NAME, __REFL_GET_SIZE, __REFL_MEMBER_COUNT, __REFL_GET_FIELDS);                                                                                              \
+	static constexpr Type __REFL_TYPE = init_type(__REFL_NAME, __REFL_GET_SIZE, __REFL_MEMBER_COUNT, __REFL_GET_FIELDS, __REFL_COPY_CONSTRUCTOR);                                                                     \
 	}                                                                                                                                                                                                                 \
 	;
 
