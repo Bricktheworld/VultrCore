@@ -64,44 +64,6 @@ requires(!Vultr::is_same<T, void>) T *v_alloc(size_t count = 1)
 }
 
 /**
- * Reallocate a block of memory using game memory.
- *
- * @param T *memory: The memory that was allocated.
- * @param size_t count: The number of blocks of memory of the requested size to allocate.
- *
- * @return T *: The reallocated memory.
- *
- * @error This will crash the program if it failed to reallocate.
- */
-template <typename T>
-requires(!Vultr::is_same<T, void>) T *v_realloc(T *memory, size_t count)
-{
-	ASSERT(Vultr::g_game_memory != nullptr, "Cannot allocate using `realloc(T *memory, size_t count)` without first calling `init_game_memory()`. \n"
-											"Use `realloc(Allocator *allocator, T *memory, size_t count)` if you would like to use an allocator.");
-	auto *slab_allocator      = Vultr::g_game_memory->slab_allocator;
-	auto *free_list_allocator = Vultr::g_game_memory->general_allocator;
-
-	// If the memory resides in the slab allocator.
-	if (reinterpret_cast<byte *>(memory) > reinterpret_cast<byte *>(slab_allocator))
-	{
-		if (sizeof(T) * count <= slab_allocator->max_slab_size)
-		{
-			auto *data = v_realloc_safe<Vultr::SlabAllocator, T>(slab_allocator, memory, count);
-			if (data != nullptr)
-			{
-				return data;
-			}
-		}
-		auto *new_buf = v_alloc_with_allocator<Vultr::FreeListAllocator, T>(free_list_allocator, count);
-		auto old_size = Vultr::slab_get_size(slab_allocator, memory);
-		Vultr::Utils::move(new_buf, memory, Vultr::min(old_size, count * sizeof(T)));
-		v_free_with_allocator<Vultr::SlabAllocator, T>(slab_allocator, memory);
-		return new_buf;
-	}
-	return v_realloc_with_allocator<Vultr::FreeListAllocator, T>(free_list_allocator, memory, count);
-}
-
-/**
  * Free a block of memory using game memory.
  *
  * @param T *memory: The memory that was allocated.

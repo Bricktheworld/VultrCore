@@ -46,19 +46,6 @@ namespace Vultr
 	void *pool_alloc(size_t size);
 
 	/**
-	 * Reallocate a block of memory using game memory.
-	 * This will use the pool allocator.
-	 *
-	 * @param void *memory: The memory that was allocated using `pool_alloc`.
-	 * @param size_t size: The size of memory to reallocate.
-	 *
-	 * @return void *: The reallocated memory.
-	 *
-	 * @error This will return nullptr if it failed to reallocate.
-	 */
-	void *pool_realloc(void *memory, size_t size);
-
-	/**
 	 * Free a block of memory using game memory.
 	 *
 	 * @param void *memory: The memory that was allocated.
@@ -70,9 +57,6 @@ namespace Private
 {
 	template <typename Allocator>
 	void *malloc(Allocator *allocator, size_t size);
-
-	template <typename Allocator>
-	void *realloc(Allocator *allocator, void *memory, size_t size);
 
 	template <typename Allocator>
 	void free(Allocator *allocator, void *memory);
@@ -117,43 +101,6 @@ requires(!Vultr::is_same<T, void>) T *v_alloc_with_allocator(Allocator *allocato
 	T *buf = v_alloc_safe<Allocator, T>(allocator, count);
 	PRODUCTION_ASSERT(buf != nullptr, "Failed to allocate memory!");
 	return buf;
-}
-
-/**
- * Reallocate a block of memory using an allocator.
- * This does not throw an exception if it fails to reallocate, handling this is the responsibility of the call-site
- *
- * @param Allocator *allocator: The memory allocator.
- * @param T *memory: The memory that was allocated.
- * @param size_t count: The number of blocks of memory of the requested size to allocate.
- *
- * @return T *: The reallocated memory.
- *
- * @error This will return nullptr if it fails to allocate.
- */
-// TODO(Brandon): Add copy constructor and destructor safety.
-template <typename Allocator, typename T>
-requires(!Vultr::is_same<T, void>) T *v_realloc_safe(Allocator *allocator, T *memory, size_t count) { return static_cast<T *>(Private::realloc(allocator, memory, count * sizeof(T))); }
-
-/**
- * Reallocate a block of memory using an allocator.
- *
- * @param Allocator *allocator: The memory allocator.
- * @param T *memory: The memory that was allocated.
- * @param size_t count: The number of blocks of memory of the requested size to allocate.
- *
- * @return T *: The reallocated memory.
- *
- * @error This will crash the program if it failed to reallocate.
- */
-// TODO(Brandon): Add copy constructor and destructor safety.
-template <typename Allocator, typename T>
-requires(!Vultr::is_same<T, void>) T *v_realloc_with_allocator(Allocator *allocator, T *memory, size_t count)
-{
-	T *new_buf = v_realloc_safe<Allocator, T>(allocator, memory, count);
-	PRODUCTION_ASSERT(new_buf != nullptr, "Failed to reallocate memory!");
-
-	return new_buf;
 }
 
 /**

@@ -151,7 +151,6 @@ namespace Vultr
 
 	static void slab_free(Slab *slab, void *data)
 	{
-		// TODO(Brandon): Reimplement this check when we actually move blocks in slab reallocation.
 		size_t difference = reinterpret_cast<byte *>(data) - reinterpret_cast<byte *>(slab->heap);
 		ASSERT(difference % slab->block_size == 0, "Not a valid free address!");
 
@@ -202,56 +201,6 @@ namespace Vultr
 		}
 
 		THROW("Failed to find slab for data!");
-	}
-
-	void *slab_realloc(SlabAllocator *allocator, void *data, size_t size)
-	{
-		Platform::Lock lock(allocator->mutex);
-		ASSERT(size <= allocator->max_slab_size, "Slab allocator does not have a slab of big enough size.");
-		Slab *cur_slab = nullptr;
-		u32 index      = 0;
-		for (u32 i = allocator->num_slabs; i > 0; i--)
-		{
-			if (data > allocator->slabs[i - 1])
-			{
-				cur_slab = allocator->slabs[i - 1];
-				index    = i - 1;
-				break;
-			}
-		}
-
-		ASSERT(cur_slab != nullptr, "Failed to find slab for data!");
-
-		if (size == cur_slab->block_size)
-			return data;
-
-		u32 lower_bound = 0;
-		u32 upper_bound = allocator->num_slabs;
-
-		if (size > cur_slab->block_size)
-			lower_bound = index + 1;
-		else // if (size < cur_slab->block_size)
-			upper_bound = index;
-
-		for (u32 i = lower_bound; i < upper_bound; i++)
-		{
-			if (size <= allocator->slabs[i]->block_size)
-			{
-				void *new_data = slab_alloc(allocator->slabs[i]);
-
-				if (new_data == nullptr)
-					return nullptr;
-
-				memmove(new_data, data, cur_slab->block_size);
-				slab_free(cur_slab, data);
-				return new_data;
-			}
-		}
-
-		if (size < cur_slab->block_size)
-			return data;
-		else
-			return nullptr;
 	}
 
 	void slab_free(SlabAllocator *allocator, void *data)

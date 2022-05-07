@@ -109,8 +109,11 @@ namespace Vultr
 				}
 				else
 				{
+					auto *new_storage = v_alloc<T>(new_size);
+					Utils::move(new_storage, storage, m_size);
+					v_free<void>(storage);
 					m_size  = new_size;
-					storage = v_realloc(storage, m_size);
+					storage = new_storage;
 				}
 			}
 		}

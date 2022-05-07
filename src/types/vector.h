@@ -105,7 +105,7 @@ namespace Vultr
 		~Vector() { clear(); }
 
 		// Push element to back of dynamic_array
-		// If the dynamic_array does not have enough space, then a reallocation will
+		// If the vector does not have enough space, then a reallocation will
 		// occur
 		//
 		// Returns the element just inserted
@@ -301,7 +301,7 @@ namespace Vultr
 						m_capacity        = get_capacity(new_size);
 						auto *new_storage = v_alloc<T>(new_size);
 						Utils::move(new_storage, m_storage, m_size);
-						v_free(m_storage);
+						v_free<void>(m_storage);
 						m_storage = new_storage;
 					}
 					m_size = new_size;

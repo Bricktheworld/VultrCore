@@ -81,26 +81,6 @@ namespace Vultr
 		}
 	}
 
-	void *mem_realloc(Allocator *allocator, void *memory, size_t size)
-	{
-		switch (allocator->type)
-		{
-			case AllocatorType::Linear:
-				THROW("Cannot reallocate in a linear allocator, the entire point of linear is to not do that.");
-			case AllocatorType::Pool:
-				return pool_realloc(reinterpret_cast<PoolAllocator *>(allocator), memory, size);
-			case AllocatorType::FreeList:
-				return free_list_realloc(reinterpret_cast<FreeListAllocator *>(allocator), memory, size);
-			case AllocatorType::Slab:
-				return slab_realloc(reinterpret_cast<SlabAllocator *>(allocator), memory, size);
-			case AllocatorType::Stack:
-				THROW("Cannot reallocate in a stack allocator, this is not what a stack allocator is for.");
-			case AllocatorType::None:
-			default:
-				THROW("Invalid memory allocator, how the fuck did you even get here.");
-		}
-	}
-
 	void mem_free(Allocator *allocator, void *memory)
 	{
 		switch (allocator->type)
@@ -152,24 +132,6 @@ namespace Private
 	void *malloc(Vultr::SlabAllocator *allocator, size_t size)
 	{
 		return Vultr::slab_alloc(allocator, size);
-	}
-
-	template <>
-	void *realloc(Vultr::PoolAllocator *allocator, void *memory, size_t size)
-	{
-		return Vultr::pool_realloc(allocator, memory, size);
-	}
-
-	template <>
-	void *realloc(Vultr::FreeListAllocator *allocator, void *memory, size_t size)
-	{
-		return Vultr::free_list_realloc(allocator, memory, size);
-	}
-
-	template <>
-	void *realloc(Vultr::SlabAllocator *allocator, void *memory, size_t size)
-	{
-		return Vultr::slab_realloc(allocator, memory, size);
 	}
 
 	template <>

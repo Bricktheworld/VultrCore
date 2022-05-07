@@ -763,29 +763,6 @@ namespace Vultr
 		free_list_free_no_lock(allocator, data);
 	}
 
-	void *free_list_realloc(FreeListAllocator *allocator, void *data, size_t size)
-	{
-		Platform::Lock l(allocator->mutex);
-		auto *block         = get_block_from_allocated_data(data);
-		size_t current_size = get_mb_size(block);
-
-		auto *next          = block->next;
-		auto next_is_free   = next != nullptr && mb_is_free(next);
-		auto next_size      = next ? get_mb_size(next) : 0;
-
-		if (next_is_free && next_size + current_size + HEADER_SIZE >= size)
-		{
-			return data;
-		}
-		else
-		{
-			void *new_data = free_list_alloc_no_lock(allocator, size);
-			memcpy(new_data, data, current_size);
-			free_list_free_no_lock(allocator, data);
-			return new_data;
-		}
-	}
-
 	// Red-black tree rules:
 	// - Every node is either black or red.
 	// - The root node is always black.

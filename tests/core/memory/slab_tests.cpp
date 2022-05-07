@@ -22,18 +22,4 @@ TEST(SlabTests, All)
 	slab_free(allocator, data);
 	void *third_data = slab_alloc(allocator, 64);
 	ASSERT_EQ(third_data, data);
-
-	data = slab_realloc(allocator, third_data, 65);
-	ASSERT_NE(data, nullptr);
-	ASSERT_NE(data, third_data);
-	void *reallocated_data = slab_realloc(allocator, data, 66);
-	ASSERT_EQ(reallocated_data, data);
-	void *second_reallocated_data = slab_realloc(allocator, data, 65);
-	ASSERT_EQ(second_reallocated_data, reallocated_data);
-
-	void *fourth_data = slab_alloc(allocator, 10);
-	ASSERT_EQ(fourth_data, third_data);
-
-	void *third_reallocated_data = slab_realloc(allocator, data, 64);
-	ASSERT_NE(third_reallocated_data, second_reallocated_data);
 }

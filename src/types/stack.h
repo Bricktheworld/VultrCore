@@ -1,3 +1,4 @@
+#if 0
 // TODO(Brandon): Replace with custom allocator.
 #pragma once
 #include <assert.h>
@@ -196,3 +197,5 @@ namespace vtl
 		vtl::condition_variable stack_cond;
 	};
 } // namespace vtl
+
+#endif

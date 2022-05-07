@@ -42,21 +42,6 @@ namespace Vultr
 	void *free_list_alloc(FreeListAllocator *allocator, size_t size);
 
 	/**
-	 * Resize a chunk of memory from a `FreeListAllocator`.
-	 *
-	 * @param FreeListAllocator *allocator: The allocator to use.
-	 * @param void *: The old allocated block of memory.
-	 * @param size_t size: The new size of memory to allocate.
-	 *
-	 * @return void *: The memory that can now be used.
-	 *
-	 * @error The method will return nullptr if there is no memory chunk available to allocate.
-	 *
-	 * @no_thread_safety
-	 */
-	void *free_list_realloc(FreeListAllocator *allocator, void *data, size_t size);
-
-	/**
 	 * Free a chunk of memory from a `FreeListAllocator`.
 	 * @param FreeListAllocator *allocator: The allocator to use.
 	 * @param void *data: The data to free.
