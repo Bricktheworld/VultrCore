@@ -93,6 +93,7 @@ namespace Vultr
 	ErrorOr<Path> pwd();
 	bool has_parent(const Path &path);
 	ErrorOr<Path> get_parent(const Path &path);
+	ErrorOr<void> ftouch(const Path &path);
 
 	struct DirectoryIterator
 	{

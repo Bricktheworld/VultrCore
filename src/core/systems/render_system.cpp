@@ -48,7 +48,10 @@ namespace Vultr
 				update_light = true;
 				break;
 			}
-			ASSERT(update_light, "No directional light found!");
+			if (!update_light)
+			{
+				return;
+			}
 
 			for (auto [entity, transform, mesh, material] : get_entities<Transform, Mesh, Material>())
 			{

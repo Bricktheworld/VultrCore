@@ -35,6 +35,8 @@ typedef std::atomic<int64_t> atomic_s64;
 typedef std::atomic<int32_t> atomic_s32;
 typedef std::atomic<int16_t> atomic_s16;
 typedef std::atomic<int8_t> atomic_s8;
+typedef std::atomic<f32> atomic_f32;
+typedef std::atomic<f64> atomic_f64;
 
 typedef std::atomic<bool> atomic_bool;
 typedef std::atomic<char> atomic_char;

@@ -246,11 +246,6 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 		if check (Vultr::load_game(build_dir, resource_dir), auto project, auto err)
 		{
 			Vultr::open_borderless_windowed("Vultr Game Engine");
-			{
-				auto *upload_context = Platform::init_upload_context(engine()->context);
-				CHECK(Vultr::import_resource_dir(&project));
-				Platform::destroy_upload_context(upload_context);
-			}
 
 			Vultr::init_resource_allocators();
 
@@ -276,9 +271,11 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			runtime.upload_context = Vultr::Platform::init_upload_context(Vultr::engine()->context);
 			runtime.imgui_c        = Platform::init_imgui(engine()->window, runtime.upload_context);
 
-			EditorWindowState state{};
+			EditorWindowState state;
+			begin_resource_import(&project, &state);
 
-			void *project_state = project.init();
+			//			void *project_state = nullptr;
+			//			= project.init();
 
 			init_windows(&runtime, &project, &state);
 			while (!Platform::window_should_close(engine()->window))
@@ -288,7 +285,11 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 				update_windows(&state, dt);
 
-				project.update(project_state, dt);
+				//				if (project_state == nullptr && !state.resource_import_state.importing)
+				//				{
+				//					project_state = project.init();
+				//				}
+				//				project.update(project_state, dt);
 
 				if check (Platform::begin_cmd_buffer(engine()->window), auto *cmd, auto _)
 				{
@@ -305,7 +306,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 					RenderSystem::reinitialize(runtime.render_system);
 				}
 			}
-			project.destroy(project_state);
+			//			project.destroy(project_state);
 			Platform::wait_idle(engine()->context);
 			resource_allocator<Platform::Mesh *>()->kill_loading_threads();
 			resource_allocator<Platform::Mesh *>()->kill_freeing_threads();

@@ -373,6 +373,7 @@ namespace Vultr
 			size_t path_max();
 			ErrorOr<void> pwd(char *buf, size_t size);
 			ErrorOr<u64> fdate_modified_ms(str path);
+			ErrorOr<void> ftouch(str path);
 
 			typedef void DirectoryHandle;
 			ErrorOr<DirectoryHandle *> open_dir(str path);

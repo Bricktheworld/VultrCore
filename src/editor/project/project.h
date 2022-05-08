@@ -34,5 +34,5 @@ namespace Vultr
 	Tuple<Path, Path> get_mesh_resource(const Project *project, const Path &local);
 	Path get_scene_resource(const Project *project, const Path &local);
 	ErrorOr<Project> load_game(const Path &build_dir, const Path &resource_dir);
-	ErrorOr<void> import_resource_dir(Project *project);
+	//	ErrorOr<void> import_resource_dir(Project *project);
 } // namespace Vultr

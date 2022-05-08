@@ -10,10 +10,20 @@ namespace Vultr
 		Vector<Path> dirs{};
 		Path current_dir{};
 		Option<u32> selected_index = None;
+		atomic_bool need_refresh   = true;
+	};
+
+	struct ResourceImportState
+	{
+		atomic_bool importing      = false;
+		atomic_u32 total           = 0;
+		atomic_u32 progress        = 0;
+		Option<Error> import_error = None;
 	};
 
 	struct EditorWindowState
 	{
+		ResourceImportState resource_import_state;
 		Option<Entity> selected_entity = None;
 		Camera editor_camera{};
 		Transform editor_camera_transform{.position = Vec3(0, 0, 10)};
@@ -42,4 +52,5 @@ namespace Vultr
 	void update_windows(EditorWindowState *state, f64 dt);
 	void render_windows(Platform::CmdBuffer *cmd, Project *project, EditorWindowState *state, EditorRuntime *runtime, f64 dt);
 	void destroy_windows(EditorWindowState *state);
+	void begin_resource_import(Project *project, EditorWindowState *state);
 } // namespace Vultr

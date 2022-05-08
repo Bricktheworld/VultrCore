@@ -89,6 +89,16 @@ namespace Vultr
 		return Platform::Filesystem::fdate_modified_ms(path.c_str());
 	}
 
+	ErrorOr<void> ftouch(const Path &path)
+	{
+		if (!exists(path))
+			return Error("Cannot touch non-existent file " + path.string());
+
+		if (!path.is_file())
+			return Error("Cannot touch non-file " + path.string());
+		return Platform::Filesystem::ftouch(path.c_str());
+	}
+
 #if 0
 	bool fremove(const IFile *file) { return remove(file->path) == 0; }
 

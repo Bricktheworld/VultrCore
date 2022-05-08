@@ -72,7 +72,7 @@ namespace Vultr
 		}
 	}
 
-	static ErrorOr<Path> local_resource_file(Project *project, const Path &full_path)
+	static ErrorOr<Path> local_resource_file(const Project *project, const Path &full_path)
 	{
 		if (starts_with(full_path.string(), project->resource_dir.string()))
 		{
@@ -328,7 +328,7 @@ namespace Vultr
 					if (res.is_error())
 						fprintf(stderr, "Something went wrong saving material %s", res.get_error().message.c_str());
 
-					import_resource_dir(project);
+					begin_resource_import(project, state);
 				}
 			}
 			state->selected_entity = entity;
@@ -849,6 +849,7 @@ namespace Vultr
 		state->resource_browser_state.current_dir    = dir;
 		state->resource_browser_state.dirs.clear();
 		state->resource_browser_state.files.clear();
+		state->resource_browser_state.need_refresh = false;
 		for (auto path : DirectoryIterator(dir))
 		{
 			if (path.is_directory())
@@ -915,8 +916,16 @@ namespace Vultr
 		ImGui::PopTextWrapPos();
 	}
 
+	static void resource_browser_refresh(Project *project, EditorWindowState *state)
+	{
+		if (!state->resource_browser_state.need_refresh)
+			return;
+		change_dir(project, state->resource_browser_state.current_dir, state);
+	}
+
 	void resource_browser_window_draw(Project *project, EditorWindowState *editor_state)
 	{
+		resource_browser_refresh(project, editor_state);
 		ImGui::Begin("Asset Browser");
 		u32 num_cols = get_num_cols();
 		auto *state  = &editor_state->resource_browser_state;
@@ -939,12 +948,7 @@ namespace Vultr
 		{
 			if (ImGui::Button("Reimport"))
 			{
-				auto res = import_resource_dir(project);
-				if (res.is_error())
-				{
-					reimport_error_message = res.get_error().message;
-				}
-				change_dir(project, state->current_dir, editor_state);
+				begin_resource_import(project, editor_state);
 				ImGui::End();
 				return;
 			}
@@ -1008,13 +1012,9 @@ namespace Vultr
 
 								fwrite_all(new_mat, out_buf, StreamWriteMode::OVERWRITE);
 
-								auto res = import_resource_dir(project);
-								if (res.is_error())
-								{
-									reimport_error_message = res.get_error().message;
-								}
+								begin_resource_import(project, editor_state);
 
-								change_dir(project, state->current_dir, editor_state);
+								//								change_dir(project, state->current_dir, editor_state);
 
 								ImGui::CloseCurrentPopup();
 							}
@@ -1260,6 +1260,43 @@ namespace Vultr
 			ImGui::EndMenuBar();
 		}
 
+		if (ImGui::BeginPopupModal("Import"))
+		{
+			ImGui::Text("Importing resources!");
+			ImGui::ProgressBar(static_cast<f32>(state->resource_import_state.progress) / static_cast<f32>(state->resource_import_state.total));
+			if (!state->resource_import_state.importing)
+			{
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
+		else
+		{
+			if (state->resource_import_state.importing)
+			{
+				ImGui::OpenPopup("Import");
+			}
+		}
+
+		if (ImGui::BeginPopupModal("Import Error"))
+		{
+			ImGui::Text("Failed to import resources!");
+			ImGui::Text("%s", state->resource_import_state.import_error.value().message.c_str());
+			if (ImGui::Button("Ok"))
+			{
+				state->resource_import_state.import_error = None;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
+		else
+		{
+			if (!state->resource_import_state.importing && state->resource_import_state.import_error)
+			{
+				ImGui::OpenPopup("Import Error");
+			}
+		}
+
 		auto dockspace = ImGui::GetID("HUB_DockSpace");
 		ImGui::DockSpace(dockspace, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoResize);
 
@@ -1292,5 +1329,168 @@ namespace Vultr
 		Platform::destroy_texture(c, state->file);
 		Platform::destroy_texture(c, state->folder);
 		Platform::destroy_texture(c, state->mesh);
+	}
+
+	static ErrorOr<void> import_resource_file(const Project *project, const Path &local_src, const Path &full_src, atomic_u32 *progress)
+	{
+		switch (get_resource_type(local_src))
+		{
+			case ResourceType::MESH:
+			{
+				auto [vertex_out, index_out] = get_mesh_resource(project, local_src);
+				if (needs_reimport(full_src, vertex_out) || needs_reimport(full_src, index_out))
+				{
+					ftouch(full_src);
+					printf("Importing mesh %s\n", full_src.c_str());
+					TRY_UNWRAP(auto mesh, Platform::import_mesh_file(full_src));
+					TRY(Platform::export_mesh(vertex_out, index_out, &mesh));
+					Platform::free_imported_mesh(&mesh);
+					(*progress)++;
+				}
+				break;
+			}
+			case ResourceType::SHADER:
+			{
+				auto [vertex_out, fragment_out] = get_shader_resource(project, local_src);
+				if (needs_reimport(full_src, vertex_out) || needs_reimport(full_src, fragment_out))
+				{
+					ftouch(full_src);
+					String src{};
+					TRY(try_fread_all(full_src, &src));
+					TRY_UNWRAP(auto compiled, Platform::try_compile_shader(src));
+					TRY(try_fwrite_all(vertex_out, compiled.vert_src, StreamWriteMode::OVERWRITE));
+					TRY(try_fwrite_all(fragment_out, compiled.frag_src, StreamWriteMode::OVERWRITE));
+					(*progress)++;
+				}
+				break;
+			}
+			case ResourceType::TEXTURE:
+			{
+				auto out = get_texture_resource(project, local_src);
+				if (needs_reimport(full_src, out))
+				{
+					ftouch(full_src);
+					Buffer imported{};
+					TRY(Platform::import_texture_file(full_src, &imported));
+					TRY(try_fwrite_all(out, imported, StreamWriteMode::OVERWRITE));
+					(*progress)++;
+				}
+				break;
+			}
+			default:
+			{
+				auto out = project->build_resource_dir / local_src;
+				if (needs_reimport(full_src, out))
+				{
+					ftouch(full_src);
+					Buffer src{};
+					TRY(try_fread_all(full_src, &src));
+					TRY(try_fwrite_all(out, src, StreamWriteMode::OVERWRITE));
+					(*progress)++;
+				}
+				break;
+			}
+		}
+		return Success;
+	}
+
+	static ErrorOr<void> import_dir(const Project *project, const Path &in_dir, atomic_u32 *progress)
+	{
+		for (auto entry : DirectoryIterator(in_dir))
+		{
+			auto local = local_resource_file(project, entry).value();
+			if (entry.is_directory())
+			{
+				TRY(makedir(project->build_resource_dir / local));
+				TRY(import_dir(project, entry, progress));
+			}
+			else
+			{
+				TRY(import_resource_file(project, local, entry, progress))
+			}
+		}
+		return Success;
+	}
+
+	static bool needs_reimport(const Project *project, const Path &path)
+	{
+		auto local = local_resource_file(project, path).value();
+		switch (get_resource_type(path))
+		{
+			case ResourceType::TEXTURE:
+			{
+				auto out = get_texture_resource(project, local);
+				return needs_reimport(path, out);
+			}
+			case ResourceType::SHADER:
+			{
+				auto [vertex_out, fragment_out] = get_shader_resource(project, local);
+				return (needs_reimport(path, vertex_out) || needs_reimport(path, fragment_out));
+			}
+			case ResourceType::MATERIAL:
+			{
+				auto out = get_material_resource(project, local);
+				return needs_reimport(path, out);
+			}
+			case ResourceType::MESH:
+			{
+				auto [vertex_out, index_out] = get_mesh_resource(project, local);
+				return (needs_reimport(path, vertex_out) || needs_reimport(path, index_out));
+			}
+			default:
+			{
+				return needs_reimport(path, project->build_resource_dir / local);
+			}
+		}
+	}
+
+	static u32 count_resource_imports(const Project *project, const Path &dir)
+	{
+		u32 count = 0;
+		for (auto entry : DirectoryIterator(dir))
+		{
+			if (entry.is_file())
+			{
+				if (needs_reimport(project, entry))
+					count++;
+			}
+			else
+			{
+				count += count_resource_imports(project, entry);
+			}
+		}
+		return count;
+	}
+
+	static void resource_import_thread(Project *project, EditorWindowState *state)
+	{
+		ASSERT(!state->resource_import_state.importing, "Already importing!");
+		state->resource_import_state.importing = true;
+		auto res                               = makedir(project->build_resource_dir);
+		if (!res.is_error())
+		{
+			state->resource_import_state.total = count_resource_imports(project, project->resource_dir);
+			auto res                           = import_dir(project, project->resource_dir, &state->resource_import_state.progress);
+			if (!res.is_error())
+			{
+				state->resource_import_state.import_error = None;
+			}
+			else
+			{
+				state->resource_import_state.import_error = res.get_error();
+			}
+		}
+		else
+		{
+			state->resource_import_state.import_error = res.get_error();
+		}
+		state->resource_import_state.importing     = false;
+		state->resource_browser_state.need_refresh = true;
+	}
+
+	void begin_resource_import(Project *project, EditorWindowState *state)
+	{
+		Platform::Thread thread(resource_import_thread, project, state);
+		thread.detach();
 	}
 } // namespace Vultr

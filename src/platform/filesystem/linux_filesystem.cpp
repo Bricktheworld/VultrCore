@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <dirent.h>
+#include <utime.h>
 
 namespace Vultr::Platform::Filesystem
 {
@@ -69,6 +70,13 @@ namespace Vultr::Platform::Filesystem
 		{
 			return error_from_errno(errno);
 		}
+	}
+
+	ErrorOr<void> ftouch(str path)
+	{
+		if (utime(path, nullptr) != 0)
+			return error_from_errno(errno);
+		return Success;
 	}
 
 	ErrorOr<DirectoryHandle *> open_dir(str path)
