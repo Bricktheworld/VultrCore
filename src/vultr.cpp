@@ -1,4 +1,5 @@
 #include "vultr.h"
+
 namespace Vultr
 {
 	GameMemory *g_game_memory = nullptr;
@@ -57,6 +58,8 @@ namespace Vultr
 		new (g_game_memory->engine) Engine();
 		g_game_memory->resource_allocator = linear_alloc(g_game_memory->persistent_storage, ResourceTypes::size * sizeof(ResourceAllocator<void *>));
 		ASSERT(g_game_memory->resource_allocator != nullptr, "Failed to allocate resource manager!");
+		g_game_memory->input_manager = static_cast<Input::InputManager *>(linear_alloc(g_game_memory->persistent_storage, sizeof(Input::InputManager)));
+		ASSERT(g_game_memory->input_manager != nullptr, "Failed to allocate input manager!");
 	}
 
 	template <typename T>

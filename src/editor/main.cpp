@@ -243,9 +243,9 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 		ASSERT(exists(resource_dir), "Resource directory does not exist!");
 		ASSERT(exists(build_dir), "Build directory does not exist!");
 
+		Vultr::open_borderless_windowed("Vultr Game Engine");
 		if check (Vultr::load_game(build_dir, resource_dir), auto project, auto err)
 		{
-			Vultr::open_borderless_windowed("Vultr Game Engine");
 
 			Vultr::init_resource_allocators();
 
@@ -280,13 +280,32 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			while (!Platform::window_should_close(engine()->window))
 			{
 				Platform::poll_events(engine()->window);
+				Input::update_input(Input::input_manager(), state.render_window_offset, state.render_window_size);
 				auto dt = Platform::update_window(engine()->window);
 
-				update_windows(&state, dt);
+				if (state.hot_reload_fence.try_acquire())
+				{
+					if (state.playing)
+						project.update(state.game_memory, dt);
+
+					update_windows(&state, dt);
+					state.hot_reload_fence.release();
+				}
 
 				if check (Platform::begin_cmd_buffer(engine()->window), auto *cmd, auto _)
 				{
-					RenderSystem::update(state.editor_camera, state.editor_camera_transform, cmd, runtime.render_system);
+					if (state.hot_reload_fence.try_acquire())
+					{
+						if (state.playing)
+						{
+							RenderSystem::update(cmd, runtime.render_system);
+						}
+						else
+						{
+							RenderSystem::update(state.editor_camera, state.editor_camera_transform, cmd, runtime.render_system);
+						}
+						state.hot_reload_fence.release();
+					}
 
 					Platform::begin_window_framebuffer(cmd);
 					render_windows(cmd, runtime.render_system, &project, &state, &runtime, dt);
@@ -299,8 +318,16 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 					RenderSystem::reinitialize(runtime.render_system);
 				}
 			}
-			world()->component_manager.deregister_non_system_components();
-			//			project.destroy(project_state);
+
+			if (state.hot_reload_fence.try_acquire())
+			{
+				if (state.started)
+					project.destroy(state.game_memory);
+
+				world()->component_manager.deregister_non_system_components();
+				state.hot_reload_fence.release();
+			}
+
 			Platform::wait_idle(engine()->context);
 			resource_allocator<Platform::Mesh *>()->kill_loading_threads();
 			resource_allocator<Platform::Mesh *>()->kill_freeing_threads();

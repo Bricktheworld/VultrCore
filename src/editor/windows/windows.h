@@ -23,6 +23,8 @@ namespace Vultr
 
 	struct EditorWindowState
 	{
+		Vec2 render_window_offset = Vec2(0);
+		Vec2 render_window_size   = Vec2(0);
 		ResourceImportState resource_import_state;
 		Option<Entity> selected_entity = None;
 		Camera editor_camera{};
@@ -35,16 +37,26 @@ namespace Vultr
 		Option<Path> scene_path = None;
 		Platform::CallbackHandle key_listener{};
 
-		Platform::Texture *texture    = nullptr;
-		Platform::Texture *cpp_source = nullptr;
-		Platform::Texture *shader     = nullptr;
-		Platform::Texture *file       = nullptr;
-		Platform::Texture *folder     = nullptr;
-		Platform::Texture *mesh       = nullptr;
+		Platform::Texture *texture              = nullptr;
+		Platform::Texture *cpp_source           = nullptr;
+		Platform::Texture *shader               = nullptr;
+		Platform::Texture *file                 = nullptr;
+		Platform::Texture *folder               = nullptr;
+		Platform::Texture *mesh                 = nullptr;
+
+		Option<StringView> error_title          = None;
+		Option<String> error_message            = None;
+
+		bool started                            = false;
+		bool playing                            = false;
+		void *game_memory                       = nullptr;
+
+		Platform::Semaphore<1> hot_reload_fence = Platform::Semaphore<1>(1);
+		atomic_bool hot_reloading               = false;
 	};
 
 	void scene_window_update(EditorWindowState *state, f64 dt);
-	void scene_window_draw(RenderSystem::Component *render_system, EditorWindowState *state, EditorRuntime *runtime);
+	void scene_window_draw(RenderSystem::Component *render_system, Project *project, EditorWindowState *state, EditorRuntime *runtime);
 	void entity_hierarchy_window_draw(Project *project, EditorWindowState *state);
 	void component_inspector_window_draw(Project *project, EditorWindowState *state);
 	void resource_browser_window_draw(Project *project, EditorWindowState *state);

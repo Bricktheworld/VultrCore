@@ -5,6 +5,7 @@
 #include <math/decompose_transform.h>
 #include <editor/res/resources.h>
 #include <ecs/serialization.h>
+#include <vultr_input.h>
 
 namespace ImGui
 {
@@ -35,40 +36,47 @@ namespace ImGui
 } // namespace ImGui
 namespace Vultr
 {
+	static void display_error(EditorWindowState *state, const StringView &title, String message)
+	{
+		state->error_title   = title;
+		state->error_message = message;
+	}
+
 	void scene_window_update(EditorWindowState *state, f64 dt)
 	{
-		if (Platform::mouse_down(engine()->window, Platform::Input::MouseButton::MOUSE_RIGHT))
+		if (state->playing)
+			return;
+		if (Input::mouse_down(Input::MOUSE_RIGHT))
 		{
-			Platform::lock_cursor(engine()->window);
+			Input::lock_mouse();
 
 			static constexpr f32 speed = 2;
-			static constexpr f32 sens  = 100000;
+			static constexpr f32 sens  = 70;
 			f32 delta                  = speed * (f32)dt;
 			auto &transform            = state->editor_camera_transform;
 
-			if (Platform::key_down(engine()->window, Platform::Input::KEY_W))
+			if (Input::key_down(Input::KEY_W))
 				transform.position += forward(transform) * delta;
-			if (Platform::key_down(engine()->window, Platform::Input::KEY_S))
+			if (Input::key_down(Input::KEY_S))
 				transform.position -= forward(transform) * delta;
-			if (Platform::key_down(engine()->window, Platform::Input::KEY_D))
+			if (Input::key_down(Input::KEY_D))
 				transform.position += right(transform) * delta;
-			if (Platform::key_down(engine()->window, Platform::Input::KEY_A))
+			if (Input::key_down(Input::KEY_A))
 				transform.position -= right(transform) * delta;
-			if (Platform::key_down(engine()->window, Platform::Input::KEY_E))
+			if (Input::key_down(Input::KEY_E))
 				transform.position += Vec3(0, 1, 0) * delta;
-			if (Platform::key_down(engine()->window, Platform::Input::KEY_Q))
+			if (Input::key_down(Input::KEY_Q))
 				transform.position -= Vec3(0, 1, 0) * delta;
 
-			auto mouse_delta    = Platform::get_mouse_delta(engine()->window);
+			auto mouse_delta    = Input::mouse_delta();
 
-			f64 aspect_ratio    = (f64)Platform::get_window_width(engine()->window) / (f64)Platform::get_window_width(engine()->window);
-			Quat rotation_horiz = glm::angleAxis(f32(sens * dt * -mouse_delta.x * aspect_ratio), Vec3(0, 1, 0));
+			Quat rotation_horiz = glm::angleAxis(f32(sens * dt * -mouse_delta.x), Vec3(0, 1, 0));
 			Quat rotation_vert  = glm::angleAxis(f32(sens * dt * -mouse_delta.y), right(transform));
 			transform.rotation  = rotation_horiz * rotation_vert * transform.rotation;
 		}
 		else
 		{
-			Platform::unlock_cursor(engine()->window);
+			Input::unlock_mouse();
 		}
 	}
 
@@ -125,106 +133,260 @@ namespace Vultr
 		}
 	}
 
-	void scene_window_draw(RenderSystem::Component *render_system, EditorWindowState *state, EditorRuntime *runtime)
+	static bool serialize_current_scene(EditorWindowState *state)
 	{
+		if (!state->started)
+		{
+			if let (const auto &scene_path, state->scene_path)
+			{
+				auto out = FileOutputStream(state->scene_path.value(), StreamFormat::BINARY, StreamWriteMode::OVERWRITE);
+				auto res = serialize_world_yaml(world(), &out);
+				if (res.is_error())
+				{
+					display_error(state, "Scene Serialization Failed", String(res.get_error().message));
+					return false;
+				}
+				return true;
+			}
+			else
+			{
+				display_error(state, "No Scene Open", String("Please open a scene before saving."));
+				return false;
+			}
+		}
+		else
+		{
+			display_error(state, "Cannot Save When Playing", String("In order to save the current scene, please exit play mode."));
+			return false;
+		}
+	}
+
+	static bool load_scene(EditorWindowState *state, const Path &file)
+	{
+		state->scene_path = file;
+		String src;
+		fread_all(file, &src);
+		printf("Freeing scene......................\n");
+		world()->component_manager.destroy_component_arrays();
+		world()->entity_manager = EntityManager();
+		printf("Initializing new scene.............\n");
+		auto res = read_world_yaml(src, world());
+		if (res.is_error())
+		{
+			display_error(state, "Failed To Load Scene", String(res.get_error().message));
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+
+	static void play_game(EditorWindowState *state, Project *project)
+	{
+		ASSERT(!state->playing, "Cannot play game that is already playing!");
+		if (!state->started)
+		{
+			if let (auto scene, state->scene_path)
+			{
+				if (!serialize_current_scene(state))
+					return;
+
+				if (!state->started)
+				{
+					state->game_memory = project->init();
+				}
+			}
+			else
+			{
+				display_error(state, "No Scene Open", String("Cannot hot-reload gameplay DLL without an open scene. Please open a scene."));
+			}
+		}
+		state->started = true;
+		state->playing = true;
+	}
+
+	static void pause_game(EditorWindowState *state, Project *project)
+	{
+		ASSERT(state->started, "Cannot pause game that has not been started!");
+		ASSERT(state->playing, "Cannot pause game that is already paused!");
+		state->playing = false;
+	}
+
+	static void stop_game(EditorWindowState *state, Project *project)
+	{
+		ASSERT(state->started, "Cannot stop game that has not been started!");
+
+		project->destroy(state->game_memory);
+		load_scene(state, state->scene_path.value());
+
+		state->playing = false;
+		state->started = false;
+	}
+
+	static void hot_reload_game_thread(EditorWindowState *state, Project *project)
+	{
+		state->hot_reload_fence.acquire();
+		state->hot_reloading = true;
+		if let (auto scene, state->scene_path)
+		{
+			if (!serialize_current_scene(state))
+				return;
+
+			auto res = reload_game(project);
+			if (res)
+			{
+				world()->component_manager.destroy_component_arrays();
+				world()->entity_manager = EntityManager();
+				world()->component_manager.deregister_non_system_components();
+				project->register_components();
+				load_scene(state, state->scene_path.value());
+			}
+			else
+			{
+				display_error(state, "Hot Reload Gameplay DLL Failed", String(res.get_error().message));
+			}
+		}
+		else
+		{
+			display_error(state, "No Scene Open", String("Cannot hot-reload gameplay DLL without an open scene. Please open a scene."));
+		}
+		state->hot_reloading = false;
+		state->hot_reload_fence.release();
+	}
+
+	static void hot_reload_game(EditorWindowState *state, Project *project)
+	{
+		Platform::Thread thread(hot_reload_game_thread, state, project);
+		thread.detach();
+	}
+
+	static void invalid_resource_error(EditorWindowState *state) { display_error(state, "Invalid Resource", String("Resource provided is invalid!")); }
+
+	void scene_window_draw(RenderSystem::Component *render_system, Project *project, EditorWindowState *state, EditorRuntime *runtime)
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 		ImGui::Begin("Game");
-		if (ImGui::IsWindowHovered() && !Platform::mouse_down(engine()->window, Platform::Input::MOUSE_RIGHT))
+		if (state->hot_reload_fence.try_acquire())
 		{
-			if (Platform::key_down(engine()->window, Platform::Input::KEY_Q))
+			if (ImGui::IsWindowHovered() && !Input::mouse_down(Input::MOUSE_RIGHT))
 			{
-				state->current_operation = ImGuizmo::OPERATION::TRANSLATE;
-			}
-			else if (Platform::key_down(engine()->window, Platform::Input::KEY_W))
-			{
-				state->current_operation = ImGuizmo::OPERATION::ROTATE;
-			}
-			else if (Platform::key_down(engine()->window, Platform::Input::KEY_E))
-			{
-				state->current_operation = ImGuizmo::OPERATION::SCALE;
-			}
-		}
-
-		//		{
-		//			auto alignment = ImVec2(0.5f, 0.5f);
-		//			ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, alignment);
-		//
-		//			if (ImGui::Selectable("Play", false, ImGuiSelectableFlags_None, ImVec2(80, 80)))
-		//			{
-		//				printf("Play\n");
-		//			}
-		//
-		//			ImGui::PopStyleVar();
-		//		}
-
-		ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
-		auto output_texture        = Platform::imgui_get_texture_id(Platform::get_attachment_texture(runtime->render_system->output_framebuffer, 0));
-		ImGui::Image(output_texture, viewport_panel_size);
-
-		if (Platform::get_width(render_system->output_framebuffer) != viewport_panel_size.x || Platform::get_height(render_system->output_framebuffer) != viewport_panel_size.y)
-		{
-			RenderSystem::request_resize(render_system, max(viewport_panel_size.x, 1.0f), max(viewport_panel_size.y, 1.0f));
-		}
-
-		if (ImGui::BeginDragDropTarget())
-		{
-			const auto *payload = ImGui::AcceptDragDropPayload("File");
-
-			if (payload != nullptr)
-			{
-				auto file = Path(static_cast<char *>(payload->Data));
-				if (get_resource_type(file) == ResourceType::SCENE)
+				if (Input::key_down(Input::KEY_Q))
 				{
-					state->scene_path = file;
-					String src;
-					fread_all(file, &src);
-					printf("Freeing scene......................\n");
-					world()->component_manager.destroy_component_arrays();
-					world()->entity_manager = EntityManager();
-					printf("Initializing new scene.............\n");
-					CHECK(read_world_yaml(src, world()));
+					state->current_operation = ImGuizmo::OPERATION::TRANSLATE;
 				}
-				else
+				else if (Input::key_down(Input::KEY_W))
 				{
-					ImGui::OpenPopup("Invalid Resource");
+					state->current_operation = ImGuizmo::OPERATION::ROTATE;
+				}
+				else if (Input::key_down(Input::KEY_E))
+				{
+					state->current_operation = ImGuizmo::OPERATION::SCALE;
 				}
 			}
-			ImGui::EndDragDropTarget();
-		}
 
-		ImGui::ErrorModal("Invalid Resource", "Resource provided is invalid!");
-
-		ImGuizmo::SetOrthographic(false);
-		ImGuizmo::SetDrawlist();
-
-		f32 window_width  = (f32)ImGui::GetWindowWidth();
-		f32 window_height = (f32)ImGui::GetWindowHeight();
-		ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, window_width, window_height);
-
-		if (state->selected_entity.has_value())
-		{
-			auto ent = state->selected_entity.value();
-			if (has_component<Transform>(ent))
 			{
-				auto transform_mat = get_world_transform(ent);
-				auto view_mat      = view_matrix(state->editor_camera_transform);
-				auto camera_proj   = projection_matrix(state->editor_camera, window_width, window_height);
+				auto alignment = ImVec2(0.5f, 0.5f);
+				ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, alignment);
 
-				bool snap          = Platform::key_down(engine()->window, Platform::Input::KEY_LEFT_SHIFT);
-				f32 snap_value     = state->current_operation != ImGuizmo::OPERATION::ROTATE ? 0.5f : 45.0f;
-				f32 snap_values[]  = {snap_value, snap_value, snap_value};
+				static constexpr ImVec2 button_size         = ImVec2(80, 80);
+				static constexpr ImGuiSelectableFlags flags = ImGuiSelectableFlags_None;
 
-				ImGuizmo::Manipulate(glm::value_ptr(view_mat), glm::value_ptr(camera_proj), (ImGuizmo::OPERATION)state->current_operation, ImGuizmo::LOCAL, glm::value_ptr(transform_mat), nullptr,
-									 snap ? snap_values : nullptr);
+				auto disabled_flag                          = [](bool expr) { return expr ? 0 : ImGuiSelectableFlags_Disabled; };
 
-				if (ImGuizmo::IsUsing())
-				{
-					auto &transform = get_component<Transform>(ent);
-					Math::decompose_transform(get_local_transform(transform_mat, ent), &transform.position, &transform.rotation, &transform.scale);
-				}
+				if (ImGui::Selectable("Play", false, flags | disabled_flag(!state->playing || !state->started), button_size))
+					play_game(state, project);
+
+				ImGui::SameLine();
+				if (ImGui::Selectable("Pause", false, flags | disabled_flag(state->started && state->playing), button_size))
+					pause_game(state, project);
+
+				ImGui::SameLine();
+				if (ImGui::Selectable("Stop", false, flags | disabled_flag(state->started), button_size))
+					stop_game(state, project);
+
+				ImGui::SameLine();
+				if (ImGui::Selectable("Reload", false, flags | disabled_flag(!state->started && !state->playing), button_size))
+					hot_reload_game(state, project);
+
+				ImGui::PopStyleVar();
 			}
+
+			ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
+			auto output_texture        = Platform::imgui_get_texture_id(Platform::get_attachment_texture(runtime->render_system->output_framebuffer, 0));
+			ImGui::Image(output_texture, viewport_panel_size);
+
+			if (Platform::get_width(render_system->output_framebuffer) != viewport_panel_size.x || Platform::get_height(render_system->output_framebuffer) != viewport_panel_size.y)
+			{
+				RenderSystem::request_resize(render_system, max(viewport_panel_size.x, 1.0f), max(viewport_panel_size.y, 1.0f));
+			}
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				const auto *payload = ImGui::AcceptDragDropPayload("File");
+
+				if (payload != nullptr)
+				{
+					auto file = Path(static_cast<char *>(payload->Data));
+					if (get_resource_type(file) == ResourceType::SCENE)
+					{
+						load_scene(state, file);
+					}
+					else
+					{
+						invalid_resource_error(state);
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
+
+			ImGui::ErrorModal("Invalid Resource", "Resource provided is invalid!");
+
+			ImVec2 top_left             = ImVec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y + (ImGui::GetWindowHeight() - viewport_panel_size.y));
+
+			state->render_window_offset = Vec2(top_left.x, top_left.y);
+			state->render_window_size   = Vec2(viewport_panel_size.x, viewport_panel_size.y);
+
+			if (!state->playing)
+			{
+				ImVec2 bottom_left = ImVec2(top_left.x + viewport_panel_size.x, top_left.y + viewport_panel_size.y);
+				ImGui::PushClipRect(top_left, bottom_left, true);
+
+				ImGuizmo::SetOrthographic(false);
+				ImGuizmo::SetDrawlist();
+
+				ImGuizmo::SetRect(top_left.x, top_left.y, viewport_panel_size.x, viewport_panel_size.y);
+
+				if (state->selected_entity.has_value())
+				{
+					auto ent = state->selected_entity.value();
+					if (has_component<Transform>(ent))
+					{
+						auto transform_mat = get_world_transform(ent);
+						auto view_mat      = view_matrix(state->editor_camera_transform);
+						auto camera_proj   = projection_matrix(state->editor_camera, viewport_panel_size.x, viewport_panel_size.y);
+
+						bool snap          = Input::key_down(Input::KEY_SHIFT);
+						f32 snap_value     = state->current_operation != ImGuizmo::OPERATION::ROTATE ? 0.5f : 45.0f;
+						f32 snap_values[]  = {snap_value, snap_value, snap_value};
+
+						ImGuizmo::Manipulate(glm::value_ptr(view_mat), glm::value_ptr(camera_proj), (ImGuizmo::OPERATION)state->current_operation, ImGuizmo::LOCAL, glm::value_ptr(transform_mat), nullptr,
+											 snap ? snap_values : nullptr);
+
+						if (ImGuizmo::IsUsing())
+						{
+							auto &transform = get_component<Transform>(ent);
+							Math::decompose_transform(get_local_transform(transform_mat, ent), &transform.position, &transform.rotation, &transform.scale);
+						}
+					}
+				}
+				ImGui::PopClipRect();
+			}
+			state->hot_reload_fence.release();
 		}
 
 		ImGui::End();
+		ImGui::PopStyleVar();
 	}
 
 	template <typename T>
@@ -432,76 +594,82 @@ namespace Vultr
 	void entity_hierarchy_window_draw(Project *project, EditorWindowState *state)
 	{
 		ImGui::Begin("Hierarchy");
-		for (Entity entity = 1; entity < MAX_ENTITIES; entity++)
+		if (state->hot_reload_fence.try_acquire())
 		{
-			if (!entity_exists(entity))
-				continue;
-
-			if (has_parent(entity))
-				continue;
-
-			render_entity_hierarchy(entity, state, project);
-		}
-
-		if (ImGui::Button("Create Entity"))
-		{
-			ImGui::OpenPopup("EntityCreationPopup");
-		}
-
-		if (ImGui::BeginPopup("EntityCreationPopup"))
-		{
-			if (ImGui::Selectable("Mesh"))
+			for (Entity entity = 1; entity < MAX_ENTITIES; entity++)
 			{
-				StringView label = "Mesh Entity";
-				Entity entity;
-				if let (auto parent, state->selected_entity)
+				if (!entity_exists(entity))
+					continue;
+
+				if (has_parent(entity))
+					continue;
+
+				render_entity_hierarchy(entity, state, project);
+			}
+
+			if (ImGui::Button("Create Entity"))
+			{
+				ImGui::OpenPopup("EntityCreationPopup");
+			}
+
+			if (ImGui::BeginPopup("EntityCreationPopup"))
+			{
+				if (ImGui::Selectable("Mesh"))
 				{
-					if (has_component<Transform>(parent))
+					StringView label = "Mesh Entity";
+					Entity entity;
+					if let (auto parent, state->selected_entity)
 					{
-						entity = create_parented_entity(label, parent, Transform{}, Material{}, Mesh{});
+						if (has_component<Transform>(parent))
+						{
+							entity = create_parented_entity(label, parent, Transform{}, Material{}, Mesh{});
+						}
+						else
+						{
+							entity = create_entity(label, Transform{}, Material{}, Mesh{});
+						}
 					}
 					else
 					{
 						entity = create_entity(label, Transform{}, Material{}, Mesh{});
 					}
+					state->selected_entity = entity;
+					ImGui::CloseCurrentPopup();
 				}
-				else
-				{
-					entity = create_entity(label, Transform{}, Material{}, Mesh{});
-				}
-				state->selected_entity = entity;
-				ImGui::CloseCurrentPopup();
-			}
 
-			if (ImGui::Selectable("Empty"))
-			{
-				StringView label = "Empty Entity";
-				Entity entity;
-				if let (auto parent, state->selected_entity)
+				if (ImGui::Selectable("Empty"))
 				{
-					if (has_component<Transform>(parent))
+					StringView label = "Empty Entity";
+					Entity entity;
+					if let (auto parent, state->selected_entity)
 					{
-						entity = create_parented_entity(label, parent, Transform{});
+						if (has_component<Transform>(parent))
+						{
+							entity = create_parented_entity(label, parent, Transform{});
+						}
+						else
+						{
+							entity = create_entity(label, Transform{});
+						}
 					}
 					else
 					{
 						entity = create_entity(label, Transform{});
 					}
+					state->selected_entity = entity;
+					ImGui::CloseCurrentPopup();
 				}
-				else
-				{
-					entity = create_entity(label, Transform{});
-				}
-				state->selected_entity = entity;
-				ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
 			}
-			ImGui::EndPopup();
+			state->hot_reload_fence.release();
 		}
 		ImGui::End();
 	}
 
+	static void resource_not_imported_error(EditorWindowState *state) { display_error(state, "Resource Not Imported", String("Resource provided has not been imported, please reimport assets!")); }
+
 	template <typename T>
-	static void draw_resource_target(Project *project, const EditorField &editor_field)
+	static void draw_resource_target(Project *project, EditorWindowState *state, const EditorField &editor_field)
 	{
 		ImGui::PushID(editor_field.field.name);
 		auto *resource = editor_field.get_addr<Resource<T>>();
@@ -545,12 +713,12 @@ namespace Vultr
 						}
 						else
 						{
-							ImGui::OpenPopup("Invalid Resource");
+							invalid_resource_error(state);
 						}
 					}
 					else
 					{
-						ImGui::OpenPopup("Resource Not Imported");
+						resource_not_imported_error(state);
 					}
 				}
 				else
@@ -559,9 +727,6 @@ namespace Vultr
 			}
 			ImGui::EndDragDropTarget();
 		}
-
-		ImGui::ErrorModal("Invalid Resource", "Resource provided is invalid!");
-		ImGui::ErrorModal("Resource Not Imported", "Resource provided has not been imported, please reimport assets!");
 
 		ImGui::SameLine();
 		if (!resource->empty())
@@ -586,278 +751,282 @@ namespace Vultr
 	void component_inspector_window_draw(Project *project, EditorWindowState *state)
 	{
 		ImGui::Begin("Inspector");
-		if (state->selected_entity)
+		if (state->hot_reload_fence.try_acquire())
 		{
-			ImGui::InputText("Label", get_label(state->selected_entity.value()));
-			auto *cm  = &world()->component_manager;
-			auto info = cm->get_component_editor_rtti(state->selected_entity.value());
-			for (auto [type, fields, data] : info)
+			if (state->selected_entity)
 			{
-				if (ImGui::CollapsingHeader(type.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+				ImGui::InputText("Label", get_label(state->selected_entity.value()));
+				auto *cm  = &world()->component_manager;
+				auto info = cm->get_component_editor_rtti(state->selected_entity.value());
+				for (auto [type, fields, data] : info)
 				{
-					ImGui::PushID(type.name.c_str());
-					if (ImGui::Button("Reset"))
+					if (ImGui::CollapsingHeader(type.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 					{
-						for (auto &field : type.get_fields())
+						ImGui::PushID(type.name.c_str());
+						if (ImGui::Button("Reset"))
 						{
-							field.initialize_default(data);
+							for (auto &field : type.get_fields())
+							{
+								field.initialize_default(data);
+							}
 						}
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("Copy"))
-					{
-						state->component_clipboard.resize(type.size());
-						state->component_clipboard.fill(static_cast<byte *>(data), type.size());
-					}
-					if (state->component_clipboard.size() == type.size())
-					{
 						ImGui::SameLine();
-						if (ImGui::Button("Paste"))
+						if (ImGui::Button("Copy"))
 						{
-							type.copy_constructor(data, state->component_clipboard.storage);
+							state->component_clipboard.resize(type.size());
+							state->component_clipboard.fill(static_cast<byte *>(data), type.size());
 						}
-					}
-
-					for (auto editor_field : fields)
-					{
-						auto &field = editor_field.field;
-						auto *addr  = editor_field.addr;
-						switch (field.type.primitive_type)
+						if (state->component_clipboard.size() == type.size())
 						{
-							case PrimitiveType::U8:
-								ImGui::DragScalar(field.name, ImGuiDataType_U8, addr, 1);
-								break;
-							case PrimitiveType::U16:
-								ImGui::DragScalar(field.name, ImGuiDataType_U16, addr, 1);
-								break;
-							case PrimitiveType::U32:
-								ImGui::DragScalar(field.name, ImGuiDataType_U32, addr, 1);
-								break;
-							case PrimitiveType::U64:
-								ImGui::DragScalar(field.name, ImGuiDataType_U64, addr, 1);
-								break;
-							case PrimitiveType::S8:
-								ImGui::DragScalar(field.name, ImGuiDataType_S8, addr, 1);
-								break;
-							case PrimitiveType::S16:
-								ImGui::DragScalar(field.name, ImGuiDataType_S16, addr, 1);
-								break;
-							case PrimitiveType::S32:
-								ImGui::DragScalar(field.name, ImGuiDataType_S32, addr, 1);
-								break;
-							case PrimitiveType::S64:
-								ImGui::DragScalar(field.name, ImGuiDataType_S64, addr, 1);
-								break;
-							case PrimitiveType::F32:
-								ImGui::DragScalar(field.name, ImGuiDataType_Float, addr, 0.02f);
-								break;
-							case PrimitiveType::F64:
-								ImGui::DragScalar(field.name, ImGuiDataType_Double, addr, 0.02f);
-								break;
-							case PrimitiveType::VECTOR:
-							case PrimitiveType::BITFIELD:
-							case PrimitiveType::ARRAY:
-							case PrimitiveType::HASHMAP:
-							case PrimitiveType::HASHTABLE:
-							case PrimitiveType::STRING_HASH:
-							case PrimitiveType::BUFFER:
-							case PrimitiveType::QUEUE:
-							case PrimitiveType::MAT3:
-							case PrimitiveType::MAT4:
-								break;
-							case PrimitiveType::CHAR:
-								ImGui::Text("%s Char %c", field.name.c_str(), *static_cast<char *>(addr));
-								break;
-							case PrimitiveType::BYTE:
-								ImGui::Text("%s Byte %u", field.name.c_str(), *static_cast<byte *>(addr));
-								break;
-							case PrimitiveType::BOOL:
-								ImGui::Checkbox(field.name, static_cast<bool *>(addr));
-								break;
-							case PrimitiveType::STRING_VIEW:
-								ImGui::Text("%s String %s", field.name.c_str(), static_cast<StringView *>(addr)->c_str());
-								break;
-							case PrimitiveType::PTR:
-								ImGui::Text("%s void * %p", field.name.c_str(), addr);
-								break;
-							case PrimitiveType::VEC2:
+							ImGui::SameLine();
+							if (ImGui::Button("Paste"))
 							{
-								Vec2 *vec2 = static_cast<Vec2 *>(addr);
-								ImGui::Text("%s", field.name.c_str());
-								ImGui::SameLine();
-
-								ImGui::PushID((field.name + ".x").c_str());
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &vec2->x, 0.02f);
-								ImGui::SameLine();
-								ImGui::PopID();
-
-								ImGui::PushID((field.name + ".y").c_str());
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &vec2->y, 0.02f);
-								ImGui::SameLine();
-								ImGui::PopID();
-								break;
+								type.copy_constructor(data, state->component_clipboard.storage);
 							}
-							case PrimitiveType::VEC3:
-							{
-								Vec3 *vec3 = static_cast<Vec3 *>(addr);
-								ImGui::PushID((field.name + ".x").c_str());
-								ImGui::Text("%s", field.name.c_str());
-								ImGui::SameLine();
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &vec3->x, 0.02f);
-								ImGui::SameLine();
-								ImGui::PopID();
-
-								ImGui::PushID((field.name + ".y").c_str());
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &vec3->y, 0.02f);
-								ImGui::SameLine();
-								ImGui::PopID();
-
-								ImGui::PushID((field.name + ".z").c_str());
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &vec3->z, 0.02f);
-								ImGui::PopID();
-								break;
-							}
-							case PrimitiveType::VEC4:
-							{
-								Vec4 *vec4 = static_cast<Vec4 *>(addr);
-								ImGui::PushID((field.name + ".x").c_str());
-								ImGui::Text("%s", field.name.c_str());
-								ImGui::SameLine();
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &vec4->x, 0.02f);
-								ImGui::SameLine();
-								ImGui::PopID();
-
-								ImGui::PushID((field.name + ".y").c_str());
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &vec4->y, 0.02f);
-								ImGui::SameLine();
-								ImGui::PopID();
-
-								ImGui::PushID((field.name + ".z").c_str());
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &vec4->z, 0.02f);
-								ImGui::SameLine();
-								ImGui::PopID();
-
-								ImGui::PushID((field.name + ".w").c_str());
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &vec4->w, 0.02f);
-								ImGui::PopID();
-								break;
-							}
-							case PrimitiveType::COLOR:
-							{
-								f32 *val = glm::value_ptr(*static_cast<Vec4 *>(addr));
-								ImGui::ColorEdit4(field.name, val);
-								break;
-							}
-							case PrimitiveType::QUAT:
-							{
-								Quat *quat = static_cast<Quat *>(addr);
-								ImGui::PushID((field.name + ".x").c_str());
-								ImGui::Text("%s", field.name.c_str());
-								ImGui::SameLine();
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &quat->x, 0.02f);
-								ImGui::SameLine();
-								ImGui::PopID();
-
-								ImGui::PushID((field.name + ".y").c_str());
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &quat->y, 0.02f);
-								ImGui::SameLine();
-								ImGui::PopID();
-
-								ImGui::PushID((field.name + ".z").c_str());
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &quat->z, 0.02f);
-								ImGui::SameLine();
-								ImGui::PopID();
-
-								ImGui::PushID((field.name + ".w").c_str());
-								ImGui::SetNextItemWidth(150);
-								ImGui::DragFloat("", &quat->w, 0.02f);
-								ImGui::PopID();
-								break;
-							}
-							case PrimitiveType::PATH:
-								break;
-							case PrimitiveType::STRING:
-								break;
-							case PrimitiveType::TEXTURE_RESOURCE:
-								draw_resource_target<Platform::Texture *>(project, editor_field);
-								break;
-							case PrimitiveType::MESH_RESOURCE:
-								draw_resource_target<Platform::Mesh *>(project, editor_field);
-								break;
-							case PrimitiveType::SHADER_RESOURCE:
-								draw_resource_target<Platform::Shader *>(project, editor_field);
-								break;
-							case PrimitiveType::MATERIAL_RESOURCE:
-								draw_resource_target<Platform::Material *>(project, editor_field);
-								break;
-							case PrimitiveType::NONE:
-								break;
 						}
+
+						for (auto editor_field : fields)
+						{
+							auto &field = editor_field.field;
+							auto *addr  = editor_field.addr;
+							switch (field.type.primitive_type)
+							{
+								case PrimitiveType::U8:
+									ImGui::DragScalar(field.name, ImGuiDataType_U8, addr, 1);
+									break;
+								case PrimitiveType::U16:
+									ImGui::DragScalar(field.name, ImGuiDataType_U16, addr, 1);
+									break;
+								case PrimitiveType::U32:
+									ImGui::DragScalar(field.name, ImGuiDataType_U32, addr, 1);
+									break;
+								case PrimitiveType::U64:
+									ImGui::DragScalar(field.name, ImGuiDataType_U64, addr, 1);
+									break;
+								case PrimitiveType::S8:
+									ImGui::DragScalar(field.name, ImGuiDataType_S8, addr, 1);
+									break;
+								case PrimitiveType::S16:
+									ImGui::DragScalar(field.name, ImGuiDataType_S16, addr, 1);
+									break;
+								case PrimitiveType::S32:
+									ImGui::DragScalar(field.name, ImGuiDataType_S32, addr, 1);
+									break;
+								case PrimitiveType::S64:
+									ImGui::DragScalar(field.name, ImGuiDataType_S64, addr, 1);
+									break;
+								case PrimitiveType::F32:
+									ImGui::DragScalar(field.name, ImGuiDataType_Float, addr, 0.02f);
+									break;
+								case PrimitiveType::F64:
+									ImGui::DragScalar(field.name, ImGuiDataType_Double, addr, 0.02f);
+									break;
+								case PrimitiveType::VECTOR:
+								case PrimitiveType::BITFIELD:
+								case PrimitiveType::ARRAY:
+								case PrimitiveType::HASHMAP:
+								case PrimitiveType::HASHTABLE:
+								case PrimitiveType::STRING_HASH:
+								case PrimitiveType::BUFFER:
+								case PrimitiveType::QUEUE:
+								case PrimitiveType::MAT3:
+								case PrimitiveType::MAT4:
+									break;
+								case PrimitiveType::CHAR:
+									ImGui::Text("%s Char %c", field.name.c_str(), *static_cast<char *>(addr));
+									break;
+								case PrimitiveType::BYTE:
+									ImGui::Text("%s Byte %u", field.name.c_str(), *static_cast<byte *>(addr));
+									break;
+								case PrimitiveType::BOOL:
+									ImGui::Checkbox(field.name, static_cast<bool *>(addr));
+									break;
+								case PrimitiveType::STRING_VIEW:
+									ImGui::Text("%s String %s", field.name.c_str(), static_cast<StringView *>(addr)->c_str());
+									break;
+								case PrimitiveType::PTR:
+									ImGui::Text("%s void * %p", field.name.c_str(), addr);
+									break;
+								case PrimitiveType::VEC2:
+								{
+									Vec2 *vec2 = static_cast<Vec2 *>(addr);
+									ImGui::Text("%s", field.name.c_str());
+									ImGui::SameLine();
+
+									ImGui::PushID((field.name + ".x").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &vec2->x, 0.02f);
+									ImGui::SameLine();
+									ImGui::PopID();
+
+									ImGui::PushID((field.name + ".y").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &vec2->y, 0.02f);
+									ImGui::SameLine();
+									ImGui::PopID();
+									break;
+								}
+								case PrimitiveType::VEC3:
+								{
+									Vec3 *vec3 = static_cast<Vec3 *>(addr);
+									ImGui::PushID((field.name + ".x").c_str());
+									ImGui::Text("%s", field.name.c_str());
+									ImGui::SameLine();
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &vec3->x, 0.02f);
+									ImGui::SameLine();
+									ImGui::PopID();
+
+									ImGui::PushID((field.name + ".y").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &vec3->y, 0.02f);
+									ImGui::SameLine();
+									ImGui::PopID();
+
+									ImGui::PushID((field.name + ".z").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &vec3->z, 0.02f);
+									ImGui::PopID();
+									break;
+								}
+								case PrimitiveType::VEC4:
+								{
+									Vec4 *vec4 = static_cast<Vec4 *>(addr);
+									ImGui::PushID((field.name + ".x").c_str());
+									ImGui::Text("%s", field.name.c_str());
+									ImGui::SameLine();
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &vec4->x, 0.02f);
+									ImGui::SameLine();
+									ImGui::PopID();
+
+									ImGui::PushID((field.name + ".y").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &vec4->y, 0.02f);
+									ImGui::SameLine();
+									ImGui::PopID();
+
+									ImGui::PushID((field.name + ".z").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &vec4->z, 0.02f);
+									ImGui::SameLine();
+									ImGui::PopID();
+
+									ImGui::PushID((field.name + ".w").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &vec4->w, 0.02f);
+									ImGui::PopID();
+									break;
+								}
+								case PrimitiveType::COLOR:
+								{
+									f32 *val = glm::value_ptr(*static_cast<Vec4 *>(addr));
+									ImGui::ColorEdit4(field.name, val);
+									break;
+								}
+								case PrimitiveType::QUAT:
+								{
+									Quat *quat = static_cast<Quat *>(addr);
+									ImGui::PushID((field.name + ".x").c_str());
+									ImGui::Text("%s", field.name.c_str());
+									ImGui::SameLine();
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &quat->x, 0.02f);
+									ImGui::SameLine();
+									ImGui::PopID();
+
+									ImGui::PushID((field.name + ".y").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &quat->y, 0.02f);
+									ImGui::SameLine();
+									ImGui::PopID();
+
+									ImGui::PushID((field.name + ".z").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &quat->z, 0.02f);
+									ImGui::SameLine();
+									ImGui::PopID();
+
+									ImGui::PushID((field.name + ".w").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &quat->w, 0.02f);
+									ImGui::PopID();
+									break;
+								}
+								case PrimitiveType::PATH:
+									break;
+								case PrimitiveType::STRING:
+									break;
+								case PrimitiveType::TEXTURE_RESOURCE:
+									draw_resource_target<Platform::Texture *>(project, state, editor_field);
+									break;
+								case PrimitiveType::MESH_RESOURCE:
+									draw_resource_target<Platform::Mesh *>(project, state, editor_field);
+									break;
+								case PrimitiveType::SHADER_RESOURCE:
+									draw_resource_target<Platform::Shader *>(project, state, editor_field);
+									break;
+								case PrimitiveType::MATERIAL_RESOURCE:
+									draw_resource_target<Platform::Material *>(project, state, editor_field);
+									break;
+								case PrimitiveType::NONE:
+									break;
+							}
+						}
+						if (type.id != get_type<Transform>.id && ImGui::Button("Remove"))
+						{
+							auto index = cm->type_to_index.get(type.id);
+							cm->component_arrays[index]->remove_entity(state->selected_entity.value());
+							Signature component_signature;
+							component_signature.set(index, true);
+							world()->entity_manager.remove_signature(state->selected_entity.value(), component_signature);
+						}
+
+						ImGui::PopID();
 					}
-					if (type.id != get_type<Transform>.id && ImGui::Button("Remove"))
+				}
+
+				if (ImGui::Button("Add Component"))
+				{
+					ImGui::OpenPopup("ComponentAddPopup");
+				}
+
+				if (ImGui::BeginPopup("ComponentAddPopup"))
+				{
+					for (auto [type_id, index] : cm->type_to_index)
 					{
-						auto index = cm->type_to_index.get(type.id);
-						cm->component_arrays[index]->remove_entity(state->selected_entity.value());
+						auto *array = cm->component_arrays[index];
+						auto &type  = array->rtti_type;
+
 						Signature component_signature;
 						component_signature.set(index, true);
-						world()->entity_manager.remove_signature(state->selected_entity.value(), component_signature);
-					}
+						const auto &signature = get_signature(state->selected_entity.value());
 
-					ImGui::PopID();
-				}
-			}
+						if (signature.at(index))
+							continue;
 
-			if (ImGui::Button("Add Component"))
-			{
-				ImGui::OpenPopup("ComponentAddPopup");
-			}
-
-			if (ImGui::BeginPopup("ComponentAddPopup"))
-			{
-				for (auto [type_id, index] : cm->type_to_index)
-				{
-					auto *array = cm->component_arrays[index];
-					auto &type  = array->rtti_type;
-
-					Signature component_signature;
-					component_signature.set(index, true);
-					const auto &signature = get_signature(state->selected_entity.value());
-
-					if (signature.at(index))
-						continue;
-
-					if (ImGui::Selectable(type.name.c_str()))
-					{
-
-						auto new_index = array->m_size;
-						array->m_entity_to_index.set(state->selected_entity.value(), new_index);
-						array->m_index_to_entity.set(new_index, state->selected_entity.value());
-						auto *component_memory = static_cast<byte *>(array->m_array) + (new_index * type.size());
-						array->m_size++;
-
-						for (auto &field : type.get_fields())
+						if (ImGui::Selectable(type.name.c_str()))
 						{
-							field.initialize_default(component_memory);
-						}
 
-						world()->entity_manager.add_signature(state->selected_entity.value(), component_signature);
-						ImGui::CloseCurrentPopup();
+							auto new_index = array->m_size;
+							array->m_entity_to_index.set(state->selected_entity.value(), new_index);
+							array->m_index_to_entity.set(new_index, state->selected_entity.value());
+							auto *component_memory = static_cast<byte *>(array->m_array) + (new_index * type.size());
+							array->m_size++;
+
+							for (auto &field : type.get_fields())
+							{
+								field.initialize_default(component_memory);
+							}
+
+							world()->entity_manager.add_signature(state->selected_entity.value(), component_signature);
+							ImGui::CloseCurrentPopup();
+						}
 					}
+					ImGui::EndPopup();
 				}
-				ImGui::EndPopup();
 			}
+			state->hot_reload_fence.release();
 		}
 		ImGui::End();
 	}
@@ -979,15 +1148,8 @@ namespace Vultr
 		}
 		ImGui::SameLine();
 
-		String reimport_error_message;
-		{
-			if (ImGui::Button("Reimport"))
-			{
-				begin_resource_import(project, editor_state);
-				ImGui::End();
-				return;
-			}
-		}
+		if (ImGui::Button("Reimport"))
+			begin_resource_import(project, editor_state);
 
 		if (ImGui::BeginTable("Asset Table", static_cast<s32>(num_cols)))
 		{
@@ -1135,38 +1297,21 @@ namespace Vultr
 			ImGui::EndTable();
 		}
 
-		if (!reimport_error_message.is_empty())
-			ImGui::OpenPopup("Reimport-Error");
-
-		ImGui::ErrorModal("Reimport-Error", reimport_error_message);
-
 		ImGui::End();
 	}
 
-	static void serialize_current_scene(EditorWindowState *state)
-	{
-		if let (const auto &scene_path, state->scene_path)
-		{
-			auto out = FileOutputStream(state->scene_path.value(), StreamFormat::BINARY, StreamWriteMode::OVERWRITE);
-			CHECK(serialize_world_yaml(world(), &out));
-		}
-		else
-		{
-		}
-	}
-
-	static void on_key_press(void *data, Platform::Input::Key key, Platform::Input::Action action, u32 modifiers)
+	static void on_key_press(void *data, Input::Key key, Input::Action action, Input::Key modifiers)
 	{
 		auto *state = static_cast<EditorWindowState *>(data);
-		if (action == Platform::Input::PRESS)
+		if (action == Input::ACTION_PRESS)
 		{
-			if ((modifiers & Platform::Input::CTRL_BIT) == Platform::Input::CTRL_BIT)
+			if ((modifiers & Input::KEY_CONTROL) == Input::KEY_CONTROL)
 			{
-				if (key == Platform::Input::KEY_S)
+				if (key == Input::KEY_S)
 				{
 					serialize_current_scene(state);
 				}
-				else if (key == Platform::Input::KEY_D)
+				else if (key == Input::KEY_D)
 				{
 					if let (auto entity, state->selected_entity)
 					{
@@ -1311,11 +1456,26 @@ namespace Vultr
 			}
 		}
 
+		if (ImGui::BeginPopupModal("Hot Reloading Game..."))
+		{
+			ImGui::Text("Hot reloading game, please wait.");
+			if (!state->hot_reloading)
+				ImGui::CloseCurrentPopup();
+			ImGui::EndPopup();
+		}
+		else
+		{
+			if (state->hot_reloading)
+			{
+				ImGui::OpenPopup("Hot Reloading Game...");
+			}
+		}
+
 		auto dockspace = ImGui::GetID("HUB_DockSpace");
 		ImGui::DockSpace(dockspace, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoResize);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
-		scene_window_draw(render_system, state, runtime);
+		scene_window_draw(render_system, project, state, runtime);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		ImGui::ShowDemoWindow();
@@ -1329,6 +1489,23 @@ namespace Vultr
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		resource_browser_window_draw(project, state);
 
+		if (state->error_title && state->error_message)
+		{
+			ImGui::OpenPopup(state->error_title.value());
+			if (ImGui::BeginPopupModal(state->error_title.value()))
+			{
+				ImGui::Text("An error has occurred!");
+				ImGui::Text("%s", state->error_message.value().c_str());
+				if (ImGui::Button("OK"))
+				{
+					state->error_title   = None;
+					state->error_message = None;
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::EndPopup();
+			}
+		}
+
 		ImGui::End();
 
 		Platform::imgui_end_frame(cmd, runtime->imgui_c);
@@ -1337,6 +1514,7 @@ namespace Vultr
 	void destroy_windows(EditorWindowState *state)
 	{
 		auto *c = engine()->context;
+
 		Platform::destroy_texture(c, state->texture);
 		Platform::destroy_texture(c, state->cpp_source);
 		Platform::destroy_texture(c, state->shader);

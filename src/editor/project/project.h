@@ -7,6 +7,8 @@ namespace Vultr
 {
 	struct Project
 	{
+		Path dll_location{};
+		u32 index = 0;
 		Platform::DLL dll{};
 		Path resource_dir{};
 		Path build_dir{};
@@ -35,5 +37,6 @@ namespace Vultr
 	Tuple<Path, Path> get_mesh_resource(const Project *project, const Path &local);
 	Path get_scene_resource(const Project *project, const Path &local);
 	ErrorOr<Project> load_game(const Path &build_dir, const Path &resource_dir);
+	ErrorOr<void> reload_game(Project *project);
 	//	ErrorOr<void> import_resource_dir(Project *project);
 } // namespace Vultr

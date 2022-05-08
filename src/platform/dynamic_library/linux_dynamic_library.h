@@ -13,7 +13,7 @@ namespace Vultr
 		inline ErrorOr<DLL> dl_open(const char *path)
 		{
 			DLL dll{};
-			auto res = dlopen(path, RTLD_NOW);
+			auto res = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
 			if (res == nullptr)
 			{
 				return Error(dlerror());
@@ -24,10 +24,17 @@ namespace Vultr
 				return dll;
 			}
 		}
-		inline void dl_close(DLL *dll)
+		inline ErrorOr<void> dl_close(DLL *dll)
 		{
 			ASSERT(dll != nullptr, "Cannot close nullptr dll.");
-			dlclose(dll->shared_library);
+			if (dlclose(dll->shared_library) == 0)
+			{
+				return Success;
+			}
+			else
+			{
+				return Error(dlerror());
+			}
 		}
 
 		template <typename T>

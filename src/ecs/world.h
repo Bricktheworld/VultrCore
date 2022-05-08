@@ -238,6 +238,8 @@ namespace Vultr
 			m_init(typename SequenceImpl<sizeof...(DefaultComponent)>::type());
 		}
 
+		ComponentManager(const ComponentManager &other) {}
+
 		template <typename T>
 		void register_component()
 		{
@@ -255,8 +257,16 @@ namespace Vultr
 			{
 				auto index = type_to_index.get(id);
 				type_to_index.remove(id);
-				component_arrays.remove(index);
+				component_arrays[index]->destroy();
+				v_free(component_arrays[index]->m_array);
+				v_free(component_arrays[index]);
 			}
+
+			while (component_arrays.size() != sizeof...(DefaultComponent))
+			{
+				component_arrays.remove_last();
+			}
+
 			non_system_components.clear();
 		}
 
@@ -266,7 +276,7 @@ namespace Vultr
 			if constexpr (Types::template contains<T>())
 				return Types::template index_of<T>();
 			else
-				type_to_index.get(get_type<T>.id);
+				return type_to_index.get(get_type<T>.id);
 		}
 
 		template <typename... Ts>
@@ -403,7 +413,7 @@ namespace Vultr
 						skip_to_next();
 				}
 
-				Tuple<Entity, Ts &...> operator*() { return Tuple<Entity, Ts &...>(m_iterator->key, m_world->component_manager.template get_component<Ts>(m_iterator->key)...); }
+				Tuple<Entity, Ts *...> operator*() { return Tuple<Entity, Ts *...>(m_iterator->key, &m_world->component_manager.template get_component<Ts>(m_iterator->key)...); }
 				bool operator==(const EntityIterator &other) const { return m_iterator == other.m_iterator; }
 
 				EntityIterator &operator++()

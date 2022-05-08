@@ -21,7 +21,7 @@ namespace Vultr
 		{
 			Vulkan::GpuBuffer buffer{};
 			void *mapped         = nullptr;
-			Bitfield<64> updated = 0;
+			Bitfield<64> updated = {};
 		};
 
 		struct InFlightFence

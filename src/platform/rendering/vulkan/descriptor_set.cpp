@@ -47,7 +47,7 @@ namespace Vultr
 				return;
 
 			memcpy(start, data, size);
-			set->updated = U8Max;
+			set->updated.set_all();
 		}
 
 		void update_descriptor_set(DescriptorSet *set, const Option<ResourceId> &texture, u32 binding)
@@ -60,7 +60,7 @@ namespace Vultr
 				return;
 
 			existing_texture = texture;
-			set->updated     = U8Max;
+			set->updated.set_all();
 		}
 
 		void bind_descriptor_set(CmdBuffer *cmd, GraphicsPipeline *pipeline, DescriptorSet *set)

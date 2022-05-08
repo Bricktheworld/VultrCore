@@ -246,13 +246,13 @@ namespace Vultr
 				auto padded_size   = pad_size(d, sizeof(Platform::CameraUBO));
 				auto buffer        = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 				void *mapped       = map_buffer(d, &buffer);
-				sc->camera_binding = {.buffer = buffer, .mapped = mapped, .updated = 0};
+				sc->camera_binding = {.buffer = buffer, .mapped = mapped, .updated = {}};
 			}
 			{
 				auto padded_size = pad_size(d, sizeof(Platform::DirectionalLightUBO));
 				auto buffer      = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 				void *mapped     = map_buffer(d, &buffer);
-				sc->directional_light_binding = {.buffer = buffer, .mapped = mapped, .updated = 0};
+				sc->directional_light_binding = {.buffer = buffer, .mapped = mapped, .updated = {}};
 			}
 
 			for (u32 i = 0; i < sc->images.size(); i++)
@@ -541,7 +541,7 @@ namespace Vultr
 
 			if (memcmp(data, start, size) != 0)
 			{
-				binding->updated = 0b111;
+				binding->updated.set_all();
 				memcpy(start, data, size);
 			}
 

@@ -37,11 +37,11 @@ namespace Vultr
 			for (auto [light, transform_component, directional_light] : get_entities<Transform, DirectionalLight>())
 			{
 				Platform::DirectionalLightUBO ubo{
-					.direction = Vec4(forward(transform_component), 0),
-					.ambient   = directional_light.ambient,
-					.diffuse   = directional_light.diffuse,
-					.specular  = directional_light.specular,
-					.intensity = directional_light.intensity,
+					.direction = Vec4(forward(*transform_component), 0),
+					.ambient   = directional_light->ambient,
+					.diffuse   = directional_light->diffuse,
+					.specular  = directional_light->specular,
+					.intensity = directional_light->intensity,
 					.exists    = true,
 				};
 				Platform::update_default_descriptor_set(cmd, &camera_ubo, &ubo);
@@ -55,12 +55,12 @@ namespace Vultr
 
 			for (auto [entity, transform, mesh, material] : get_entities<Transform, Mesh, Material>())
 			{
-				if (!mesh.source.loaded() || !material.source.loaded())
+				if (!mesh->source.loaded() || !material->source.loaded())
 					continue;
 
 				auto model        = get_world_transform(entity);
-				auto *loaded_mesh = mesh.source.value();
-				auto *loaded_mat  = material.source.value();
+				auto *loaded_mesh = mesh->source.value();
+				auto *loaded_mat  = material->source.value();
 
 				if (!system->pipelines.contains(loaded_mat->source))
 				{
@@ -107,17 +107,23 @@ namespace Vultr
 
 		void update(Platform::CmdBuffer *cmd, Component *system)
 		{
-			Entity camera = 0;
+			Entity camera = INVALID_ENTITY;
 			for (auto [entity, transform_component, camera_component] : get_entities<Transform, Camera>())
 			{
 				camera = entity;
 				break;
 			}
 
-			if (camera == 0)
+			if (camera == INVALID_ENTITY)
+			{
 				fprintf(stderr, "No camera found!\n");
+			}
 			else
-				update(get_component<Camera>(camera), get_component<Transform>(camera), cmd, system);
+			{
+				Transform transform;
+				Math::decompose_transform(get_world_transform(camera), &transform.position, &transform.rotation, &transform.scale);
+				update(get_component<Camera>(camera), transform, cmd, system);
+			}
 		}
 
 		void update(Component *system)

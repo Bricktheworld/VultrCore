@@ -2,6 +2,7 @@
 #include "core/vultr_core.h"
 #include <utils/transfer.h>
 #include <math/min_max.h>
+#include <input/input.h>
 
 namespace Vultr
 {
@@ -17,9 +18,9 @@ namespace Vultr
 		SlabAllocator *slab_allocator        = nullptr;
 		PoolAllocator *pool_allocator        = nullptr;
 		void *world                          = nullptr;
-		void *system_manager                 = nullptr;
 		void *engine                         = nullptr;
 		void *resource_allocator             = nullptr;
+		Input::InputManager *input_manager   = nullptr;
 		void *memory                         = nullptr;
 	};
 

@@ -4,3 +4,4 @@
 #include "vultr.cpp"
 #include "platform/platform.cpp"
 #include "utils/utils.cpp"
+#include "input/input.cpp"

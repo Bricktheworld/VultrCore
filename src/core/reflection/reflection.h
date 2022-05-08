@@ -614,7 +614,7 @@ namespace Vultr
 	inline constexpr Type get_type<char> = {PrimitiveType::CHAR, []() { return sizeof(char); }, generic_type_serializer<char>, generic_type_deserializer<char>, generic_copy_constructor<char>, "char"};
 
 	template <>
-	inline constexpr Type get_type<bool> = {PrimitiveType::BOOL, []() { return sizeof(byte); }, generic_type_serializer<byte>, generic_type_deserializer<byte>, generic_copy_constructor<byte>, "byte"};
+	inline constexpr Type get_type<bool> = {PrimitiveType::BOOL, []() { return sizeof(bool); }, generic_type_serializer<bool>, generic_type_deserializer<bool>, generic_copy_constructor<bool>, "byte"};
 
 	template <typename T, size_t len>
 	inline constexpr Type get_type<Array<T, len>> = {

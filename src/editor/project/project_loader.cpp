@@ -3,25 +3,47 @@
 
 namespace Vultr
 {
+	static ErrorOr<void> load_game_symbols(Project *project)
+	{
+		TRY(makedir(project->build_dir / "binaries"));
+		project->dll_location = project->build_dir / ("binaries/libGameplay" + serialize_u64(project->index) + ".so");
+
+		Buffer dll_buf;
+		TRY(try_fread_all(project->build_dir / VULTR_GAMEPLAY_NAME, &dll_buf));
+		TRY(try_fwrite_all(project->dll_location, dll_buf, StreamWriteMode::OVERWRITE));
+
+		printf("Opening %s\n", project->dll_location.c_str());
+		TRY_UNWRAP(project->dll, Platform::dl_open(project->dll_location.c_str()));
+
+		TRY_UNWRAP(auto use_game_memory, Platform::dl_load_symbol<UseGameMemoryApi>(&project->dll, USE_GAME_MEMORY_SYMBOL));
+		use_game_memory(g_game_memory);
+
+		TRY_UNWRAP(project->register_components, Platform::dl_load_symbol<VultrRegisterComponentsApi>(&project->dll, VULTR_REGISTER_COMPONENTS_SYMBOL));
+		TRY_UNWRAP(project->init, Platform::dl_load_symbol<VultrInitApi>(&project->dll, VULTR_INIT_SYMBOL));
+		TRY_UNWRAP(project->update, Platform::dl_load_symbol<VultrUpdateApi>(&project->dll, VULTR_UPDATE_SYMBOL));
+		TRY_UNWRAP(project->destroy, Platform::dl_load_symbol<VultrDestroyApi>(&project->dll, VULTR_DESTROY_SYMBOL));
+
+		return Success;
+	}
+
 	ErrorOr<Project> load_game(const Path &build_dir, const Path &resource_dir)
 	{
 		Project project{};
-		auto dll_location          = build_dir / VULTR_GAMEPLAY_NAME;
 		project.build_dir          = build_dir;
 		project.resource_dir       = resource_dir;
 		project.build_resource_dir = build_dir / "res/";
-		printf("Opening %s\n", dll_location.c_str());
-		TRY_UNWRAP(project.dll, Platform::dl_open(dll_location.c_str()));
-
-		TRY_UNWRAP(auto use_game_memory, Platform::dl_load_symbol<UseGameMemoryApi>(&project.dll, USE_GAME_MEMORY_SYMBOL));
-		use_game_memory(g_game_memory);
-
-		TRY_UNWRAP(project.register_components, Platform::dl_load_symbol<VultrRegisterComponentsApi>(&project.dll, VULTR_REGISTER_COMPONENTS_SYMBOL));
-		TRY_UNWRAP(project.init, Platform::dl_load_symbol<VultrInitApi>(&project.dll, VULTR_INIT_SYMBOL));
-		TRY_UNWRAP(project.update, Platform::dl_load_symbol<VultrUpdateApi>(&project.dll, VULTR_UPDATE_SYMBOL));
-		TRY_UNWRAP(project.destroy, Platform::dl_load_symbol<VultrDestroyApi>(&project.dll, VULTR_DESTROY_SYMBOL));
+		project.index              = 0;
+		TRY(load_game_symbols(&project));
 
 		return project;
+	}
+
+	ErrorOr<void> reload_game(Project *project)
+	{
+		Platform::dl_close(&project->dll);
+		project->index++;
+		TRY(load_game_symbols(project));
+		return Success;
 	}
 
 	static bool needs_reimport(const Path &src_file, const Path &out_file)

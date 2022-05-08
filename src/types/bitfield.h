@@ -9,15 +9,16 @@ namespace Vultr
 	struct Bitfield
 	{
 	  public:
-		Bitfield() = default;
-		Bitfield(u64 data) { m_elements[0] = data; };
+		constexpr Bitfield() = default;
+		constexpr Bitfield(u32 initialized_bit) { this->set(initialized_bit, true); };
+		//		constexpr Bitfield(u64 data[bits]) {m_elements = data;}
 		~Bitfield() = default;
 
-		void set(size_t index, bool val)
+		constexpr auto &set(size_t index, bool val)
 		{
 			ASSERT(index < bits, "Index is greater than the number of bits available.");
 			size_t element_index = index / 64;
-			size_t shifted       = 1 << index;
+			size_t shifted       = 1UL << (index % 64);
 			if (!val)
 			{
 				shifted = ~shifted;
@@ -27,9 +28,10 @@ namespace Vultr
 			{
 				m_elements[element_index] |= shifted;
 			}
+			return *this;
 		}
 
-		bool at(size_t index) const
+		constexpr bool at(size_t index) const
 		{
 			ASSERT(index < bits, "Index is greater than the number of bits available.");
 			size_t element_index = index / 64;
@@ -37,10 +39,10 @@ namespace Vultr
 			return m_elements[element_index] & shifted;
 		}
 
-		bool operator[](size_t index) const { return at(index); }
+		constexpr bool operator[](size_t index) const { return at(index); }
 
 		template <size_t other_bits>
-		Bitfield &operator&=(const Bitfield<other_bits> &other)
+		constexpr Bitfield &operator&=(const Bitfield<other_bits> &other)
 		{
 			constexpr size_t elements = min(m_num_elements, Bitfield<other_bits>::m_num_elements);
 			for (size_t i = 0; i < elements; i++)
@@ -49,7 +51,7 @@ namespace Vultr
 		}
 
 		template <size_t other_bits>
-		auto operator&(const Bitfield<other_bits> &other) const
+		constexpr auto operator&(const Bitfield<other_bits> &other) const
 		{
 			Bitfield<max(bits, other_bits)> res{};
 			for (size_t i = 0; i < min(m_num_elements, other.m_num_elements); i++)
@@ -60,7 +62,7 @@ namespace Vultr
 		}
 
 		template <size_t other_bits>
-		Bitfield &operator|=(const Bitfield<other_bits> &other)
+		constexpr Bitfield &operator|=(const Bitfield<other_bits> &other)
 		{
 			constexpr size_t elements = min(m_num_elements, Bitfield<other_bits>::m_num_elements);
 			for (size_t i = 0; i < elements; i++)
@@ -69,7 +71,7 @@ namespace Vultr
 		}
 
 		template <size_t other_bits>
-		auto operator|(const Bitfield<other_bits> &other) const
+		constexpr auto operator|(const Bitfield<other_bits> &other) const
 		{
 			Bitfield<max(bits, other_bits)> res;
 			for (size_t i = 0; i < max(m_num_elements, other.m_num_elements); i++)
@@ -91,7 +93,7 @@ namespace Vultr
 		}
 
 		template <size_t other_bits>
-		Bitfield &operator^=(const Bitfield<other_bits> &other)
+		constexpr Bitfield &operator^=(const Bitfield<other_bits> &other)
 		{
 			constexpr size_t elements = min(m_num_elements, Bitfield<other_bits>::m_num_elements);
 			for (size_t i = 0; i < elements; i++)
@@ -100,7 +102,7 @@ namespace Vultr
 		}
 
 		template <size_t other_bits>
-		auto operator^(const Bitfield<other_bits> &other) const
+		constexpr auto operator^(const Bitfield<other_bits> &other) const
 		{
 			Bitfield<max(bits, other_bits)> res;
 			for (size_t i = 0; i < max(m_num_elements, other.m_num_elements); i++)
@@ -121,7 +123,7 @@ namespace Vultr
 			return res;
 		}
 
-		bool operator==(const Bitfield &other) const
+		constexpr bool operator==(const Bitfield &other) const
 		{
 			for (size_t i = 0; i < m_num_elements; i++)
 			{
@@ -131,7 +133,7 @@ namespace Vultr
 			return true;
 		}
 
-		auto operator~() const
+		constexpr auto operator~() const
 		{
 			Bitfield<bits> res;
 			for (size_t i = 0; i < m_num_elements; i++)
@@ -139,7 +141,24 @@ namespace Vultr
 			return res;
 		}
 
+		constexpr auto &set_all()
+		{
+			for (auto &element : m_elements)
+				element = U64Max;
+			return *this;
+		}
+
+		constexpr auto &clear()
+		{
+			for (auto &element : m_elements)
+				element = 0;
+			return *this;
+		}
+
 		constexpr static size_t m_num_elements = max<size_t>(bits / 64, 1);
 		u64 m_elements[m_num_elements]{};
 	};
+
+	template <size_t bits>
+	static constexpr Bitfield<bits> MAX_BITFIELD = Bitfield<bits>().set_all();
 } // namespace Vultr

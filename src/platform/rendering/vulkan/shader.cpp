@@ -432,7 +432,7 @@ namespace Vultr
 					VK_CHECK(vkAllocateDescriptorSets(d->device, &alloc_info, &vk_set));
 					set.vk_frame_descriptor_sets.push_back(vk_set);
 				}
-				set.updated = 0;
+				set.updated.clear();
 				shader->free_descriptor_sets.push(&set);
 			}
 
@@ -653,7 +653,7 @@ namespace Vultr
 			auto buffer      = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 			void *mapped     = map_buffer(d, &buffer);
 			descriptor_set->uniform_buffer_binding = {.buffer = buffer, .mapped = mapped};
-			descriptor_set->updated                = U8Max;
+			descriptor_set->updated.set_all();
 			descriptor_set->sampler_bindings.resize(shader->reflection.samplers.size());
 
 			return descriptor_set;
@@ -669,7 +669,7 @@ namespace Vultr
 				shader->allocated_descriptor_sets.remove(index);
 				shader->free_descriptor_sets.push(set);
 			}
-			set->updated = 0;
+			set->updated.clear();
 
 			unmap_buffer(d, &set->uniform_buffer_binding.buffer);
 			free_buffer(Vulkan::get_swapchain(c), &set->uniform_buffer_binding.buffer);

@@ -24,7 +24,7 @@ namespace Vultr
 			Vector<Option<ResourceId>> sampler_bindings{};
 
 			Vector<VkDescriptorSet> vk_frame_descriptor_sets{};
-			Bitfield<64> updated = U8Max;
+			Bitfield<64> updated = MAX_BITFIELD<64>;
 		};
 	} // namespace Platform
 
