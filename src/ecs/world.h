@@ -230,6 +230,7 @@ namespace Vultr
 		using Types = TypeList<DefaultComponent...>;
 		Vector<IComponentArray *, sizeof...(DefaultComponent)> component_arrays{};
 		Hashmap<u32, size_t> type_to_index;
+		HashTable<u32> non_system_components{};
 
 		ComponentManager()
 		{
@@ -245,6 +246,18 @@ namespace Vultr
 			size_t index = component_arrays.size();
 			component_arrays.push_back(v_alloc<ComponentArray<T>>());
 			type_to_index.set(type_id, index);
+			non_system_components.set<u32>(type_id);
+		}
+
+		void deregister_non_system_components()
+		{
+			for (u32 id : non_system_components)
+			{
+				auto index = type_to_index.get(id);
+				type_to_index.remove(id);
+				component_arrays.remove(index);
+			}
+			non_system_components.clear();
 		}
 
 		template <typename T>

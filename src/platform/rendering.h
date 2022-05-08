@@ -438,6 +438,7 @@ namespace Vultr
 		void imgui_begin_frame(CmdBuffer *cmd, ImGuiContext *c);
 		void imgui_end_frame(CmdBuffer *cmd, ImGuiContext *c);
 		ImTextureID imgui_get_texture_id(Texture *texture);
+		void imgui_free_texture_id(Texture *texture);
 		void destroy_imgui(RenderContext *c, ImGuiContext *imgui_c);
 
 	} // namespace Platform

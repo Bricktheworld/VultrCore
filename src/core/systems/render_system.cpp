@@ -84,10 +84,16 @@ namespace Vultr
 
 		void update(const Camera &camera, const Transform &transform, Platform::CmdBuffer *cmd, Component *system)
 		{
+			if (system->resize_request)
+			{
+				reinitialize(system, system->resize_request.value().width, system->resize_request.value().height);
+				system->resize_request = None;
+			}
+
 			Platform::begin_framebuffer(cmd, system->output_framebuffer);
 
-			auto width  = Platform::get_window_width(engine()->window);
-			auto height = Platform::get_window_height(engine()->window);
+			auto width  = get_width(system->output_framebuffer);
+			auto height = get_height(system->output_framebuffer);
 			Platform::CameraUBO camera_ubo{
 				.position  = Vec4(transform.position, 0),
 				.view      = view_matrix(transform),
@@ -127,12 +133,22 @@ namespace Vultr
 			}
 		}
 
-		void reinitialize(Component *c)
+		void request_resize(Component *c, u32 width, u32 height) { c->resize_request = ResizeRequest{.width = width, .height = height}; }
+
+		void reinitialize(Component *c, Option<u32> width, Option<u32> height)
 		{
 			const auto attachment_descriptions = Vector<Platform::AttachmentDescription>({{.format = Platform::TextureFormat::SRGBA8}, {.format = Platform::TextureFormat::DEPTH}});
 			if (c->output_framebuffer != nullptr)
+			{
+				if (!width)
+					width = Platform::get_width(c->output_framebuffer);
+
+				if (!height)
+					height = Platform::get_height(c->output_framebuffer);
+
 				Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
-			c->output_framebuffer = Platform::init_framebuffer(engine()->context, attachment_descriptions);
+			}
+			c->output_framebuffer = Platform::init_framebuffer(engine()->context, attachment_descriptions, width, height);
 		}
 
 		void destroy(Component *c)

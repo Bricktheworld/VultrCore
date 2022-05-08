@@ -125,12 +125,46 @@ namespace Vultr
 		}
 	}
 
-	void scene_window_draw(EditorWindowState *state, EditorRuntime *runtime)
+	void scene_window_draw(RenderSystem::Component *render_system, EditorWindowState *state, EditorRuntime *runtime)
 	{
 		ImGui::Begin("Game");
+		if (ImGui::IsWindowHovered() && !Platform::mouse_down(engine()->window, Platform::Input::MOUSE_RIGHT))
+		{
+			if (Platform::key_down(engine()->window, Platform::Input::KEY_Q))
+			{
+				state->current_operation = ImGuizmo::OPERATION::TRANSLATE;
+			}
+			else if (Platform::key_down(engine()->window, Platform::Input::KEY_W))
+			{
+				state->current_operation = ImGuizmo::OPERATION::ROTATE;
+			}
+			else if (Platform::key_down(engine()->window, Platform::Input::KEY_E))
+			{
+				state->current_operation = ImGuizmo::OPERATION::SCALE;
+			}
+		}
+
+		//		{
+		//			auto alignment = ImVec2(0.5f, 0.5f);
+		//			ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, alignment);
+		//
+		//			if (ImGui::Selectable("Play", false, ImGuiSelectableFlags_None, ImVec2(80, 80)))
+		//			{
+		//				printf("Play\n");
+		//			}
+		//
+		//			ImGui::PopStyleVar();
+		//		}
+
 		ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
 		auto output_texture        = Platform::imgui_get_texture_id(Platform::get_attachment_texture(runtime->render_system->output_framebuffer, 0));
 		ImGui::Image(output_texture, viewport_panel_size);
+
+		if (Platform::get_width(render_system->output_framebuffer) != viewport_panel_size.x || Platform::get_height(render_system->output_framebuffer) != viewport_panel_size.y)
+		{
+			RenderSystem::request_resize(render_system, max(viewport_panel_size.x, 1.0f), max(viewport_panel_size.y, 1.0f));
+		}
+
 		if (ImGui::BeginDragDropTarget())
 		{
 			const auto *payload = ImGui::AcceptDragDropPayload("File");
@@ -797,14 +831,15 @@ namespace Vultr
 					auto *array = cm->component_arrays[index];
 					auto &type  = array->rtti_type;
 
+					Signature component_signature;
+					component_signature.set(index, true);
+					const auto &signature = get_signature(state->selected_entity.value());
+
+					if (signature.at(index))
+						continue;
+
 					if (ImGui::Selectable(type.name.c_str()))
 					{
-						Signature component_signature;
-						component_signature.set(index, true);
-						const auto &signature = get_signature(state->selected_entity.value());
-
-						if (signature.at(index))
-							continue;
 
 						auto new_index = array->m_size;
 						array->m_entity_to_index.set(state->selected_entity.value(), new_index);
@@ -1123,80 +1158,59 @@ namespace Vultr
 	static void on_key_press(void *data, Platform::Input::Key key, Platform::Input::Action action, u32 modifiers)
 	{
 		auto *state = static_cast<EditorWindowState *>(data);
-		if (Platform::mouse_down(engine()->window, Platform::Input::MOUSE_RIGHT))
+		if (action == Platform::Input::PRESS)
 		{
-			if (modifiers == 0)
+			if ((modifiers & Platform::Input::CTRL_BIT) == Platform::Input::CTRL_BIT)
 			{
-				if (key == Platform::Input::KEY_Q)
+				if (key == Platform::Input::KEY_S)
 				{
-					state->current_operation = ImGuizmo::OPERATION::TRANSLATE;
+					serialize_current_scene(state);
 				}
-				else if (Platform::key_down(engine()->window, Platform::Input::KEY_W))
+				else if (key == Platform::Input::KEY_D)
 				{
-					state->current_operation = ImGuizmo::OPERATION::ROTATE;
-				}
-				else if (Platform::key_down(engine()->window, Platform::Input::KEY_E))
-				{
-					state->current_operation = ImGuizmo::OPERATION::SCALE;
-				}
-			}
-		}
-		else
-		{
-			if (action == Platform::Input::PRESS)
-			{
-				if ((modifiers & Platform::Input::CTRL_BIT) == Platform::Input::CTRL_BIT)
-				{
-					if (key == Platform::Input::KEY_S)
+					if let (auto entity, state->selected_entity)
 					{
-						serialize_current_scene(state);
-					}
-					else if (key == Platform::Input::KEY_D)
-					{
-						if let (auto entity, state->selected_entity)
+						Entity duplicate;
+						if (has_parent(entity))
 						{
-							Entity duplicate;
-							if (has_parent(entity))
-							{
-								duplicate = create_parented_entity(*get_label(entity), get_parent(entity).value(), Transform{});
-							}
-							else
-							{
-								duplicate = create_entity(*get_label(entity));
-							}
-							auto signature = get_signature(entity);
-							auto *em       = &world()->entity_manager;
-							auto *cm       = &world()->component_manager;
-							em->add_signature(duplicate, signature);
-
-							for (auto [type_id, index] : cm->type_to_index)
-							{
-								if (!signature.at(index))
-									continue;
-
-								auto *array = cm->component_arrays[index];
-								auto type   = array->rtti_type;
-								void *dest;
-								if (!array->m_entity_to_index.contains(duplicate))
-								{
-									auto component_index = array->m_size;
-									array->m_entity_to_index.set(duplicate, component_index);
-									array->m_index_to_entity.set(component_index, duplicate);
-									dest = static_cast<byte *>(array->m_array) + (component_index * type.size());
-									array->m_size++;
-								}
-								else
-								{
-									auto component_index = array->m_entity_to_index.get(duplicate);
-									dest                 = static_cast<byte *>(array->m_array) + (component_index * type.size());
-								}
-								void *src = static_cast<byte *>(array->m_array) + (type.size() * array->m_entity_to_index.get(entity));
-								type.copy_constructor(dest, src);
-							}
+							duplicate = create_parented_entity(*get_label(entity), get_parent(entity).value(), Transform{});
 						}
 						else
 						{
+							duplicate = create_entity(*get_label(entity));
 						}
+						auto signature = get_signature(entity);
+						auto *em       = &world()->entity_manager;
+						auto *cm       = &world()->component_manager;
+						em->add_signature(duplicate, signature);
+
+						for (auto [type_id, index] : cm->type_to_index)
+						{
+							if (!signature.at(index))
+								continue;
+
+							auto *array = cm->component_arrays[index];
+							auto type   = array->rtti_type;
+							void *dest;
+							if (!array->m_entity_to_index.contains(duplicate))
+							{
+								auto component_index = array->m_size;
+								array->m_entity_to_index.set(duplicate, component_index);
+								array->m_index_to_entity.set(component_index, duplicate);
+								dest = static_cast<byte *>(array->m_array) + (component_index * type.size());
+								array->m_size++;
+							}
+							else
+							{
+								auto component_index = array->m_entity_to_index.get(duplicate);
+								dest                 = static_cast<byte *>(array->m_array) + (component_index * type.size());
+							}
+							void *src = static_cast<byte *>(array->m_array) + (type.size() * array->m_entity_to_index.get(entity));
+							type.copy_constructor(dest, src);
+						}
+					}
+					else
+					{
 					}
 				}
 			}
@@ -1223,7 +1237,7 @@ namespace Vultr
 
 	void update_windows(EditorWindowState *state, f64 dt) { scene_window_update(state, dt); }
 
-	void render_windows(Platform::CmdBuffer *cmd, Project *project, EditorWindowState *state, EditorRuntime *runtime, f64 dt)
+	void render_windows(Platform::CmdBuffer *cmd, RenderSystem::Component *render_system, Project *project, EditorWindowState *state, EditorRuntime *runtime, f64 dt)
 	{
 		Platform::imgui_begin_frame(cmd, runtime->imgui_c);
 
@@ -1301,7 +1315,7 @@ namespace Vultr
 		ImGui::DockSpace(dockspace, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoResize);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
-		scene_window_draw(state, runtime);
+		scene_window_draw(render_system, state, runtime);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		ImGui::ShowDemoWindow();

@@ -11,6 +11,7 @@ namespace Vultr
 		Path resource_dir{};
 		Path build_dir{};
 		Path build_resource_dir{};
+		VultrRegisterComponentsApi register_components{};
 		VultrInitApi init{};
 		VultrUpdateApi update{};
 		VultrDestroyApi destroy{};

@@ -12,10 +12,10 @@ namespace Vultr
 #define VCOMPONENT_BEGIN(name)                                                                                                                                                                                        \
 	struct name                                                                                                                                                                                                       \
 	{                                                                                                                                                                                                                 \
-		static constexpr StringView __REFL_NAME = #name;                                                                                                                                                              \
-		static constexpr u32 __REFL_START_COUNT = __COUNTER__ + 1;                                                                                                                                                    \
+		static constexpr Vultr::StringView __REFL_NAME = #name;                                                                                                                                                       \
+		static constexpr u32 __REFL_START_COUNT        = __COUNTER__ + 1;                                                                                                                                             \
 		template <size_t i>                                                                                                                                                                                           \
-		static constexpr Field __REFL_GET_FIELD;                                                                                                                                                                      \
+		static constexpr Vultr::Field __REFL_GET_FIELD;                                                                                                                                                               \
 		static constexpr name *__REFL_CAST(void *ptr) { return static_cast<name *>(ptr); }                                                                                                                            \
 		static constexpr size_t __REFL_GET_SIZE() { return sizeof(name); }                                                                                                                                            \
 		static constexpr void __REFL_COPY_CONSTRUCTOR(void *dest, const void *src) { *static_cast<name *>(dest) = *static_cast<const name *>(src); }
@@ -24,7 +24,7 @@ namespace Vultr
 	T name = val;                                                                                                                                                                                                     \
 	static constexpr void *__REFL_##name##_GET_ADDR(void *component) { return &__REFL_CAST(component)->name; }                                                                                                        \
 	template <>                                                                                                                                                                                                       \
-	static constexpr Field __REFL_GET_FIELD<__COUNTER__ - __REFL_START_COUNT> = init_field(#name, get_type<T>, __REFL_##name##_GET_ADDR, [](void *data) {                                                             \
+	static constexpr Vultr::Field __REFL_GET_FIELD<__COUNTER__ - __REFL_START_COUNT> = Vultr::init_field(#name, Vultr::get_type<T>, __REFL_##name##_GET_ADDR, [](void *data) {                                        \
 		new (data) T();                                                                                                                                                                                               \
 		*static_cast<T *>(data) = val;                                                                                                                                                                                \
 	});
@@ -32,12 +32,12 @@ namespace Vultr
 #define VCOMPONENT_END()                                                                                                                                                                                              \
 	static constexpr u32 __REFL_MEMBER_COUNT = __COUNTER__ - __REFL_START_COUNT;                                                                                                                                      \
 	template <size_t... S>                                                                                                                                                                                            \
-	static constexpr void __REFL_GET_FIELDS_IMPL(Field *out, Sequence<S...>)                                                                                                                                          \
+	static constexpr void __REFL_GET_FIELDS_IMPL(Vultr::Field *out, Vultr::Sequence<S...>)                                                                                                                            \
 	{                                                                                                                                                                                                                 \
 		((out[S] = __REFL_GET_FIELD<S>), ...);                                                                                                                                                                        \
 	}                                                                                                                                                                                                                 \
-	static constexpr void __REFL_GET_FIELDS(Field *out) { __REFL_GET_FIELDS_IMPL(out, typename SequenceImpl<__REFL_MEMBER_COUNT>::type()); }                                                                          \
-	static constexpr Type __REFL_TYPE = init_type(__REFL_NAME, __REFL_GET_SIZE, __REFL_MEMBER_COUNT, __REFL_GET_FIELDS, __REFL_COPY_CONSTRUCTOR);                                                                     \
+	static constexpr void __REFL_GET_FIELDS(Vultr::Field *out) { __REFL_GET_FIELDS_IMPL(out, typename Vultr::SequenceImpl<__REFL_MEMBER_COUNT>::type()); }                                                            \
+	static constexpr Vultr::Type __REFL_TYPE = Vultr::init_type(__REFL_NAME, __REFL_GET_SIZE, __REFL_MEMBER_COUNT, __REFL_GET_FIELDS, __REFL_COPY_CONSTRUCTOR);                                                       \
 	}                                                                                                                                                                                                                 \
 	;
 

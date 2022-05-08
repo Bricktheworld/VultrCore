@@ -107,5 +107,11 @@ namespace Vultr
 
 			return texture->cached_texture_id;
 		}
+
+		void imgui_free_texture_id(Texture *texture)
+		{
+			ASSERT(texture->cached_texture_id != nullptr, "Cannot free invalid ImGui texture ID!");
+			ImGui_ImplVulkan_RemoveTexture(texture->cached_texture_id);
+		}
 	} // namespace Platform
 } // namespace Vultr

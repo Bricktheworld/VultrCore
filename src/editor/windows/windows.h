@@ -44,13 +44,13 @@ namespace Vultr
 	};
 
 	void scene_window_update(EditorWindowState *state, f64 dt);
-	void scene_window_draw(EditorWindowState *state, EditorRuntime *runtime);
+	void scene_window_draw(RenderSystem::Component *render_system, EditorWindowState *state, EditorRuntime *runtime);
 	void entity_hierarchy_window_draw(Project *project, EditorWindowState *state);
 	void component_inspector_window_draw(Project *project, EditorWindowState *state);
 	void resource_browser_window_draw(Project *project, EditorWindowState *state);
 	void init_windows(EditorRuntime *runtime, Project *project, EditorWindowState *state);
 	void update_windows(EditorWindowState *state, f64 dt);
-	void render_windows(Platform::CmdBuffer *cmd, Project *project, EditorWindowState *state, EditorRuntime *runtime, f64 dt);
+	void render_windows(Platform::CmdBuffer *cmd, RenderSystem::Component *render_system, Project *project, EditorWindowState *state, EditorRuntime *runtime, f64 dt);
 	void destroy_windows(EditorWindowState *state);
 	void begin_resource_import(Project *project, EditorWindowState *state);
 } // namespace Vultr

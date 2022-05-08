@@ -274,8 +274,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			EditorWindowState state;
 			begin_resource_import(&project, &state);
 
-			//			void *project_state = nullptr;
-			//			= project.init();
+			project.register_components();
 
 			init_windows(&runtime, &project, &state);
 			while (!Platform::window_should_close(engine()->window))
@@ -285,18 +284,12 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 				update_windows(&state, dt);
 
-				//				if (project_state == nullptr && !state.resource_import_state.importing)
-				//				{
-				//					project_state = project.init();
-				//				}
-				//				project.update(project_state, dt);
-
 				if check (Platform::begin_cmd_buffer(engine()->window), auto *cmd, auto _)
 				{
 					RenderSystem::update(state.editor_camera, state.editor_camera_transform, cmd, runtime.render_system);
 
 					Platform::begin_window_framebuffer(cmd);
-					render_windows(cmd, &project, &state, &runtime, dt);
+					render_windows(cmd, runtime.render_system, &project, &state, &runtime, dt);
 					Platform::end_framebuffer(cmd);
 
 					Platform::end_cmd_buffer(cmd);
@@ -306,6 +299,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 					RenderSystem::reinitialize(runtime.render_system);
 				}
 			}
+			world()->component_manager.deregister_non_system_components();
 			//			project.destroy(project_state);
 			Platform::wait_idle(engine()->context);
 			resource_allocator<Platform::Mesh *>()->kill_loading_threads();
@@ -317,10 +311,10 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			resource_allocator<Platform::Texture *>()->kill_loading_threads();
 			resource_allocator<Platform::Texture *>()->kill_freeing_threads();
 
-			Platform::destroy_imgui(engine()->context, runtime.imgui_c);
 			destroy_windows(&state);
-			Platform::destroy_upload_context(runtime.upload_context);
 			RenderSystem::destroy(runtime.render_system);
+			Platform::destroy_imgui(engine()->context, runtime.imgui_c);
+			Platform::destroy_upload_context(runtime.upload_context);
 			Platform::close_window(engine()->window);
 		}
 		else

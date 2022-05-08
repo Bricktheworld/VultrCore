@@ -1179,6 +1179,15 @@ VkDescriptorSet ImGui_ImplVulkan_AddTexture(VkSampler sampler, VkImageView image
 	return descriptor_set;
 }
 
+IMGUI_IMPL_API void ImGui_ImplVulkan_RemoveTexture(ImTextureID id)
+{
+	ImGui_ImplVulkan_Data *bd    = ImGui_ImplVulkan_GetBackendData();
+	ImGui_ImplVulkan_InitInfo *v = &bd->VulkanInitInfo;
+	VkDescriptorSet set          = static_cast<VkDescriptorSet>(id);
+
+	check_vk_result(vkFreeDescriptorSets(v->Device, v->DescriptorPool, 1, &set));
+}
+
 //-------------------------------------------------------------------------
 // Internal / Miscellaneous Vulkan Helpers
 // (Used by example's main.cpp. Used by multi-viewport features. PROBABLY NOT used by your own app.)
