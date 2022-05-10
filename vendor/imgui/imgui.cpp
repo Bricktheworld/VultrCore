@@ -4672,11 +4672,11 @@ void ImGui::Shutdown(ImGuiContext* context)
 {
     // The fonts atlas can be used prior to calling NewFrame(), so we clear it even if g.Initialized is FALSE (which would happen if we never called NewFrame)
     ImGuiContext& g = *context;
-    if (g.IO.Fonts && g.FontAtlasOwnedByContext)
-    {
-        g.IO.Fonts->Locked = false;
-        IM_DELETE(g.IO.Fonts);
-    }
+//    if (g.IO.Fonts && g.FontAtlasOwnedByContext)
+//    {
+//        g.IO.Fonts->Locked = false;
+//        IM_DELETE(g.IO.Fonts);
+//    }
     g.IO.Fonts = NULL;
 
     // Cleanup of other data are conditional on actually having initialized Dear ImGui.

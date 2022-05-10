@@ -1030,7 +1030,7 @@ namespace Vultr
 		}
 		ImGui::End();
 	}
-#define WIDGET_SIZE 130.0f
+#define WIDGET_SIZE 170.0f
 #define ASSET_BROWSER_PADDING 2
 #define ICON_SIZE 100.0f
 

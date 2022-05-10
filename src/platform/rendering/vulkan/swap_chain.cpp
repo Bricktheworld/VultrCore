@@ -46,7 +46,12 @@ namespace Vultr
 		{
 			for (const auto &mode : available_modes)
 			{
-				if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+				// We are disabling vsync for now cause it's annoying
+				//				if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+				//				{
+				//					return mode;
+				//				}
+				if (mode == VK_PRESENT_MODE_IMMEDIATE_KHR)
 				{
 					return mode;
 				}

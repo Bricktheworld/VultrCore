@@ -433,7 +433,7 @@ namespace Vultr
 		void wait_idle(RenderContext *c);
 
 		struct ImGuiContext;
-		ImGuiContext *init_imgui(const Window *window, UploadContext *upload_context);
+		ImGuiContext *init_imgui(const Window *window, UploadContext *upload_context, byte *font_src, size_t font_src_size, u32 font_size);
 		void imgui_begin_frame(CmdBuffer *cmd, ImGuiContext *c);
 		void imgui_end_frame(CmdBuffer *cmd, ImGuiContext *c);
 		ImTextureID imgui_get_texture_id(Texture *texture);

@@ -96,7 +96,7 @@ static void material_loader_thread(const Vultr::Project *project)
 		Vultr::fread_all(Vultr::get_material_resource(project, path), &material_src);
 
 		auto shader_path = Vultr::split(material_src, "\n")[0];
-		auto shader = Vultr::Resource<Vultr::Platform::Shader *>(Vultr::Path(shader_path));
+		auto shader      = Vultr::Resource<Vultr::Platform::Shader *>(Vultr::Path(shader_path));
 		shader.wait_loaded();
 
 		CHECK_UNWRAP(auto *mat, Vultr::Platform::try_load_material(c, shader, material_src));
@@ -269,7 +269,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			EditorRuntime runtime{};
 			runtime.render_system  = RenderSystem::init();
 			runtime.upload_context = Vultr::Platform::init_upload_context(Vultr::engine()->context);
-			runtime.imgui_c        = Platform::init_imgui(engine()->window, runtime.upload_context);
+			runtime.imgui_c        = Platform::init_imgui(engine()->window, runtime.upload_context, EditorResources::GET_ROBOTO_TTF(), EditorResources::ROBOTO_TTF_LEN, 30);
 
 			EditorWindowState state;
 			begin_resource_import(&project, &state);
@@ -277,6 +277,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			project.register_components();
 
 			init_windows(&runtime, &project, &state);
+
 			while (!Platform::window_should_close(engine()->window))
 			{
 				Platform::poll_events(engine()->window);

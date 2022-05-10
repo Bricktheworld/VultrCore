@@ -15,7 +15,8 @@ namespace Vultr
 		{
 			VkDescriptorPool descriptor_pool = nullptr;
 		};
-		ImGuiContext *init_imgui(const Window *window, UploadContext *upload_context)
+
+		ImGuiContext *init_imgui(const Window *window, UploadContext *upload_context, byte *font_src, size_t font_src_size, u32 font_size)
 		{
 			auto *imgui_c                        = v_alloc<ImGuiContext>();
 			auto pool_sizes                      = Array<VkDescriptorPoolSize, 11>({{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -60,6 +61,8 @@ namespace Vultr
 			};
 			ImGui_ImplVulkan_Init(&init_info, Vulkan::get_swapchain(c)->render_pass);
 			auto cmd = Vulkan::begin_cmd_buffer(d, &upload_context->cmd_pool);
+			ImGui::GetIO().Fonts->AddFontFromMemoryTTF(font_src, font_src_size, font_size);
+
 			ImGui_ImplVulkan_CreateFontsTexture(cmd);
 			Vulkan::end_cmd_buffer(cmd, &upload_context->cmd_pool);
 
