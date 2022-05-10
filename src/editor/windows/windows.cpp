@@ -327,7 +327,7 @@ namespace Vultr
 
 				if (payload != nullptr)
 				{
-					auto file = Path(static_cast<char *>(payload->Data));
+					auto file = Path(StringView(static_cast<char *>(payload->Data), payload->DataSize));
 					if (get_resource_type(file) == ResourceType::SCENE)
 					{
 						load_scene(state, file);
@@ -926,35 +926,30 @@ namespace Vultr
 								{
 									Quat *quat = static_cast<Quat *>(addr);
 
-									Vec3 euler = glm::degrees(glm::eulerAngles(glm::normalize(*quat)));
-									bool used  = false;
-
 									ImGui::PushID((field.name + ".x").c_str());
 									ImGui::Text("%s", field.name.c_str());
 									ImGui::SameLine();
 									ImGui::SetNextItemWidth(150);
-									used = used | ImGui::DragFloat("", &euler.x, 0.02f);
+									ImGui::DragFloat("", &quat->x, 0.02f);
 									ImGui::SameLine();
 									ImGui::PopID();
 
 									ImGui::PushID((field.name + ".y").c_str());
 									ImGui::SetNextItemWidth(150);
-									used = used | ImGui::DragFloat("", &euler.y, 0.02f);
+									ImGui::DragFloat("", &quat->y, 0.02f);
 									ImGui::SameLine();
 									ImGui::PopID();
 
 									ImGui::PushID((field.name + ".z").c_str());
 									ImGui::SetNextItemWidth(150);
-									used = used | ImGui::DragFloat("", &euler.z, 0.02f);
+									ImGui::DragFloat("", &quat->z, 0.02f);
+									ImGui::SameLine();
 									ImGui::PopID();
 
-									if (used)
-									{
-										Quat x = glm::angleAxis(glm::radians(euler.x), Vec3(1.0, 0.0, 0.0));
-										Quat y = glm::angleAxis(glm::radians(euler.y), Vec3(0.0, 1.0, 0.0));
-										Quat z = glm::angleAxis(glm::radians(euler.z), Vec3(0.0, 0.0, 1.0));
-										*quat  = x * y * z;
-									}
+									ImGui::PushID((field.name + ".w").c_str());
+									ImGui::SetNextItemWidth(150);
+									ImGui::DragFloat("", &quat->w, 0.02f);
+									ImGui::PopID();
 
 									break;
 								}

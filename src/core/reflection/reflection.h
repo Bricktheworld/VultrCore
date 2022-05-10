@@ -565,7 +565,14 @@ namespace Vultr
 	template <typename T>
 	void generic_type_deserializer(const YAML::Node &node, const Field *field, void *data)
 	{
-		*field->get_addr<T>(data) = node.as<T>();
+		try
+		{
+			*field->get_addr<T>(data) = node.as<T>();
+		}
+		catch (const YAML::TypedBadConversion<T> &ex)
+		{
+			field->initialize_default(data);
+		}
 	}
 
 	template <typename T>

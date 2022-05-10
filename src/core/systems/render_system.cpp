@@ -23,13 +23,11 @@ namespace Vultr
 
 		static void render(Platform::CameraUBO camera_ubo, Component *system, Platform::CmdBuffer *cmd)
 		{
-			// TODO(Brandon): Make this not in the render function because it causes a dup lock.
 			while (!system->free_queue_listener.empty())
 			{
 				auto shader = system->free_queue_listener.pop();
 				if (system->pipelines.contains(shader))
 				{
-					printf("Destroying pipeline with shader %p\n", shader);
 					Platform::destroy_pipeline(engine()->context, system->pipelines.get(shader));
 					system->pipelines.remove(shader);
 				}
@@ -39,11 +37,10 @@ namespace Vultr
 			{
 				Platform::DirectionalLightUBO ubo{
 					.direction = Vec4(forward(*transform_component), 0),
-					.ambient   = directional_light->ambient,
 					.diffuse   = directional_light->diffuse,
 					.specular  = directional_light->specular,
 					.intensity = directional_light->intensity,
-					.exists    = true,
+					.ambient   = directional_light->ambient,
 				};
 				Platform::update_default_descriptor_set(cmd, &camera_ubo, &ubo);
 				update_light = true;

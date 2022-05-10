@@ -359,11 +359,10 @@ namespace Vultr
 		struct DirectionalLightUBO
 		{
 			Vec4 direction{};
-			Vec4 ambient{};
 			Vec4 diffuse{};
 			f32 specular;
 			f32 intensity;
-			s32 exists = false;
+			f32 ambient;
 		};
 
 		struct PushConstant

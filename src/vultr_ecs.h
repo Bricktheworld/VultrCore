@@ -214,19 +214,13 @@ namespace Vultr
 
 	inline Mat4 world_get_local_transform(World *w, Mat4 world_transform, Entity entity)
 	{
-		Mat4 reverser  = world_transform;
-		Entity current = entity;
-		while (true)
+		if let (auto parent, world_get_parent(w, entity))
 		{
-			if let (auto parent, world_get_parent(w, current))
-			{
-				reverser = glm::inverse(model_matrix(world_get_component<Transform>(w, parent))) * reverser;
-				current  = parent;
-			}
-			else
-			{
-				return reverser;
-			}
+			return glm::inverse(world_get_world_transform(w, parent)) * world_transform;
+		}
+		else
+		{
+			return world_transform;
 		}
 	}
 
