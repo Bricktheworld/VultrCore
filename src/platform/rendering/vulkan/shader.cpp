@@ -361,12 +361,13 @@ namespace Vultr
 
 		ErrorOr<Shader *> try_load_shader(RenderContext *c, const CompiledShaderSrc &compiled_shader, const ShaderReflection &reflection)
 		{
-			auto *d            = Vulkan::get_device(c);
-			auto *sc           = Vulkan::get_swapchain(c);
-			auto *shader       = v_alloc<Shader>();
+			auto *d      = Vulkan::get_device(c);
+			auto *sc     = Vulkan::get_swapchain(c);
+			auto *shader = v_alloc<Shader>();
+			printf("Allocated shader at %p\n", shader);
 			shader->reflection = reflection;
 
-			u32 binding_count  = reflection.samplers.size() + 1;
+			u32 binding_count = reflection.samplers.size() + 1;
 			VkDescriptorSetLayoutBinding layout_bindings[binding_count];
 			layout_bindings[0] = {
 				.binding         = 0,
@@ -445,6 +446,8 @@ namespace Vultr
 
 			ASSERT(shader->vert_module != nullptr && shader->frag_module != nullptr, "Cannot destroy shader with module nullptr");
 			ASSERT(shader->allocated_descriptor_sets.empty(), "Destroying shader before depending descriptor sets have been freed!");
+
+
 			vkDestroyShaderModule(d->device, shader->vert_module, nullptr);
 			vkDestroyShaderModule(d->device, shader->frag_module, nullptr);
 
@@ -647,11 +650,12 @@ namespace Vultr
 				ASSERT(!shader->free_descriptor_sets.empty(), "Maximum number of descriptor sets have been allocated!");
 				descriptor_set = shader->free_descriptor_sets.pop();
 				shader->allocated_descriptor_sets.push_back(descriptor_set);
+				printf("Pushed allocated descriptor set, shader now has %lu\n", shader->allocated_descriptor_sets.size());
 			}
 
 			auto padded_size = pad_size(d, shader->reflection.uniform_size);
-			auto buffer      = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-			void *mapped     = map_buffer(d, &buffer);
+			auto buffer = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+			void *mapped = map_buffer(d, &buffer);
 			descriptor_set->uniform_buffer_binding = {.buffer = buffer, .mapped = mapped};
 			descriptor_set->updated.set_all();
 			descriptor_set->sampler_bindings.resize(shader->reflection.samplers.size());

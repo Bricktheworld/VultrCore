@@ -18,8 +18,8 @@ namespace Vultr
 		struct Component
 		{
 			Platform::Framebuffer *output_framebuffer = nullptr;
-			Hashmap<ResourceId, Platform::GraphicsPipeline *> pipelines{};
-			Queue<u32, 1024> free_queue_listener{};
+			Hashmap<void *, Platform::GraphicsPipeline *> pipelines{};
+			Queue<void *, 1024> free_queue_listener{};
 			Option<ResizeRequest> resize_request = None;
 		};
 

@@ -165,3 +165,49 @@ inline constexpr u64 Kilobyte(u64 val) { return val * 1024; }
 inline constexpr u64 Megabyte(u64 val) { return Kilobyte(val) * 1024; }
 inline constexpr u64 Gigabyte(u64 val) { return Megabyte(val) * 1024; }
 inline constexpr u64 Terabyte(u64 val) { return Gigabyte(val) * 1024; }
+
+#ifdef OVERFLOW_CHECK
+struct OverflowCheckInfo
+{
+	void **addr = nullptr;
+	void *data  = nullptr;
+};
+
+#define MAX_OVERFLOW_CHECKS 100
+inline OverflowCheckInfo g_overflow_check_infos[MAX_OVERFLOW_CHECKS]{};
+inline void register_overflow_check(void **addr)
+{
+	for (u32 i = 0; i < MAX_OVERFLOW_CHECKS; i++)
+	{
+		if (g_overflow_check_infos[i].addr != nullptr)
+			continue;
+
+		g_overflow_check_infos[i].addr = addr;
+		g_overflow_check_infos[i].data = *addr;
+		printf("Registered address overflow check with address %p and data %p\n", addr, *addr);
+		return;
+	}
+}
+inline void deregister_overflow_check(void **addr)
+{
+	for (u32 i = 0; i < MAX_OVERFLOW_CHECKS; i++)
+	{
+		if (g_overflow_check_infos[i].addr == addr)
+		{
+			g_overflow_check_infos[i].addr = nullptr;
+			g_overflow_check_infos[i].data = nullptr;
+		}
+	}
+}
+#define ASSERT_NO_OVERFLOW()                                                                                                                                                                                          \
+	{                                                                                                                                                                                                                 \
+		for (u32 i = 0; i < MAX_OVERFLOW_CHECKS; i++)                                                                                                                                                                 \
+		{                                                                                                                                                                                                             \
+			if (g_overflow_check_infos[i].addr != nullptr)                                                                                                                                                            \
+			{                                                                                                                                                                                                         \
+				ASSERT(*g_overflow_check_infos[i].addr == g_overflow_check_infos[i].data, "Memory at address %p overflowed! Values is now %p. Calling line is %s:%d", g_overflow_check_infos[i].addr,                 \
+					   *g_overflow_check_infos[i].addr, __FILE__, __LINE__);                                                                                                                                          \
+			}                                                                                                                                                                                                         \
+		}                                                                                                                                                                                                             \
+	}
+#endif

@@ -261,7 +261,7 @@ namespace Vultr
 		thread.detach();
 	}
 
-	static void invalid_resource_error(EditorWindowState *state) { display_error(state, "Invalid Resource", String("Resource provided is invalid!")); }
+	static void invalid_resource_error(EditorWindowState *state, const Path &path) { display_error(state, "Invalid Resource", "Resource " + path.string() + " is invalid!"); }
 
 	void scene_window_draw(RenderSystem::Component *render_system, Project *project, EditorWindowState *state, EditorRuntime *runtime)
 	{
@@ -334,13 +334,11 @@ namespace Vultr
 					}
 					else
 					{
-						invalid_resource_error(state);
+						invalid_resource_error(state, file);
 					}
 				}
 				ImGui::EndDragDropTarget();
 			}
-
-			ImGui::ErrorModal("Invalid Resource", "Resource provided is invalid!");
 
 			ImVec2 top_left             = ImVec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y + (ImGui::GetWindowHeight() - viewport_panel_size.y));
 
@@ -713,7 +711,7 @@ namespace Vultr
 						}
 						else
 						{
-							invalid_resource_error(state);
+							invalid_resource_error(state, full_path);
 						}
 					}
 					else
@@ -927,30 +925,37 @@ namespace Vultr
 								case PrimitiveType::QUAT:
 								{
 									Quat *quat = static_cast<Quat *>(addr);
+
+									Vec3 euler = glm::degrees(glm::eulerAngles(glm::normalize(*quat)));
+									bool used  = false;
+
 									ImGui::PushID((field.name + ".x").c_str());
 									ImGui::Text("%s", field.name.c_str());
 									ImGui::SameLine();
 									ImGui::SetNextItemWidth(150);
-									ImGui::DragFloat("", &quat->x, 0.02f);
+									used = used | ImGui::DragFloat("", &euler.x, 0.02f);
 									ImGui::SameLine();
 									ImGui::PopID();
 
 									ImGui::PushID((field.name + ".y").c_str());
 									ImGui::SetNextItemWidth(150);
-									ImGui::DragFloat("", &quat->y, 0.02f);
+									used = used | ImGui::DragFloat("", &euler.y, 0.02f);
 									ImGui::SameLine();
 									ImGui::PopID();
 
 									ImGui::PushID((field.name + ".z").c_str());
 									ImGui::SetNextItemWidth(150);
-									ImGui::DragFloat("", &quat->z, 0.02f);
-									ImGui::SameLine();
+									used = used | ImGui::DragFloat("", &euler.z, 0.02f);
 									ImGui::PopID();
 
-									ImGui::PushID((field.name + ".w").c_str());
-									ImGui::SetNextItemWidth(150);
-									ImGui::DragFloat("", &quat->w, 0.02f);
-									ImGui::PopID();
+									if (used)
+									{
+										Quat x = glm::angleAxis(glm::radians(euler.x), Vec3(1.0, 0.0, 0.0));
+										Quat y = glm::angleAxis(glm::radians(euler.y), Vec3(0.0, 1.0, 0.0));
+										Quat z = glm::angleAxis(glm::radians(euler.z), Vec3(0.0, 0.0, 1.0));
+										*quat  = x * y * z;
+									}
+
 									break;
 								}
 								case PrimitiveType::PATH:

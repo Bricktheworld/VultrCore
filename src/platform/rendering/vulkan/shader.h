@@ -12,6 +12,7 @@ namespace Vultr
 	{
 		struct Shader
 		{
+			byte empty_bytes[8]{0};
 			VkShaderModule vert_module = nullptr;
 			VkShaderModule frag_module = nullptr;
 
@@ -25,6 +26,7 @@ namespace Vultr
 			Queue<DescriptorSet *, MAX_DESCRIPTOR_SETS> free_descriptor_sets{};
 			Vector<DescriptorSet *, MAX_DESCRIPTOR_SETS> allocated_descriptor_sets{};
 			Platform::Mutex mutex{};
+			~Shader() { fprintf(stderr, "Shader destructor was called!\n"); }
 		};
 	} // namespace Platform
 } // namespace Vultr

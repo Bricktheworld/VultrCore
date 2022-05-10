@@ -246,8 +246,8 @@ namespace Vultr
 			Vector<VkDescriptorImageInfo> tex_info{};
 
 			auto *shader = pipeline->layout.shader;
-			auto *c      = cmd->render_context;
-			auto *d      = Vulkan::get_device(c);
+			auto *c = cmd->render_context;
+			auto *d = Vulkan::get_device(c);
 			Platform::Lock lock(shader->mutex);
 
 			u32 ubo_info_len   = 0;
@@ -279,7 +279,7 @@ namespace Vultr
 					continue;
 
 				set->updated.set(cmd->image_index, false);
-				auto *vk_set             = set->vk_frame_descriptor_sets[cmd->image_index];
+				auto *vk_set = set->vk_frame_descriptor_sets[cmd->image_index];
 
 				ubo_info[ubo_info_index] = {
 					.buffer = set->uniform_buffer_binding.buffer.buffer,
@@ -311,6 +311,7 @@ namespace Vultr
 						texture = sampler.value().value<Platform::Texture *>();
 					}
 
+					printf("Updating descriptor set with texture %p sampler %p and image_view %p\n", texture, texture->sampler, texture->image_view);
 					tex_info[tex_info_index] = {
 						.sampler     = texture->sampler,
 						.imageView   = texture->image_view,

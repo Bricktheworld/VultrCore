@@ -51,5 +51,4 @@ namespace Vultr
 	void free_list_free(FreeListAllocator *allocator, void *data);
 
 	void free_list_print(FreeListAllocator *allocator);
-
 } // namespace Vultr

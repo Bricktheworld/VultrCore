@@ -26,9 +26,10 @@ namespace Vultr
 			// TODO(Brandon): Make this not in the render function because it causes a dup lock.
 			while (!system->free_queue_listener.empty())
 			{
-				auto shader = ResourceId(system->free_queue_listener.pop());
+				auto shader = system->free_queue_listener.pop();
 				if (system->pipelines.contains(shader))
 				{
+					printf("Destroying pipeline with shader %p\n", shader);
 					Platform::destroy_pipeline(engine()->context, system->pipelines.get(shader));
 					system->pipelines.remove(shader);
 				}
@@ -62,14 +63,14 @@ namespace Vultr
 				auto *loaded_mesh = mesh->source.value();
 				auto *loaded_mat  = material->source.value();
 
-				if (!system->pipelines.contains(loaded_mat->source))
+				if (!system->pipelines.contains(loaded_mat->source.value()))
 				{
 					Platform::GraphicsPipelineInfo info{.shader = loaded_mat->source.value()};
 					auto *pipeline = Platform::init_pipeline(engine()->context, system->output_framebuffer, info);
-					system->pipelines.set(loaded_mat->source, pipeline);
+					system->pipelines.set(static_cast<void *>(loaded_mat->source.value()), pipeline);
 				}
 
-				auto *pipeline = system->pipelines.get(loaded_mat->source);
+				auto *pipeline = system->pipelines.get(loaded_mat->source.value());
 
 				Platform::PushConstant push_constant{
 					.color = Vec4(1),

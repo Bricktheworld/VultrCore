@@ -118,7 +118,7 @@ namespace Vultr
 
 			texture->cached_texture_id = nullptr;
 
-			printf("Created texture %p, sampler %p\n", texture, &texture->sampler);
+			printf("Created texture %p with sampler %p and image view %p\n", texture, texture->sampler, texture->image_view);
 			return texture;
 		}
 

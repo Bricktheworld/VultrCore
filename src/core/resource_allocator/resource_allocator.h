@@ -75,7 +75,7 @@ namespace Vultr
 				free_queue.push(info.data);
 				if (free_queue_listener != nullptr)
 				{
-					free_queue_listener->push(id);
+					free_queue_listener->push(info.data);
 				}
 			}
 		}
@@ -167,7 +167,7 @@ namespace Vultr
 		Hashmap<u32, ResourceInfo<T>> resources{};
 		Queue<u32, 1024> load_queue{};
 		Queue<T, 1024> free_queue{};
-		Queue<u32, 1024> *free_queue_listener = nullptr;
+		Queue<void *, 1024> *free_queue_listener = nullptr;
 		Platform::Mutex mutex{};
 	};
 

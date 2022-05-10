@@ -96,7 +96,7 @@ static void material_loader_thread(const Vultr::Project *project)
 		Vultr::fread_all(Vultr::get_material_resource(project, path), &material_src);
 
 		auto shader_path = Vultr::split(material_src, "\n")[0];
-		auto shader      = Vultr::Resource<Vultr::Platform::Shader *>(Vultr::Path(shader_path));
+		auto shader = Vultr::Resource<Vultr::Platform::Shader *>(Vultr::Path(shader_path));
 		shader.wait_loaded();
 
 		CHECK_UNWRAP(auto *mat, Vultr::Platform::try_load_material(c, shader, material_src));

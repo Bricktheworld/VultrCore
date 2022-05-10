@@ -288,7 +288,7 @@ namespace Vultr
 					if (new_size > inline_capacity)
 					{
 						m_capacity = get_capacity(new_size);
-						m_storage  = v_alloc<T>(m_capacity);
+						m_storage = v_alloc<T>(m_capacity);
 						Utils::move(m_storage, inline_storage(), m_size);
 						m_inline = false;
 					}
@@ -298,8 +298,8 @@ namespace Vultr
 				{
 					if (new_size > m_capacity || get_usage(new_size, m_capacity) < decay_threshold)
 					{
-						m_capacity        = get_capacity(new_size);
-						auto *new_storage = v_alloc<T>(new_size);
+						m_capacity = get_capacity(new_size);
+						auto *new_storage = v_alloc<T>(m_capacity);
 						Utils::move(new_storage, m_storage, m_size);
 						v_free<void>(m_storage);
 						m_storage = new_storage;

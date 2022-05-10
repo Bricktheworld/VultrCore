@@ -305,6 +305,9 @@ namespace Vultr
 
 		void graphics_queue_submit(Device *d, u32 submit_count, const VkSubmitInfo *p_submits, VkFence fence)
 		{
+			ASSERT(d != nullptr, "Cannot submit to nullptr device!");
+			ASSERT(p_submits != nullptr, "Cannot submit nullptr p_submits!");
+			ASSERT(fence != nullptr, "Cannot submit nullptr fence!");
 			Platform::Lock lock(d->graphics_queue_mutex);
 			VK_CHECK(vkQueueSubmit(d->graphics_queue, submit_count, p_submits, fence));
 		}

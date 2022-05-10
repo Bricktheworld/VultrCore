@@ -424,7 +424,7 @@ namespace Vultr
 
 			if (sc->images_in_flight[image_index] != VK_NULL_HANDLE)
 			{
-				vkWaitForFences(d->device, 1, &sc->images_in_flight[image_index], VK_TRUE, U64Max);
+				VK_CHECK(vkWaitForFences(d->device, 1, &sc->images_in_flight[image_index], VK_TRUE, U64Max));
 			}
 
 			sc->images_in_flight[image_index] = sc->in_flight_fences[sc->current_frame].vk_fence;
@@ -488,7 +488,7 @@ namespace Vultr
 			};
 
 			if (fence != nullptr)
-				vkResetFences(d->device, 1, &fence);
+				VK_CHECK(vkResetFences(d->device, 1, &fence));
 			Platform::Lock lock(d->graphics_queue_mutex);
 			VK_TRY(vkQueueSubmit(d->graphics_queue, 1, &submit_info, fence));
 			return Success;
@@ -519,7 +519,7 @@ namespace Vultr
 			if (count > 0)
 			{
 				auto *d = Vulkan::get_device(sc);
-				vkWaitForFences(d->device, count, fences, VK_TRUE, U64Max);
+				VK_CHECK(vkWaitForFences(d->device, count, fences, VK_TRUE, U64Max));
 			}
 
 			for (auto &fence : sc->in_flight_fences)
