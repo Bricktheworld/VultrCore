@@ -14,6 +14,7 @@ namespace Vultr
 		NEED_TO_LOAD = 0x0,
 		LOADING      = 0x1,
 		LOADED       = 0x2,
+		ERROR        = 0x4,
 	};
 
 	template <typename T>
@@ -23,6 +24,7 @@ namespace Vultr
 		Path path{};
 		ResourceLoadState load_state = ResourceLoadState::NEED_TO_LOAD;
 		T data                       = nullptr;
+		Option<Error> error          = None;
 	};
 
 	struct ResourceLoadItem
@@ -101,6 +103,20 @@ namespace Vultr
 			return resources.get(id).load_state == ResourceLoadState::LOADED;
 		}
 
+		bool has_error(u32 id)
+		{
+			Platform::Lock lock(mutex);
+			ASSERT(resources.contains(id), "Cannot get invalid resource %u", id);
+			return resources.get(id).load_state == ResourceLoadState::ERROR;
+		}
+
+		Error get_error(u32 id)
+		{
+			Platform::Lock lock(mutex);
+			ASSERT(has_error(id), "Cannot get error from resource which does not have an error!");
+			return resources.get(id).error.value();
+		}
+
 		ResourceLoadItem wait_pop_load_queue()
 		{
 			while (true)
@@ -134,6 +150,20 @@ namespace Vultr
 
 			resource.data       = data;
 			resource.load_state = ResourceLoadState::LOADED;
+			return Success;
+		}
+
+		ErrorOr<void> add_loaded_resource_error(u32 id, const Error &error)
+		{
+			Platform::Lock lock(mutex);
+			if (!resources.contains(id))
+				return Error("Resource has already been freed before it was loaded!");
+
+			auto &resource = resources.get(id);
+			ASSERT(resource.load_state != ResourceLoadState::LOADED, "Resource was loaded before an error was set");
+
+			resource.error      = error;
+			resource.load_state = ResourceLoadState::ERROR;
 			return Success;
 		}
 
@@ -309,6 +339,8 @@ namespace Vultr
 		bool operator==(const ResourceId &other) const { return this->id == other.id; }
 
 		bool loaded() const { return id.has_value() && resource_allocator<T>()->is_loaded(id.value()); }
+		bool has_error() const { return id.has_value() && resource_allocator<T>()->has_error(id.value()); }
+		Error get_error() const { return resource_allocator<T>()->get_error(id.value()); }
 		void wait_loaded() const
 		{
 			while (!loaded())

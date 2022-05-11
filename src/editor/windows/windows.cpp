@@ -743,6 +743,11 @@ namespace Vultr
 		{
 			*resource = Resource<T>();
 		}
+
+		if (resource->has_error())
+		{
+			ImGui::Text("Failed to load: %s", resource->get_error().message.c_str());
+		}
 		ImGui::PopID();
 	}
 

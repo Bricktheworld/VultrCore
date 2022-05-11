@@ -39,10 +39,26 @@ static void mesh_loader_thread(const Vultr::Project *project)
 		auto [vert, index] = Vultr::get_mesh_resource(project, path);
 
 		Vultr::Buffer vertex_buffer;
-		Vultr::fread_all(vert, &vertex_buffer);
+		{
+			auto res = Vultr::try_fread_all(vert, &vertex_buffer);
+
+			if (res.is_error())
+			{
+				allocator->add_loaded_resource_error(resource, res.get_error());
+				continue;
+			}
+		}
 
 		Vultr::Buffer index_buffer;
-		Vultr::fread_all(index, &index_buffer);
+		{
+			auto res = Vultr::try_fread_all(index, &index_buffer);
+
+			if (res.is_error())
+			{
+				allocator->add_loaded_resource_error(resource, res.get_error());
+				continue;
+			}
+		}
 
 		auto *mesh = Vultr::Platform::load_mesh_memory(c, vertex_buffer, index_buffer);
 		printf("Loaded mesh %p from path %s\n", mesh, path.c_str());
@@ -93,18 +109,31 @@ static void material_loader_thread(const Vultr::Project *project)
 		printf("Loading material %u, from path %s\n", resource, path.c_str());
 
 		Vultr::String material_src;
-		Vultr::fread_all(Vultr::get_material_resource(project, path), &material_src);
+		{
+			auto res = Vultr::try_fread_all(Vultr::get_material_resource(project, path), &material_src);
+			if (res.is_error())
+			{
+				allocator->add_loaded_resource_error(resource, res.get_error());
+				continue;
+			}
+		}
 
 		auto shader_path = Vultr::split(material_src, "\n")[0];
 		auto shader      = Vultr::Resource<Vultr::Platform::Shader *>(Vultr::Path(shader_path));
 		shader.wait_loaded();
 
-		CHECK_UNWRAP(auto *mat, Vultr::Platform::try_load_material(c, shader, material_src));
-
-		if (!allocator->add_loaded_resource(resource, mat).has_value())
+		if check (Vultr::Platform::try_load_material(c, shader, material_src), auto *mat, auto err)
 		{
-			printf("Freeing unnecessary load!\n");
-			Vultr::Platform::destroy_material(Vultr::engine()->context, mat);
+			if (!allocator->add_loaded_resource(resource, mat).has_value())
+			{
+				printf("Freeing unnecessary load!\n");
+				Vultr::Platform::destroy_material(Vultr::engine()->context, mat);
+			}
+		}
+		else
+		{
+			allocator->add_loaded_resource_error(resource, err);
+			continue;
 		}
 	}
 }
@@ -148,17 +177,43 @@ static void shader_loader_thread(const Vultr::Project *project)
 
 		Vultr::Platform::CompiledShaderSrc shader_src{};
 		auto [vert, frag] = Vultr::get_shader_resource(project, path);
-		Vultr::fread_all(vert, &shader_src.vert_src);
-		Vultr::fread_all(frag, &shader_src.frag_src);
-
-		CHECK_UNWRAP(auto reflection, Vultr::Platform::try_reflect_shader(shader_src));
-
-		CHECK_UNWRAP(auto *shader, Vultr::Platform::try_load_shader(Vultr::engine()->context, shader_src, reflection));
-
-		if (allocator->add_loaded_resource(resource, shader).is_error())
 		{
-			printf("Freeing unnecessary load!\n");
-			Vultr::Platform::destroy_shader(Vultr::engine()->context, shader);
+			auto res = Vultr::try_fread_all(vert, &shader_src.vert_src);
+			if (res.is_error())
+			{
+				allocator->add_loaded_resource_error(resource, res.get_error());
+				continue;
+			}
+		}
+		{
+			auto res = Vultr::try_fread_all(frag, &shader_src.frag_src);
+			if (res.is_error())
+			{
+				allocator->add_loaded_resource_error(resource, res.get_error());
+				continue;
+			}
+		}
+
+		if check (Vultr::Platform::try_reflect_shader(shader_src), auto reflection, auto err)
+		{
+			if check (Vultr::Platform::try_load_shader(Vultr::engine()->context, shader_src, reflection), auto *shader, auto err)
+			{
+				if (allocator->add_loaded_resource(resource, shader).is_error())
+				{
+					printf("Freeing unnecessary load!\n");
+					Vultr::Platform::destroy_shader(Vultr::engine()->context, shader);
+				}
+			}
+			else
+			{
+				allocator->add_loaded_resource_error(resource, err);
+				continue;
+			}
+		}
+		else
+		{
+			allocator->add_loaded_resource_error(resource, err);
+			continue;
 		}
 	}
 }
@@ -201,7 +256,14 @@ static void texture_loader_thread(const Vultr::Project *project)
 		printf("Loading texture %u, from path %s\n", resource, path.c_str());
 
 		Vultr::Buffer src;
-		Vultr::fread_all(Vultr::get_texture_resource(project, path), &src);
+		{
+			auto res = Vultr::try_fread_all(Vultr::get_texture_resource(project, path), &src);
+			if (res.is_error())
+			{
+				allocator->add_loaded_resource_error(resource, res.get_error());
+				continue;
+			}
+		}
 		auto *texture = Vultr::Platform::init_texture(c, *(f64 *)&src[0], *(f64 *)&src[sizeof(f64)], Vultr::Platform::TextureFormat::RGBA8);
 		Vultr::Platform::fill_texture(c, texture, &src[sizeof(f64) * 2], src.size() - 2 * sizeof(f64));
 
@@ -269,7 +331,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			EditorRuntime runtime{};
 			runtime.render_system  = RenderSystem::init();
 			runtime.upload_context = Vultr::Platform::init_upload_context(Vultr::engine()->context);
-			runtime.imgui_c        = Platform::init_imgui(engine()->window, runtime.upload_context, EditorResources::GET_ROBOTO_TTF(), EditorResources::ROBOTO_TTF_LEN, 30);
+			runtime.imgui_c        = Platform::init_imgui(engine()->window, runtime.upload_context, EditorResources::GET_ROBOTO_TTF(), EditorResources::ROBOTO_TTF_LEN, 15);
 
 			EditorWindowState state;
 			begin_resource_import(&project, &state);

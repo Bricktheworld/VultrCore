@@ -31,6 +31,45 @@ namespace Vultr
 	}
 
 	template <>
+	inline bool Resource<Platform::Material *>::has_error() const
+	{
+		if (!id.has_value())
+			return false;
+
+		if (resource_allocator<Platform::Material *>()->has_error(id.value()))
+			return true;
+
+		if (resource_allocator<Platform::Material *>()->is_loaded(id.value()))
+		{
+			for (auto &sampler : value()->samplers)
+			{
+				if (!sampler.empty() && sampler.has_error())
+					return true;
+			}
+		}
+
+		return false;
+	}
+	template <>
+	inline Error Resource<Platform::Material *>::get_error() const
+	{
+		ASSERT(id.has_value(), "Cannot get error from invalid material!");
+
+		if (resource_allocator<Platform::Material *>()->has_error(id.value()))
+			return resource_allocator<Platform::Material *>()->get_error(id.value());
+
+		ASSERT(resource_allocator<Platform::Material *>()->is_loaded(id.value()), "Cannot get error from material which doesn't have error!");
+
+		for (auto &sampler : value()->samplers)
+		{
+			if (!sampler.empty() && sampler.has_error())
+				return sampler.get_error();
+		}
+
+		THROW("Failed to find sampler with error!");
+	}
+
+	template <>
 	inline EditorType get_editor_type<Material>(Material *component)
 	{
 		EditorType type = {get_type<Material>, component};

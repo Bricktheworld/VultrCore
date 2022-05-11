@@ -149,8 +149,12 @@ namespace Vultr
 	template <typename T>
 	requires(is_valid_stream_format<T>) ErrorOr<void> try_fread_all(const Path &path, BufferT<T> *buf)
 	{
-		ASSERT(exists(path), "File does not exist!");
-		ASSERT(path.is_file(), "Cannot read from a directory!");
+		if (!exists(path))
+			return Error("File does not exist!");
+
+		if (!path.is_file())
+			return Error("Cannot read from a directory!");
+
 		StreamFormat format;
 		if constexpr (is_same<T, char>)
 		{
