@@ -311,7 +311,6 @@ namespace Vultr
 						texture = sampler.value().value<Platform::Texture *>();
 					}
 
-					printf("Updating descriptor set with texture %p sampler %p and image_view %p\n", texture, texture->sampler, texture->image_view);
 					tex_info[tex_info_index] = {
 						.sampler     = texture->sampler,
 						.imageView   = texture->image_view,

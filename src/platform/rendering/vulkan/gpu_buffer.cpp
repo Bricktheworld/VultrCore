@@ -54,9 +54,7 @@ namespace Vultr
 			VK_CHECK(vkResetFences(d->device, 1, &fence));
 			graphics_queue_submit(d, 1, &submit_info, fence);
 
-			printf("Waiting for buffer fence...\n");
 			VK_CHECK(vkWaitForFences(d->device, 1, &fence, VK_TRUE, U64Max));
-			printf("Finished waiting for buffer fence...\n");
 			recycle_cmd_pool(d, &c->cmd_pool);
 		}
 

@@ -333,14 +333,11 @@ namespace Vultr
 			Utils::move((byte *)mesh->indices, index_buffer.storage, index_buffer.size());
 
 			mesh->index_buffer = init_index_buffer(c, mesh->indices, sizeof(u16) * mesh->index_count);
-			ASSERT((void *)mesh->index_buffer != (void *)mesh->vertex_buffer, "Allocated at same location %p??", mesh->index_buffer);
-			printf("Mesh %p loaded { index_buffer = %p, vertex_buffer = %p, vertices = %p, indices = %p }\n", mesh, mesh->index_buffer, mesh->vertex_buffer, mesh->vertices, mesh->index_buffer);
 			return mesh;
 		}
 
 		inline void destroy_mesh(RenderContext *c, Mesh *mesh)
 		{
-			printf("Destroying mesh %p { index_buffer = %p, vertex_buffer = %p, vertices = %p, indices = %p }\n", mesh, mesh->index_buffer, mesh->vertex_buffer, mesh->vertices, mesh->index_buffer);
 			destroy_index_buffer(c, mesh->index_buffer);
 			destroy_vertex_buffer(c, mesh->vertex_buffer);
 			v_free(mesh->vertices);

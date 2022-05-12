@@ -86,11 +86,6 @@ namespace Vultr
 			Platform::Lock lock(Vulkan::get_device(cmd->render_context)->graphics_queue_mutex);
 			ImGuiIO &io = ImGui::GetIO();
 			ImGui::Render();
-			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-			{
-				ImGui::UpdatePlatformWindows();
-				ImGui::RenderPlatformWindowsDefault();
-			}
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd->cmd_buffer);
 		}
 

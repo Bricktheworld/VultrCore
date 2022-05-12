@@ -24,17 +24,13 @@ static void mesh_loader_thread(const Vultr::Project *project)
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Mesh *>();
 	while (true)
 	{
-		printf("Waiting for another mesh to load...\n");
 		auto [resource, path, is_kill_request] = allocator->wait_pop_load_queue();
 
 		if (is_kill_request)
 		{
-			printf("Shutting down mesh loading thread.\n");
 			Vultr::Platform::destroy_upload_context(c);
 			return;
 		}
-
-		printf("Loading mesh %u, from path %s\n", resource, path.c_str());
 
 		auto [vert, index] = Vultr::get_mesh_resource(project, path);
 
@@ -61,11 +57,9 @@ static void mesh_loader_thread(const Vultr::Project *project)
 		}
 
 		auto *mesh = Vultr::Platform::load_mesh_memory(c, vertex_buffer, index_buffer);
-		printf("Loaded mesh %p from path %s\n", mesh, path.c_str());
 
 		if (allocator->add_loaded_resource(resource, mesh).is_error())
 		{
-			printf("Freeing unnecessary load!\n");
 			Vultr::Platform::destroy_mesh(Vultr::engine()->context, mesh);
 		}
 	}
@@ -76,16 +70,13 @@ static void mesh_free_thread()
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Mesh *>();
 	while (true)
 	{
-		printf("Waiting for another mesh to free...\n");
 		auto *mesh = allocator->wait_pop_free_queue();
 
 		if (mesh == (void *)-1)
 		{
-			printf("Shutting down mesh freeing thread.\n");
 			return;
 		}
 
-		printf("Freeing mesh data at location %p\n", mesh);
 		Vultr::Platform::destroy_mesh(Vultr::engine()->context, mesh);
 	}
 }
@@ -96,17 +87,13 @@ static void material_loader_thread(const Vultr::Project *project)
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Material *>();
 	while (true)
 	{
-		printf("Waiting for another material to load...\n");
 		auto [resource, path, is_kill_request] = allocator->wait_pop_load_queue();
 
 		if (is_kill_request)
 		{
-			printf("Shutting down material loading thread.\n");
 			Vultr::Platform::destroy_upload_context(c);
 			return;
 		}
-
-		printf("Loading material %u, from path %s\n", resource, path.c_str());
 
 		Vultr::String material_src;
 		{
@@ -126,7 +113,6 @@ static void material_loader_thread(const Vultr::Project *project)
 		{
 			if (!allocator->add_loaded_resource(resource, mat).has_value())
 			{
-				printf("Freeing unnecessary load!\n");
 				Vultr::Platform::destroy_material(Vultr::engine()->context, mat);
 			}
 		}
@@ -143,16 +129,13 @@ static void material_free_thread()
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Material *>();
 	while (true)
 	{
-		printf("Waiting for another material to free...\n");
 		auto *mat = allocator->wait_pop_free_queue();
 
 		if (mat == (void *)-1)
 		{
-			printf("Shutting down material freeing thread.\n");
 			return;
 		}
 
-		printf("Freeing material data at location %p\n", mat);
 		Vultr::Platform::destroy_material(Vultr::engine()->context, mat);
 	}
 }
@@ -163,17 +146,13 @@ static void shader_loader_thread(const Vultr::Project *project)
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Shader *>();
 	while (true)
 	{
-		printf("Waiting for another shader to load...\n");
 
 		auto [resource, path, is_kill_request] = allocator->wait_pop_load_queue();
 		if (is_kill_request)
 		{
-			printf("Shutting down shader loading thread.\n");
 			Vultr::Platform::destroy_upload_context(c);
 			return;
 		}
-
-		printf("Loading shader %u, from path %s\n", resource, path.c_str());
 
 		Vultr::Platform::CompiledShaderSrc shader_src{};
 		auto [vert, frag] = Vultr::get_shader_resource(project, path);
@@ -200,7 +179,6 @@ static void shader_loader_thread(const Vultr::Project *project)
 			{
 				if (allocator->add_loaded_resource(resource, shader).is_error())
 				{
-					printf("Freeing unnecessary load!\n");
 					Vultr::Platform::destroy_shader(Vultr::engine()->context, shader);
 				}
 			}
@@ -223,16 +201,13 @@ static void shader_free_thread()
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Shader *>();
 	while (true)
 	{
-		printf("Waiting for another shader to free...\n");
 		auto *shader = allocator->wait_pop_free_queue();
 
 		if (shader == (void *)-1)
 		{
-			printf("Shutting down shader freeing thread.\n");
 			return;
 		}
 
-		printf("Freeing shader data at location %p\n", shader);
 		Vultr::Platform::destroy_shader(Vultr::engine()->context, shader);
 	}
 }
@@ -243,17 +218,13 @@ static void texture_loader_thread(const Vultr::Project *project)
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
 	while (true)
 	{
-		printf("Waiting for another texture to load...\n");
 		auto [resource, path, is_kill_request] = allocator->wait_pop_load_queue();
 
 		if (is_kill_request)
 		{
-			printf("Shutting down texture loading thread.\n");
 			Vultr::Platform::destroy_upload_context(c);
 			return;
 		}
-
-		printf("Loading texture %u, from path %s\n", resource, path.c_str());
 
 		Vultr::Buffer src;
 		{
@@ -269,7 +240,6 @@ static void texture_loader_thread(const Vultr::Project *project)
 
 		if (allocator->add_loaded_resource(resource, texture).is_error())
 		{
-			printf("Freeing unnecessary load!\n");
 			Vultr::Platform::destroy_texture(Vultr::engine()->context, texture);
 		}
 	}
@@ -280,16 +250,13 @@ static void texture_free_thread()
 	auto *allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
 	while (true)
 	{
-		printf("Waiting for another texture to free...\n");
 		auto *texture = allocator->wait_pop_free_queue();
 
 		if (texture == (void *)-1)
 		{
-			printf("Shutting down texture freeing thread.\n");
 			return;
 		}
 
-		printf("Freeing texture data at location %p\n", texture);
 		Vultr::Platform::destroy_texture(Vultr::engine()->context, texture);
 	}
 }

@@ -364,7 +364,6 @@ namespace Vultr
 			auto *d      = Vulkan::get_device(c);
 			auto *sc     = Vulkan::get_swapchain(c);
 			auto *shader = v_alloc<Shader>();
-			printf("Allocated shader at %p\n", shader);
 			shader->reflection = reflection;
 
 			u32 binding_count  = reflection.samplers.size() + 1;
@@ -649,7 +648,6 @@ namespace Vultr
 				ASSERT(!shader->free_descriptor_sets.empty(), "Maximum number of descriptor sets have been allocated!");
 				descriptor_set = shader->free_descriptor_sets.pop();
 				shader->allocated_descriptor_sets.push_back(descriptor_set);
-				printf("Pushed allocated descriptor set, shader now has %lu\n", shader->allocated_descriptor_sets.size());
 			}
 
 			auto padded_size = pad_size(d, shader->reflection.uniform_size);

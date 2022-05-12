@@ -73,7 +73,6 @@ namespace Vultr
 			resources.remove(id);
 			if (info.load_state == ResourceLoadState::LOADED)
 			{
-				printf("Removing loaded resource %s at %p\n", info.path.c_str(), info.data);
 				free_queue.push(info.data);
 				if (free_queue_listener != nullptr)
 				{

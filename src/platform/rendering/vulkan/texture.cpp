@@ -118,7 +118,6 @@ namespace Vultr
 
 			texture->cached_texture_id = nullptr;
 
-			printf("Created texture %p with sampler %p and image view %p\n", texture, texture->sampler, texture->image_view);
 			return texture;
 		}
 
@@ -217,9 +216,7 @@ namespace Vultr
 			VK_CHECK(vkResetFences(d->device, 1, &fence));
 			graphics_queue_submit(d, 1, &submit_info, fence);
 
-			printf("Waiting for texture fence...\n");
 			VK_CHECK(vkWaitForFences(d->device, 1, &fence, VK_TRUE, U64Max));
-			printf("Finished waiting for texture fence...\n");
 			recycle_cmd_pool(d, &c->cmd_pool);
 
 			Vulkan::unsafe_free_buffer(d, &staging_buffer);
@@ -232,7 +229,6 @@ namespace Vultr
 		{
 			ASSERT(texture != nullptr, "Cannot destroy invalid texture!");
 			Vulkan::wait_resource_not_in_use(sc, texture);
-			printf("Destroying texture %p\n", texture);
 
 			auto *d = Vulkan::get_device(sc);
 

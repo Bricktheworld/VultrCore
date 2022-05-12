@@ -62,7 +62,6 @@ namespace Vultr
 			};
 
 			VK_CHECK(vkBeginCommandBuffer(cmd_buffer, &begin_info));
-			printf("Beginning command buffer with index %u\n", cmd_pool->index);
 			return cmd_buffer;
 		}
 

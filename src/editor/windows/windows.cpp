@@ -166,11 +166,9 @@ namespace Vultr
 		state->scene_path = file;
 		String src;
 		fread_all(file, &src);
-		printf("Freeing scene......................\n");
 		world()->component_manager.destroy_component_arrays();
 		world()->entity_manager = EntityManager();
-		printf("Initializing new scene.............\n");
-		auto res = read_world_yaml(src, world());
+		auto res                = read_world_yaml(src, world());
 		if (res.is_error())
 		{
 			display_error(state, "Failed To Load Scene", String(res.get_error().message));
@@ -1538,7 +1536,6 @@ namespace Vultr
 				if (needs_reimport(full_src, vertex_out) || needs_reimport(full_src, index_out))
 				{
 					ftouch(full_src);
-					printf("Importing mesh %s\n", full_src.c_str());
 					TRY_UNWRAP(auto mesh, Platform::import_mesh_file(full_src));
 					TRY(Platform::export_mesh(vertex_out, index_out, &mesh));
 					Platform::free_imported_mesh(&mesh);
