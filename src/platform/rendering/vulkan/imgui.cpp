@@ -41,6 +41,7 @@ namespace Vultr
 
 			auto *c = get_render_context(window);
 			auto *d = Vulkan::get_device(c);
+			Platform::Lock lock(d->graphics_queue_mutex);
 			VK_CHECK(vkCreateDescriptorPool(d->device, &pool_info, nullptr, &imgui_c->descriptor_pool));
 
 			ImGui::CreateContext();
@@ -74,6 +75,7 @@ namespace Vultr
 
 		void imgui_begin_frame(CmdBuffer *cmd, ImGuiContext *c)
 		{
+			Platform::Lock lock(Vulkan::get_device(cmd->render_context)->graphics_queue_mutex);
 			ImGui_ImplVulkan_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
@@ -81,6 +83,7 @@ namespace Vultr
 
 		void imgui_end_frame(CmdBuffer *cmd, ImGuiContext *c)
 		{
+			Platform::Lock lock(Vulkan::get_device(cmd->render_context)->graphics_queue_mutex);
 			ImGuiIO &io = ImGui::GetIO();
 			ImGui::Render();
 			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -88,8 +91,6 @@ namespace Vultr
 				ImGui::UpdatePlatformWindows();
 				ImGui::RenderPlatformWindowsDefault();
 			}
-			auto *d = Vulkan::get_device(cmd->render_context);
-			Platform::Lock lock(d->graphics_queue_mutex);
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd->cmd_buffer);
 		}
 

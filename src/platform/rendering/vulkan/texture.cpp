@@ -214,12 +214,12 @@ namespace Vultr
 				.pCommandBuffers    = &cmd,
 			};
 
-			vkResetFences(d->device, 1, &fence);
+			VK_CHECK(vkResetFences(d->device, 1, &fence));
 			graphics_queue_submit(d, 1, &submit_info, fence);
 
-			printf("Waiting for fence...\n");
-			VK_CHECK(vkWaitForFences(d->device, 1, &fence, VK_TRUE, U64Max - 1));
-			printf("Finished waiting for fence...\n");
+			printf("Waiting for texture fence...\n");
+			VK_CHECK(vkWaitForFences(d->device, 1, &fence, VK_TRUE, U64Max));
+			printf("Finished waiting for texture fence...\n");
 			recycle_cmd_pool(d, &c->cmd_pool);
 
 			Vulkan::unsafe_free_buffer(d, &staging_buffer);
