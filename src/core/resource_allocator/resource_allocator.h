@@ -175,6 +175,7 @@ namespace Vultr
 			{
 			}
 		}
+
 		void kill_freeing_threads()
 		{
 			for (auto &[id, info] : resources)
@@ -192,6 +193,30 @@ namespace Vultr
 		{
 			Platform::Lock lock(mutex);
 			return resources.get(id).path;
+		}
+
+		void notify_reload(const Path &path)
+		{
+			Platform::Lock lock(mutex);
+			for (auto &[id, info] : resources)
+			{
+				if (info.path == path)
+				{
+					if (info.load_state == ResourceLoadState::LOADED)
+					{
+						free_queue.push(info.data);
+						if (free_queue_listener != nullptr)
+						{
+							free_queue_listener->push(info.data);
+						}
+					}
+					info.error      = None;
+					info.data       = nullptr;
+					info.load_state = ResourceLoadState::NEED_TO_LOAD;
+					load_queue.push(id);
+					return;
+				}
+			}
 		}
 
 		Hashmap<u32, ResourceInfo<T>> resources{};

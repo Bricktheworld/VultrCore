@@ -367,7 +367,7 @@ namespace Vultr
 			printf("Allocated shader at %p\n", shader);
 			shader->reflection = reflection;
 
-			u32 binding_count = reflection.samplers.size() + 1;
+			u32 binding_count  = reflection.samplers.size() + 1;
 			VkDescriptorSetLayoutBinding layout_bindings[binding_count];
 			layout_bindings[0] = {
 				.binding         = 0,
@@ -419,7 +419,7 @@ namespace Vultr
 				set.shader                 = shader;
 				set.uniform_buffer_binding = {};
 				set.sampler_bindings       = {};
-				for (u32 i = 0; i < sc->frames.size(); i++)
+				for (u32 i = 0; i < Vulkan::MAX_FRAMES_IN_FLIGHT; i++)
 				{
 					VkDescriptorSetAllocateInfo alloc_info{
 						.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -446,7 +446,6 @@ namespace Vultr
 
 			ASSERT(shader->vert_module != nullptr && shader->frag_module != nullptr, "Cannot destroy shader with module nullptr");
 			ASSERT(shader->allocated_descriptor_sets.empty(), "Destroying shader before depending descriptor sets have been freed!");
-
 
 			vkDestroyShaderModule(d->device, shader->vert_module, nullptr);
 			vkDestroyShaderModule(d->device, shader->frag_module, nullptr);
@@ -654,8 +653,8 @@ namespace Vultr
 			}
 
 			auto padded_size = pad_size(d, shader->reflection.uniform_size);
-			auto buffer = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-			void *mapped = map_buffer(d, &buffer);
+			auto buffer      = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+			void *mapped     = map_buffer(d, &buffer);
 			descriptor_set->uniform_buffer_binding = {.buffer = buffer, .mapped = mapped};
 			descriptor_set->updated.set_all();
 			descriptor_set->sampler_bindings.resize(shader->reflection.samplers.size());

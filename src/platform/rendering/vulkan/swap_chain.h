@@ -10,11 +10,33 @@ namespace Vultr
 {
 	namespace Vulkan
 	{
+		struct SwapChainImage
+		{
+			VkImage image{};
+			VkImageView image_view{};
+			VkFramebuffer framebuffer{};
+
+			// A reference to a frame completed fence, since when we are beginning another frame in flight we might acquire an image that is still in flight.
+			Option<VkFence *> available_fence = None;
+		};
+
 		struct Frame
 		{
+			// A pool for each frame where you can allocate descriptor sets and command buffers.
 			CommandPool cmd_pool{};
 			VkDescriptorPool default_uniform_descriptor_pool{};
 			VkDescriptorSet default_uniform_descriptor{};
+
+			// CPU fence to signal when graphics queue has fully processed this frame.
+			VkFence completed_fence = nullptr;
+			// GPU semaphore to signal when the vkAcquireNextImageKHR has officially acquired an image.
+			VkSemaphore acquire_sem = nullptr;
+			// GPU semaphore to signal when it is okay to present this frame.
+			VkSemaphore present_sem = nullptr;
+
+			// A hashtable of resources that are in use by a given frame.
+			HashTable<void *, Traits<void *>> in_use_resources{};
+			Platform::Mutex mutex{};
 		};
 
 		struct DefaultDescriptorBinding
@@ -24,20 +46,11 @@ namespace Vultr
 			Bitfield<64> updated = {};
 		};
 
-		struct InFlightFence
+		struct AcquiredSwapchainFrame
 		{
-			VkFence vk_fence = nullptr;
-			HashTable<void *, Traits<void *>> in_use_resources{};
-			Platform::Mutex mutex{};
-			InFlightFence() = default;
-			InFlightFence(const InFlightFence &other) : vk_fence(other.vk_fence), in_use_resources(other.in_use_resources) {}
-
-			InFlightFence &operator=(const InFlightFence &other)
-			{
-				vk_fence         = other.vk_fence;
-				in_use_resources = other.in_use_resources;
-				return *this;
-			}
+			Frame *frame                     = nullptr;
+			VkFramebuffer output_framebuffer = nullptr;
+			u32 image_index                  = 0;
 		};
 
 		struct SwapChain
@@ -45,20 +58,11 @@ namespace Vultr
 			VkSwapchainKHR swap_chain = nullptr;
 			VkFormat image_format{};
 			VkExtent2D extent{};
-			Vector<VkImage> images{};
-			Vector<VkImageView> image_views{};
-			Vector<VkFramebuffer> framebuffers{};
 			VkRenderPass render_pass = nullptr;
-
-			VkSemaphore image_available_semaphores[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
-			VkSemaphore render_finished_semaphores[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
-			InFlightFence in_flight_fences[Vulkan::MAX_FRAMES_IN_FLIGHT]{};
-			Vector<VkFence> images_in_flight{};
-
-			u32 current_frame = 0;
-
 			Device device{};
-			Vector<Frame> frames{};
+			Vector<SwapChainImage> images{};
+			Frame frames[Vulkan::MAX_FRAMES_IN_FLIGHT];
+			u32 current_frame            = 0;
 
 			bool framebuffer_was_resized = false;
 
@@ -70,7 +74,7 @@ namespace Vultr
 
 		void init_swapchain(Device *device, const Platform::Window *window, SwapChain *out);
 		void recreate_swapchain(SwapChain *sc, const Platform::Window *window);
-		ErrorOr<Tuple<u32, Frame *, VkFramebuffer>> acquire_swapchain(SwapChain *sc);
+		ErrorOr<AcquiredSwapchainFrame> acquire_swapchain(SwapChain *sc);
 		ErrorOr<void> submit_swapchain(SwapChain *sc, u32 image_index, u32 command_buffer_count, VkCommandBuffer *command_buffers);
 		ErrorOr<void> queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer, VkFence fence = VK_NULL_HANDLE);
 		ErrorOr<void> wait_queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer);

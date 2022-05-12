@@ -16,6 +16,7 @@ namespace Vultr::Platform
 		u32 width       = 0;
 		u32 height      = 0;
 		f64 last_time   = 0;
+		f32 scale       = 1;
 		s32 cursor_mode = GLFW_CURSOR_NORMAL;
 		bool is_focused = true;
 		Vector<CallbackHandle> key_input_callbacks{};
@@ -354,7 +355,10 @@ namespace Vultr::Platform
 		window->height         = height;
 
 		window->render_context = init_render_context(window, debug);
-		//		window->last_mouse_pos = get_mouse_pos(window);
+
+		f32 scale_x, scale_y;
+		glfwGetWindowContentScale(window->glfw, &scale_x, &scale_y);
+		window->scale = max(scale_x, scale_y);
 
 		glfwSetKeyCallback(window->glfw, window_key_callback);
 
@@ -363,6 +367,7 @@ namespace Vultr::Platform
 	StringView get_window_title(const Window *window) { return window->title; }
 	u32 get_window_width(const Window *window) { return window->width; }
 	u32 get_window_height(const Window *window) { return window->height; }
+	f32 get_window_scale(const Window *window) { return window->scale; }
 	RenderContext *get_render_context(const Window *window) { return window->render_context; }
 	void *get_window_implementation(const Window *window) { return window->glfw; }
 

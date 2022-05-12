@@ -18,6 +18,15 @@ namespace Vultr
 			VkCommandBuffer new_cmd_buffer;
 			VK_CHECK(vkAllocateCommandBuffers(d->device, &alloc_info, &new_cmd_buffer));
 			cmd_pool->command_buffers.push_back(new_cmd_buffer);
+
+			VkFence fence;
+			VkFenceCreateInfo fence_info{
+				.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+				.flags = 0,
+			};
+
+			VK_CHECK(vkCreateFence(d->device, &fence_info, nullptr, &fence));
+			cmd_pool->fences.push_back(fence);
 		}
 
 		CommandPool init_cmd_pool(Device *d)
@@ -33,13 +42,6 @@ namespace Vultr
 			};
 
 			VK_CHECK(vkCreateCommandPool(d->device, &pool_info, nullptr, &cmd_pool.command_pool));
-
-			VkFenceCreateInfo fence_info{
-				.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-				.flags = 0,
-			};
-
-			VK_CHECK(vkCreateFence(d->device, &fence_info, nullptr, &cmd_pool.fence));
 
 			return cmd_pool;
 		}
@@ -63,10 +65,12 @@ namespace Vultr
 			return cmd_buffer;
 		}
 
-		void end_cmd_buffer(VkCommandBuffer cmd, CommandPool *cmd_pool)
+		VkFence end_cmd_buffer(VkCommandBuffer cmd, CommandPool *cmd_pool)
 		{
+			auto fence = cmd_pool->fences[cmd_pool->index];
 			VK_CHECK(vkEndCommandBuffer(cmd));
 			cmd_pool->index++;
+			return fence;
 		}
 
 		void recycle_cmd_pool(Device *d, CommandPool *cmd_pool)
@@ -81,7 +85,11 @@ namespace Vultr
 			ASSERT(cmd_pool != nullptr, "Cannot destroy nullptr command pool.");
 			ASSERT(d != nullptr, "Cannot destroy with nullptr device.");
 
-			vkDestroyFence(d->device, cmd_pool->fence, nullptr);
+			for (auto fence : cmd_pool->fences)
+			{
+				vkDestroyFence(d->device, fence, nullptr);
+			}
+
 			vkDestroyCommandPool(d->device, cmd_pool->command_pool, nullptr);
 
 			cmd_pool->command_pool = nullptr;
@@ -91,10 +99,10 @@ namespace Vultr
 		void depend_resource(Platform::CmdBuffer *cmd, void *resource)
 		{
 			auto *sc    = Vulkan::get_swapchain(cmd->render_context);
-			auto *fence = &sc->in_flight_fences[sc->current_frame];
-			Platform::Lock lock(fence->mutex);
-			if (!fence->in_use_resources.contains(resource))
-				fence->in_use_resources.set<void *, Traits<void *>>(resource);
+			auto *frame = cmd->frame;
+			Platform::Lock lock(frame->mutex);
+			if (!frame->in_use_resources.contains(resource))
+				frame->in_use_resources.set<void *, Traits<void *>>(resource);
 		}
 	} // namespace Vulkan
 } // namespace Vultr

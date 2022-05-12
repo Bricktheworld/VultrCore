@@ -246,8 +246,8 @@ namespace Vultr
 			Vector<VkDescriptorImageInfo> tex_info{};
 
 			auto *shader = pipeline->layout.shader;
-			auto *c = cmd->render_context;
-			auto *d = Vulkan::get_device(c);
+			auto *c      = cmd->render_context;
+			auto *d      = Vulkan::get_device(c);
 			Platform::Lock lock(shader->mutex);
 
 			u32 ubo_info_len   = 0;
@@ -255,7 +255,7 @@ namespace Vultr
 			u32 write_sets_len = 0;
 			for (auto &set : shader->allocated_descriptor_sets)
 			{
-				if (!set->updated.at(cmd->image_index))
+				if (!set->updated.at(cmd->frame_index))
 					continue;
 				ubo_info_len++;
 				write_sets_len++;
@@ -275,11 +275,11 @@ namespace Vultr
 			u32 write_set_index = 0;
 			for (auto &set : shader->allocated_descriptor_sets)
 			{
-				if (!set->updated.at(cmd->image_index))
+				if (!set->updated.at(cmd->frame_index))
 					continue;
 
-				set->updated.set(cmd->image_index, false);
-				auto *vk_set = set->vk_frame_descriptor_sets[cmd->image_index];
+				set->updated.set(cmd->frame_index, false);
+				auto *vk_set             = set->vk_frame_descriptor_sets[cmd->frame_index];
 
 				ubo_info[ubo_info_index] = {
 					.buffer = set->uniform_buffer_binding.buffer.buffer,

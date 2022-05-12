@@ -43,7 +43,7 @@ namespace Vultr
 			VkBufferCopy copy_region{.size = size};
 			vkCmdCopyBuffer(cmd, src_buffer.buffer, dst_buffer.buffer, 1, &copy_region);
 
-			end_cmd_buffer(cmd, &c->cmd_pool);
+			auto fence = end_cmd_buffer(cmd, &c->cmd_pool);
 
 			VkSubmitInfo submit_info{
 				.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -51,10 +51,13 @@ namespace Vultr
 				.pCommandBuffers    = &cmd,
 			};
 
-			VK_CHECK(vkResetFences(d->device, 1, &c->cmd_pool.fence));
-			graphics_queue_submit(d, 1, &submit_info, c->cmd_pool.fence);
+			VK_CHECK(vkResetFences(d->device, 1, &fence));
+			graphics_queue_submit(d, 1, &submit_info, fence);
 
-			VK_CHECK(vkWaitForFences(d->device, 1, &c->cmd_pool.fence, VK_TRUE, UINT64_MAX));
+			printf("Waiting for fence...\n");
+			VK_CHECK(vkWaitForFences(d->device, 1, &fence, VK_TRUE, U64Max - 1));
+			printf("Finished waiting for fence...\n");
+			recycle_cmd_pool(d, &c->cmd_pool);
 		}
 
 		void *map_buffer(Device *d, GpuBuffer *buffer)

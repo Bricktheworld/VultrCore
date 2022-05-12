@@ -65,7 +65,7 @@ namespace Vultr
 
 		void bind_descriptor_set(CmdBuffer *cmd, GraphicsPipeline *pipeline, DescriptorSet *set)
 		{
-			auto vk_set = set->vk_frame_descriptor_sets[cmd->image_index];
+			auto vk_set = set->vk_frame_descriptor_sets[cmd->frame_index];
 			ASSERT(set->shader == pipeline->layout.shader, "Descriptor set is not compatible with pipeline!");
 			vkCmdBindDescriptorSets(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_layout, 1, 1, &vk_set, 0, nullptr);
 			Vulkan::depend_resource(cmd, set);

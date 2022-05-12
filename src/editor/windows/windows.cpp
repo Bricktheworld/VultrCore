@@ -1542,6 +1542,7 @@ namespace Vultr
 					TRY_UNWRAP(auto mesh, Platform::import_mesh_file(full_src));
 					TRY(Platform::export_mesh(vertex_out, index_out, &mesh));
 					Platform::free_imported_mesh(&mesh);
+					resource_allocator<Platform::Mesh *>()->notify_reload(local_src);
 					(*progress)++;
 				}
 				break;
@@ -1557,6 +1558,7 @@ namespace Vultr
 					TRY_UNWRAP(auto compiled, Platform::try_compile_shader(src));
 					TRY(try_fwrite_all(vertex_out, compiled.vert_src, StreamWriteMode::OVERWRITE));
 					TRY(try_fwrite_all(fragment_out, compiled.frag_src, StreamWriteMode::OVERWRITE));
+					resource_allocator<Platform::Shader *>()->notify_reload(local_src);
 					(*progress)++;
 				}
 				break;
@@ -1570,6 +1572,21 @@ namespace Vultr
 					Buffer imported{};
 					TRY(Platform::import_texture_file(full_src, &imported));
 					TRY(try_fwrite_all(out, imported, StreamWriteMode::OVERWRITE));
+					resource_allocator<Platform::Texture *>()->notify_reload(local_src);
+					(*progress)++;
+				}
+				break;
+			}
+			case ResourceType::MATERIAL:
+			{
+				auto out = project->build_resource_dir / local_src;
+				if (needs_reimport(full_src, out))
+				{
+					ftouch(full_src);
+					Buffer src{};
+					TRY(try_fread_all(full_src, &src));
+					TRY(try_fwrite_all(out, src, StreamWriteMode::OVERWRITE));
+					resource_allocator<Platform::Material *>()->notify_reload(local_src);
 					(*progress)++;
 				}
 				break;

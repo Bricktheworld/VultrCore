@@ -61,7 +61,7 @@ namespace Vultr
 			};
 			ImGui_ImplVulkan_Init(&init_info, Vulkan::get_swapchain(c)->render_pass);
 			auto cmd = Vulkan::begin_cmd_buffer(d, &upload_context->cmd_pool);
-			ImGui::GetIO().Fonts->AddFontFromMemoryTTF(font_src, font_src_size, font_size);
+			ImGui::GetIO().Fonts->AddFontFromMemoryTTF(font_src, font_src_size, font_size * Platform::get_window_scale(window));
 
 			ImGui_ImplVulkan_CreateFontsTexture(cmd);
 			Vulkan::end_cmd_buffer(cmd, &upload_context->cmd_pool);
@@ -88,7 +88,6 @@ namespace Vultr
 				ImGui::UpdatePlatformWindows();
 				ImGui::RenderPlatformWindowsDefault();
 			}
-			ASSERT(cmd->image_index != 256, "Image index is 256??");
 			auto *d = Vulkan::get_device(cmd->render_context);
 			Platform::Lock lock(d->graphics_queue_mutex);
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd->cmd_buffer);

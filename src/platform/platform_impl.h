@@ -136,6 +136,7 @@ namespace Vultr
 
 		u32 get_window_width(const Window *window);
 		u32 get_window_height(const Window *window);
+		f32 get_window_scale(const Window *window);
 		void *get_window_implementation(const Window *window);
 		f64 update_window(Window *window);
 		void close_window(Window *window);

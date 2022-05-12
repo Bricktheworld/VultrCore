@@ -206,7 +206,7 @@ namespace Vultr
 
 			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_to_readable);
 
-			end_cmd_buffer(cmd, &c->cmd_pool);
+			auto fence = end_cmd_buffer(cmd, &c->cmd_pool);
 
 			VkSubmitInfo submit_info{
 				.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -214,10 +214,13 @@ namespace Vultr
 				.pCommandBuffers    = &cmd,
 			};
 
-			VK_CHECK(vkResetFences(d->device, 1, &c->cmd_pool.fence));
-			graphics_queue_submit(d, 1, &submit_info, c->cmd_pool.fence);
+			vkResetFences(d->device, 1, &fence);
+			graphics_queue_submit(d, 1, &submit_info, fence);
 
-			VK_CHECK(vkWaitForFences(d->device, 1, &c->cmd_pool.fence, VK_TRUE, UINT64_MAX));
+			printf("Waiting for fence...\n");
+			VK_CHECK(vkWaitForFences(d->device, 1, &fence, VK_TRUE, U64Max - 1));
+			printf("Finished waiting for fence...\n");
+			recycle_cmd_pool(d, &c->cmd_pool);
 
 			Vulkan::unsafe_free_buffer(d, &staging_buffer);
 		}

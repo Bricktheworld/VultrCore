@@ -50,23 +50,23 @@ namespace Vultr
 			auto res = Vulkan::acquire_swapchain(&c->swap_chain);
 			if (res.has_value())
 			{
-				auto [image_index, frame, framebuffer] = res.value();
-				ASSERT(image_index != 256, "Image index is 256??");
-				auto *cmd_pool = &frame->cmd_pool;
+				auto [frame, framebuffer, image_index] = res.value();
+				auto *cmd_pool                         = &frame->cmd_pool;
 
 				Vulkan::recycle_cmd_pool(Vulkan::get_device(c), cmd_pool);
 				Vulkan::get_swapchain(c)->cmd_buffer_resource_mutex.lock();
-				auto cmd             = Vulkan::begin_cmd_buffer(Vulkan::get_device(c), cmd_pool);
+				auto cmd = Vulkan::begin_cmd_buffer(Vulkan::get_device(c), cmd_pool);
 
-				c->cmd               = {};
-				auto *buf            = &c->cmd;
-				buf->render_context  = c;
-				buf->cmd_buffer      = cmd;
-				buf->frame           = frame;
-				buf->image_index     = image_index;
-				buf->out_framebuffer = framebuffer;
+				c->cmd   = {
+					  .render_context  = c,
+					  .cmd_buffer      = cmd,
+					  .frame           = frame,
+					  .out_framebuffer = framebuffer,
+					  .image_index     = image_index,
+					  .frame_index     = Vulkan::get_swapchain(c)->current_frame,
+                };
 
-				return buf;
+				return &c->cmd;
 			}
 			else
 			{
