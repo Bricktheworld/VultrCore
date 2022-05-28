@@ -11,7 +11,7 @@ namespace Vultr
 		{
 			VkCommandPool command_pool = nullptr;
 			Vector<VkCommandBuffer> command_buffers{};
-			Vector<VkFence> fences{};
+			VkFence fence  = nullptr;
 			u32 index      = 0;
 			bool recording = false;
 		};
@@ -19,7 +19,7 @@ namespace Vultr
 		struct Device;
 		CommandPool init_cmd_pool(Device *d);
 		VkCommandBuffer begin_cmd_buffer(Device *d, CommandPool *cmd_pool);
-		VkFence end_cmd_buffer(VkCommandBuffer cmd, CommandPool *cmd_pool);
+		void end_cmd_buffer(VkCommandBuffer cmd, CommandPool *cmd_pool);
 		void recycle_cmd_pool(Device *d, CommandPool *cmd_pool);
 		void destroy_cmd_pool(Device *d, CommandPool *cmd_pool);
 		struct Frame;

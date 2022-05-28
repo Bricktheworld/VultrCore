@@ -263,7 +263,10 @@ namespace Vultr
 
 			for (auto &frame : sc->frames)
 			{
-				VkDescriptorPoolSize pool_sizes[] = {{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 2}};
+				VkDescriptorPoolSize pool_sizes[] = {
+					{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 2},
+					{.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = 1},
+				};
 
 				VkDescriptorPoolCreateInfo pool_info{
 					.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -446,7 +449,8 @@ namespace Vultr
 				.signalSemaphoreCount = 1,
 				.pSignalSemaphores    = &frame->present_sem,
 			};
-			VK_CHECK(vkResetFences(d->device, 1, &frame->completed_fence));
+
+
 			graphics_queue_submit(d, 1, &submit_info, frame->completed_fence);
 
 			VkPresentInfoKHR present_info{
@@ -461,7 +465,7 @@ namespace Vultr
 
 			sc->current_frame = (sc->current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 
-			auto res          = vkQueuePresentKHR(d->present_queue, &present_info);
+			auto res = present_queue_submit(d, &present_info);
 			if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR || sc->framebuffer_was_resized)
 			{
 				sc->framebuffer_was_resized = false;
@@ -472,30 +476,6 @@ namespace Vultr
 				THROW("Failed to present swap chain images!");
 			}
 			return None;
-		}
-
-		ErrorOr<void> queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer, VkFence fence)
-		{
-			auto *d = &sc->device;
-
-			VkSubmitInfo submit_info{
-				.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-				.commandBufferCount = 1,
-				.pCommandBuffers    = &command_buffer,
-			};
-
-			if (fence != nullptr)
-				VK_CHECK(vkResetFences(d->device, 1, &fence));
-			Platform::Lock lock(d->graphics_queue_mutex);
-			VK_TRY(vkQueueSubmit(d->graphics_queue, 1, &submit_info, fence));
-			return Success;
-		}
-
-		ErrorOr<void> wait_queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer)
-		{
-			TRY(queue_cmd_buffer(sc, command_buffer));
-			vkQueueWaitIdle(sc->device.graphics_queue);
-			return Success;
 		}
 
 		void wait_resource_not_in_use(SwapChain *sc, void *resource)

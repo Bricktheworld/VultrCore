@@ -7,16 +7,8 @@
 #include <filesystem/filestream.h>
 #include <vultr_resource_allocator.h>
 #include <platform/rendering/vulkan/texture.h>
-
-// static void print_texture_resources(int line)
-//{
-//		auto *texture_allocator = Vultr::resource_allocator<Vultr::Platform::Texture *>();
-//		for (auto &[_, info] : texture_allocator->resources)
-//		{
-//			if (info.load_state == Vultr::ResourceLoadState::LOADED)
-//				printf("(%d) Sampler location for texture %p is %p\n", line, info.data, info.data->sampler);
-//		}
-// }
+#include <platform/rendering/vulkan/vertex_buffer.h>
+#include <platform/rendering/vulkan/index_buffer.h>
 
 static void mesh_loader_thread(const Vultr::Project *project)
 {

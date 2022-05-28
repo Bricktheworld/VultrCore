@@ -36,26 +36,29 @@ namespace Vultr
 
 		void copy_buffer(Platform::UploadContext *c, GpuBuffer dst_buffer, GpuBuffer src_buffer, VkDeviceSize size)
 		{
-			auto *d  = get_device(c);
+			auto *d = get_device(c);
 
-			auto cmd = begin_cmd_buffer(d, &c->cmd_pool);
+			{
+				Platform::Lock l(d->graphics_queue_mutex);
+				auto cmd = begin_cmd_buffer(d, &c->cmd_pool);
 
-			VkBufferCopy copy_region{.size = size};
-			vkCmdCopyBuffer(cmd, src_buffer.buffer, dst_buffer.buffer, 1, &copy_region);
+				VkBufferCopy copy_region{.size = size};
+				vkCmdCopyBuffer(cmd, src_buffer.buffer, dst_buffer.buffer, 1, &copy_region);
 
-			auto fence = end_cmd_buffer(cmd, &c->cmd_pool);
+				end_cmd_buffer(cmd, &c->cmd_pool);
 
-			VkSubmitInfo submit_info{
-				.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-				.commandBufferCount = 1,
-				.pCommandBuffers    = &cmd,
-			};
+				VkSubmitInfo submit_info{
+					.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+					.commandBufferCount = 1,
+					.pCommandBuffers    = &cmd,
+				};
 
-			VK_CHECK(vkResetFences(d->device, 1, &fence));
-			graphics_queue_submit(d, 1, &submit_info, fence);
+				auto fence = c->cmd_pool.fence;
+				graphics_queue_submit(d, 1, &submit_info, fence);
 
-			VK_CHECK(vkWaitForFences(d->device, 1, &fence, VK_TRUE, U64Max));
-			recycle_cmd_pool(d, &c->cmd_pool);
+				VK_CHECK(vkWaitForFences(d->device, 1, &fence, VK_TRUE, U64Max));
+				recycle_cmd_pool(d, &c->cmd_pool);
+			}
 		}
 
 		void *map_buffer(Device *d, GpuBuffer *buffer)

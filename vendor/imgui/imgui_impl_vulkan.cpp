@@ -1185,7 +1185,7 @@ IMGUI_IMPL_API void ImGui_ImplVulkan_RemoveTexture(ImTextureID id)
 	ImGui_ImplVulkan_InitInfo *v = &bd->VulkanInitInfo;
 	VkDescriptorSet set          = static_cast<VkDescriptorSet>(id);
 
-	check_vk_result(vkFreeDescriptorSets(v->Device, v->DescriptorPool, 1, &set));
+//	check_vk_result(vkFreeDescriptorSets(v->Device, v->DescriptorPool, 1, &set));
 }
 
 //-------------------------------------------------------------------------

@@ -361,9 +361,9 @@ namespace Vultr
 
 		ErrorOr<Shader *> try_load_shader(RenderContext *c, const CompiledShaderSrc &compiled_shader, const ShaderReflection &reflection)
 		{
-			auto *d      = Vulkan::get_device(c);
-			auto *sc     = Vulkan::get_swapchain(c);
-			auto *shader = v_alloc<Shader>();
+			auto *d            = Vulkan::get_device(c);
+			auto *sc           = Vulkan::get_swapchain(c);
+			auto *shader       = v_alloc<Shader>();
 			shader->reflection = reflection;
 
 			u32 binding_count  = reflection.samplers.size() + 1;
@@ -443,6 +443,7 @@ namespace Vultr
 		{
 			auto *d = Vulkan::get_device(c);
 
+			Platform::Lock lock(shader->mutex);
 			ASSERT(shader->vert_module != nullptr && shader->frag_module != nullptr, "Cannot destroy shader with module nullptr");
 			ASSERT(shader->allocated_descriptor_sets.empty(), "Destroying shader before depending descriptor sets have been freed!");
 
@@ -643,12 +644,11 @@ namespace Vultr
 		{
 			DescriptorSet *descriptor_set;
 			auto *d = Vulkan::get_device(c);
-			{
-				Platform::Lock lock(shader->mutex);
-				ASSERT(!shader->free_descriptor_sets.empty(), "Maximum number of descriptor sets have been allocated!");
-				descriptor_set = shader->free_descriptor_sets.pop();
-				shader->allocated_descriptor_sets.push_back(descriptor_set);
-			}
+
+			Platform::Lock lock(shader->mutex);
+			ASSERT(!shader->free_descriptor_sets.empty(), "Maximum number of descriptor sets have been allocated!");
+			descriptor_set = shader->free_descriptor_sets.pop();
+			shader->allocated_descriptor_sets.push_back(descriptor_set);
 
 			auto padded_size = pad_size(d, shader->reflection.uniform_size);
 			auto buffer      = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
@@ -664,12 +664,12 @@ namespace Vultr
 		{
 			auto *d      = Vulkan::get_device(c);
 			auto *shader = set->shader;
-			{
-				Platform::Lock lock(shader->mutex);
-				auto index = shader->allocated_descriptor_sets.index_of(set);
-				shader->allocated_descriptor_sets.remove(index);
-				shader->free_descriptor_sets.push(set);
-			}
+
+			Platform::Lock lock(shader->mutex);
+			auto index = shader->allocated_descriptor_sets.index_of(set);
+			shader->allocated_descriptor_sets.remove(index);
+			shader->free_descriptor_sets.push(set);
+
 			set->updated.clear();
 
 			unmap_buffer(d, &set->uniform_buffer_binding.buffer);

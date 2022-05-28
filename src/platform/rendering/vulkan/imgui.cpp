@@ -67,7 +67,14 @@ namespace Vultr
 			ImGui_ImplVulkan_CreateFontsTexture(cmd);
 			Vulkan::end_cmd_buffer(cmd, &upload_context->cmd_pool);
 
-			Vulkan::wait_queue_cmd_buffer(Vulkan::get_swapchain(c), cmd);
+			VkSubmitInfo info{
+				.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				.commandBufferCount = 1,
+				.pCommandBuffers    = &cmd,
+			};
+
+			Vulkan::graphics_queue_submit(Vulkan::get_device(c), 1, &info, upload_context->cmd_pool.fence);
+			VK_CHECK(vkWaitForFences(Vulkan::get_device(c)->device, 1, &upload_context->cmd_pool.fence, VK_TRUE, U64Max));
 
 			ImGui_ImplVulkan_DestroyFontUploadObjects();
 			return imgui_c;

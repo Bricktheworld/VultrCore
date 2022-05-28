@@ -4,3 +4,4 @@
 #include "material.h"
 #include "camera.h"
 #include "directional_light.h"
+#include "point_light.h"

@@ -18,15 +18,6 @@ namespace Vultr
 			VkCommandBuffer new_cmd_buffer;
 			VK_CHECK(vkAllocateCommandBuffers(d->device, &alloc_info, &new_cmd_buffer));
 			cmd_pool->command_buffers.push_back(new_cmd_buffer);
-
-			VkFence fence;
-			VkFenceCreateInfo fence_info{
-				.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-				.flags = 0,
-			};
-
-			VK_CHECK(vkCreateFence(d->device, &fence_info, nullptr, &fence));
-			cmd_pool->fences.push_back(fence);
 		}
 
 		CommandPool init_cmd_pool(Device *d)
@@ -43,6 +34,13 @@ namespace Vultr
 
 			VK_CHECK(vkCreateCommandPool(d->device, &pool_info, nullptr, &cmd_pool.command_pool));
 
+			VkFenceCreateInfo fence_info{
+				.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+				.flags = 0,
+			};
+
+			VK_CHECK(vkCreateFence(d->device, &fence_info, nullptr, &cmd_pool.fence));
+
 			return cmd_pool;
 		}
 
@@ -51,7 +49,9 @@ namespace Vultr
 			ASSERT(cmd_pool->index <= cmd_pool->command_buffers.size(), "Invalid command buffer index!");
 
 			if (cmd_pool->index == cmd_pool->command_buffers.size())
+			{
 				expand_cmd_pool(d, cmd_pool);
+			}
 
 			auto cmd_buffer = cmd_pool->command_buffers[cmd_pool->index];
 
@@ -65,12 +65,10 @@ namespace Vultr
 			return cmd_buffer;
 		}
 
-		VkFence end_cmd_buffer(VkCommandBuffer cmd, CommandPool *cmd_pool)
+		void end_cmd_buffer(VkCommandBuffer cmd, CommandPool *cmd_pool)
 		{
-			auto fence = cmd_pool->fences[cmd_pool->index];
 			VK_CHECK(vkEndCommandBuffer(cmd));
 			cmd_pool->index++;
-			return fence;
 		}
 
 		void recycle_cmd_pool(Device *d, CommandPool *cmd_pool)
@@ -85,10 +83,7 @@ namespace Vultr
 			ASSERT(cmd_pool != nullptr, "Cannot destroy nullptr command pool.");
 			ASSERT(d != nullptr, "Cannot destroy with nullptr device.");
 
-			for (auto fence : cmd_pool->fences)
-			{
-				vkDestroyFence(d->device, fence, nullptr);
-			}
+			vkDestroyFence(d->device, cmd_pool->fence, nullptr);
 
 			vkDestroyCommandPool(d->device, cmd_pool->command_pool, nullptr);
 

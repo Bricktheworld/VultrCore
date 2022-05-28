@@ -11,7 +11,6 @@ namespace Vultr
 {
 	namespace Platform
 	{
-
 		struct RenderContext
 		{
 			Vulkan::SwapChain swap_chain{};

@@ -332,7 +332,10 @@ namespace Vultr
 				}
 			}
 
-			vkUpdateDescriptorSets(d->device, write_sets_len, write_sets_len == 0 ? nullptr : &write_sets[0], 0, nullptr);
+			if (write_sets_len > 0)
+			{
+				vkUpdateDescriptorSets(d->device, write_sets_len, &write_sets[0], 0, nullptr);
+			}
 
 			vkCmdBindPipeline(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_pipeline);
 			vkCmdBindDescriptorSets(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_layout, 0, 1, &cmd->frame->default_uniform_descriptor, 0, nullptr);

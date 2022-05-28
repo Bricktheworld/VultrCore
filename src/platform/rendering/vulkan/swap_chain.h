@@ -76,8 +76,6 @@ namespace Vultr
 		void recreate_swapchain(SwapChain *sc, const Platform::Window *window);
 		ErrorOr<AcquiredSwapchainFrame> acquire_swapchain(SwapChain *sc);
 		ErrorOr<void> submit_swapchain(SwapChain *sc, u32 image_index, u32 command_buffer_count, VkCommandBuffer *command_buffers);
-		ErrorOr<void> queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer, VkFence fence = VK_NULL_HANDLE);
-		ErrorOr<void> wait_queue_cmd_buffer(SwapChain *sc, VkCommandBuffer command_buffer);
 		void wait_resource_not_in_use(SwapChain *sc, void *resource);
 		void destroy_swapchain(SwapChain *sc);
 	}; // namespace Vulkan

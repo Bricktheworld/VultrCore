@@ -307,9 +307,19 @@ namespace Vultr
 		{
 			ASSERT(d != nullptr, "Cannot submit to nullptr device!");
 			ASSERT(p_submits != nullptr, "Cannot submit nullptr p_submits!");
-			ASSERT(fence != nullptr, "Cannot submit nullptr fence!");
+
 			Platform::Lock lock(d->graphics_queue_mutex);
+			VK_CHECK(vkResetFences(d->device, 1, &fence));
 			VK_CHECK(vkQueueSubmit(d->graphics_queue, submit_count, p_submits, fence));
+		}
+
+		VkResult present_queue_submit(Device *d, const VkPresentInfoKHR *p_submit)
+		{
+			ASSERT(d != nullptr, "Cannot submit to nullptr device!");
+			ASSERT(p_submit != nullptr, "Cannot submit nullptr p_submit!");
+
+			Platform::Lock lock(d->graphics_queue_mutex);
+			return vkQueuePresentKHR(d->present_queue, p_submit);
 		}
 
 		void wait_idle(Device *d) { vkDeviceWaitIdle(d->device); }

@@ -53,8 +53,7 @@ namespace Vultr
 		void destroy_device(Device *d);
 
 		void graphics_queue_submit(Device *d, u32 submit_count, const VkSubmitInfo *p_submits, VkFence fence);
-
-		// void map_memory(Device *d, void *)
+		VkResult present_queue_submit(Device *d, const VkPresentInfoKHR *p_submit);
 
 		struct QueueFamilyIndices
 		{
