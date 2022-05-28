@@ -342,6 +342,10 @@ namespace Vultr::Platform
 		glfwSetWindowUserPointer(window->glfw, window);
 		glfwSetFramebufferSizeCallback(window->glfw, window_resize_callback);
 
+		window->title  = String(title);
+		window->width  = width;
+		window->height = height;
+
 		if (mode == DisplayMode::WINDOWED)
 		{
 			glfwMaximizeWindow(window->glfw);
@@ -349,10 +353,6 @@ namespace Vultr::Platform
 		}
 
 		glfwMakeContextCurrent(window->glfw);
-
-		window->title          = String(title);
-		window->width          = width;
-		window->height         = height;
 
 		window->render_context = init_render_context(window, debug);
 

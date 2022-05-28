@@ -131,7 +131,7 @@ namespace Vultr
 	template <typename... Ts>
 	inline Entity world_create_entity(World *w, const StringView &label, const Ts &...components)
 	{
-		auto entity = world()->entity_manager.create_entity(label);
+		auto entity = world()->entity_manager.create_entity(label, Platform::generate_uuid());
 		if constexpr (sizeof...(Ts) != 0)
 		{
 			add_component<Ts...>(entity, components...);
@@ -162,11 +162,12 @@ namespace Vultr
 	}
 
 	template <typename... Ts>
-	requires(TypeList<Ts...>::template contains<Transform>()) inline Entity world_create_parented_entity(World *w, const StringView &label, Entity parent, const Ts &...components)
+		requires(TypeList<Ts...>::template contains<Transform>())
+	inline Entity world_create_parented_entity(World *w, const StringView &label, Entity parent, const Ts &...components)
 	{
 		ASSERT(parent != INVALID_ENTITY, "Cannot create entity with invalid parent!");
 		ASSERT(has_component<Transform>(parent), "Cannot create entity to parent entity without a transform!");
-		auto entity = w->entity_manager.create_entity(label, parent);
+		auto entity = w->entity_manager.create_entity(label, Platform::generate_uuid(), parent);
 		if constexpr (sizeof...(Ts) != 0)
 		{
 			add_component<Ts...>(entity, components...);
@@ -175,13 +176,32 @@ namespace Vultr
 	}
 
 	template <typename... Ts>
-	requires(TypeList<Ts...>::template contains<Transform>()) inline Entity create_parented_entity(const StringView &label, Entity parent, const Ts &...components)
+		requires(TypeList<Ts...>::template contains<Transform>())
+	inline Entity create_parented_entity(const StringView &label, Entity parent, const Ts &...components)
 	{
 		return world_create_parented_entity(world(), label, parent, components...);
 	}
 
+	//	 inline Entity en(World *w, const StringView &label, Entity parent)
+	//	{
+	//		ASSERT(parent != INVALID_ENTITY, "Cannot create entity with invalid parent!");
+	//		ASSERT(has_component<Transform>(parent), "Cannot create entity to parent entity without a transform!");
+	//		auto entity = w->entity_manager.create_entity(label, parent);
+	//		if constexpr (sizeof...(Ts) != 0)
+	//		{
+	//			add_component<Ts...>(entity, components...);
+	//		}
+	//		return entity;
+	//	}
+
 	inline String *world_get_label(World *w, Entity entity) { return w->entity_manager.get_label(entity); }
 	inline String *get_label(Entity entity) { return world()->entity_manager.get_label(entity); }
+
+	inline UUID world_get_uuid(World *w, Entity entity) { return w->entity_manager.get_uuid(entity); }
+	inline UUID get_uuid(World *w, Entity entity) { return world()->entity_manager.get_uuid(entity); }
+
+	inline Entity world_get_entity(World *w, const UUID &uuid) { return w->entity_manager.get_entity(uuid); }
+	inline Entity get_entity(const UUID &uuid) { return world()->entity_manager.get_entity(uuid); }
 
 	inline Option<Entity> world_get_parent(World *w, Entity entity) { return w->entity_manager.get_parent(entity); }
 	inline Option<Entity> get_parent(Entity entity) { return world_get_parent(world(), entity); }

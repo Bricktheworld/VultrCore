@@ -21,7 +21,6 @@ TEST(Hashmap, Iterator)
 	ASSERT_EQ(map.size(), 4);
 	for (auto &[key, value] : map)
 	{
-		printf("%s -> %s\n", key.c_str(), value.c_str());
 	}
 
 	ASSERT_TRUE(map.remove("urmom"));

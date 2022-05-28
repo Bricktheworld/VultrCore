@@ -18,6 +18,7 @@
 #include "mesh_importing/assimp.cpp"
 #include "texture_importing/stbi.cpp"
 #include "time/linux_time.cpp"
+#include "uuid/linux_uuid.cpp"
 #else
 // TODO(Brandon): Determine what needs to be ported to MacOS.
 #endif

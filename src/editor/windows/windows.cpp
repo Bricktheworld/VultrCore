@@ -842,6 +842,13 @@ namespace Vultr
 								case PrimitiveType::BOOL:
 									ImGui::Checkbox(field.name, static_cast<bool *>(addr));
 									break;
+								case PrimitiveType::UUID:
+								{
+									Platform::UUID_String buf;
+									Platform::stringify_uuid(*static_cast<UUID *>(addr), buf);
+									ImGui::Text("%s UUID %s", field.name.c_str(), buf);
+									break;
+								}
 								case PrimitiveType::STRING_VIEW:
 									ImGui::Text("%s String %s", field.name.c_str(), static_cast<StringView *>(addr)->c_str());
 									break;

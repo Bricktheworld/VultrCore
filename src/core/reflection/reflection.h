@@ -32,6 +32,42 @@ namespace YAML
 	};
 
 	template <>
+	struct convert<Vultr::StringView>
+	{
+		static Node encode(const Vultr::StringView &rhs)
+		{
+			Node node;
+			node = rhs.c_str();
+			return node;
+		}
+
+		static bool decode(const Node &node, const Vultr::StringView &rhs) { return false; }
+	};
+
+	template <>
+	struct convert<Vultr::UUID>
+	{
+		static Node encode(const Vultr::UUID &rhs)
+		{
+			Node node;
+
+			Vultr::Platform::UUID_String buf;
+			Vultr::Platform::stringify_uuid(rhs, buf);
+
+			node = Vultr::StringView(buf, sizeof(Vultr::Platform::UUID_String));
+			return node;
+		}
+
+		static bool decode(const Node &node, Vultr::UUID &rhs)
+		{
+			if (!node)
+				return false;
+			rhs = Vultr::Platform::parse_uuid(Vultr::StringView(node.Scalar().c_str(), node.Scalar().size()));
+			return true;
+		}
+	};
+
+	template <>
 	struct convert<Vultr::Path>
 	{
 		static Node encode(const Vultr::Path &rhs)
@@ -320,6 +356,14 @@ namespace Vultr
 		return out;
 	}
 
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const UUID &u)
+	{
+		Platform::UUID_String buf;
+		Platform::stringify_uuid(u, buf);
+		out << buf;
+		return out;
+	}
+
 	inline YAML::Emitter &operator<<(YAML::Emitter &out, const StringHash &s)
 	{
 		out << s.value();
@@ -449,6 +493,7 @@ namespace Vultr
 		HASHTABLE,
 		QUEUE,
 		STRING,
+		UUID,
 		STRING_VIEW,
 		STRING_HASH,
 		PTR,
@@ -582,10 +627,12 @@ namespace Vultr
 	}
 
 	template <typename T>
-	requires(is_pointer<T>) inline constexpr Type get_type<T> = {PrimitiveType::PTR, []() { return sizeof(T); }, generic_type_serializer<T>, "pointer"};
+		requires(is_pointer<T>)
+	inline constexpr Type get_type<T> = {PrimitiveType::PTR, []() { return sizeof(T); }, generic_type_serializer<T>, "pointer"};
 
 	template <typename T>
-	requires(requires() { T::__REFL_TYPE; }) inline constexpr Type get_type<T> = T::__REFL_TYPE;
+		requires(requires() { T::__REFL_TYPE; })
+	inline constexpr Type get_type<T> = T::__REFL_TYPE;
 
 	template <>
 	inline constexpr Type get_type<u8> = {PrimitiveType::U8, []() { return sizeof(u8); }, generic_type_serializer<u8>, generic_type_deserializer<u8>, generic_copy_constructor<u8>, "u8"};
@@ -649,6 +696,9 @@ namespace Vultr
 	template <typename T>
 	inline constexpr Type get_type<Queue<T>> = {
 		PrimitiveType::QUEUE, []() { return sizeof(Queue<T>); }, generic_type_serializer<Queue<T>>, generic_type_deserializer<Queue<T>>, generic_copy_constructor<Queue<T>>, "Queue"};
+
+	template <>
+	inline constexpr Type get_type<UUID> = {PrimitiveType::UUID, []() { return sizeof(UUID); }, generic_type_serializer<UUID>, nullptr, generic_copy_constructor<UUID>, "UUID"};
 
 	template <>
 	inline constexpr Type get_type<StringView> = {PrimitiveType::STRING_VIEW, []() { return sizeof(StringView); }, generic_type_serializer<StringView>, nullptr, generic_copy_constructor<StringView>, "StringView"};

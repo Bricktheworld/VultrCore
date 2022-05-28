@@ -13,6 +13,7 @@ namespace Vultr
 	struct EntityInfo
 	{
 		String label{};
+		UUID uuid{};
 		Signature signature{};
 		Entity parent = INVALID_ENTITY;
 		HashTable<Entity> children{};
@@ -22,6 +23,7 @@ namespace Vultr
 	{
 		Queue<Entity, MAX_ENTITIES> m_queue{};
 		Hashmap<Entity, EntityInfo> m_living_entities{};
+		Hashmap<UUID, Entity> m_uuid_to_entity{};
 
 		EntityManager()
 		{
@@ -31,11 +33,12 @@ namespace Vultr
 			}
 		}
 
-		Entity create_entity(const StringView &label, Entity parent = INVALID_ENTITY)
+		Entity create_entity(const StringView &label, UUID uuid, Entity parent = INVALID_ENTITY)
 		{
 			ASSERT(parent == INVALID_ENTITY || entity_exists(parent), "Cannot re-parent to non-existent parent entity!");
 			Entity new_entity = m_queue.pop();
-			m_living_entities.set(new_entity, {.label = String(label), .parent = parent});
+			m_living_entities.set(new_entity, {.label = String(label), .parent = parent, .uuid = uuid});
+			m_uuid_to_entity.set(uuid, new_entity);
 			if (parent != INVALID_ENTITY)
 				m_living_entities.get(parent).children.set<Entity>(new_entity);
 			return new_entity;
@@ -45,6 +48,8 @@ namespace Vultr
 		void remove_signature(Entity entity, const Signature &signature) { m_living_entities.get(entity).signature &= (~signature); }
 		const Signature &get_signature(Entity entity) { return m_living_entities.get(entity).signature; }
 		String *get_label(Entity entity) { return &m_living_entities.get(entity).label; }
+		UUID get_uuid(Entity entity) { return m_living_entities.get(entity).uuid; }
+		Entity get_entity(const UUID &uuid) { return m_uuid_to_entity.get(uuid); }
 
 		Option<Entity> get_parent(Entity entity)
 		{
@@ -94,6 +99,10 @@ namespace Vultr
 			{
 				m_living_entities.get(parent).children.remove(entity);
 			}
+
+			auto uuid = m_living_entities.get(entity).uuid;
+			m_uuid_to_entity.remove(uuid);
+
 			auto res = m_living_entities.remove(entity);
 			ASSERT(res, "Entity has already been destroyed!");
 			m_queue.push(entity);

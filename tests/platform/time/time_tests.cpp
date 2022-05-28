@@ -3,4 +3,8 @@
 #include <platform/platform.h>
 
 using namespace Vultr;
-TEST(Time, CurrentMs) { printf("Current MS since epoch %lu", Platform::current_ms()); }
+TEST(Time, CurrentMs)
+{
+	u64 current_ms = Platform::current_ms();
+	ASSERT_NE(current_ms, 0);
+}

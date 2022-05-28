@@ -1,6 +1,7 @@
 #pragma once
 #include <types/types.h>
 #include <types/error_or.h>
+#include <types/uuid.h>
 #include <glm/glm.hpp>
 #include <types/tuple.h>
 #include <thread>
@@ -212,6 +213,11 @@ namespace Vultr
 		void poll_events(Window *window);
 
 		u64 current_ms();
+
+		typedef char UUID_String[sizeof(UUID::m_uuid) * 2 + 5];
+		UUID generate_uuid();
+		void stringify_uuid(const UUID &uuid, UUID_String out);
+		UUID parse_uuid(const StringView &src);
 
 		namespace Filesystem
 		{

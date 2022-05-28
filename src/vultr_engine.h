@@ -21,11 +21,11 @@ namespace Vultr
 		return static_cast<Engine *>(g_game_memory->engine);
 	}
 
-	inline void open_windowed(str name, u32 width, u32 height)
+	inline void open_windowed(str name, Option<u32> width = None, Option<u32> height = None)
 	{
 		auto *e    = engine();
 
-		e->window  = Platform::open_window(Platform::DisplayMode::WINDOWED, nullptr, name, IS_DEBUG, width, height);
+		e->window  = Platform::open_window(Platform::DisplayMode::WINDOWED, nullptr, name, IS_DEBUG, width.value_or(0), height.value_or(0));
 		e->context = Platform::get_render_context(e->window);
 	}
 

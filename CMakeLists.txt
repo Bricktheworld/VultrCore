@@ -32,7 +32,7 @@ set(TargetIncludeDirs src vendor)
 
 if (UNIX)
     set(LINUX_PRECOMPILED_BINARIES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libs/LINUX)
-    set(Libs vulkan GL X11 Xxf86vm Xrandr pthread Xi dl freetype ${LINUX_PRECOMPILED_BINARIES}/libassimp.so ${LINUX_PRECOMPILED_BINARIES}/libglfw3.a ${LINUX_PRECOMPILED_BINARIES}/libshaderc_combined.a ${LINUX_PRECOMPILED_BINARIES}/libyaml-cpp.a)
+    set(Libs vulkan GL X11 Xxf86vm Xrandr pthread Xi dl freetype uuid ${LINUX_PRECOMPILED_BINARIES}/libassimp.so ${LINUX_PRECOMPILED_BINARIES}/libglfw3.a ${LINUX_PRECOMPILED_BINARIES}/libshaderc_combined.a ${LINUX_PRECOMPILED_BINARIES}/libyaml-cpp.a)
     link_directories(${CMAKE_BINARY_DIR}/res)
     file(GLOB_RECURSE VultrExeSources "src/platform/entry_point/linux_main.cpp")
 
@@ -55,8 +55,7 @@ target_include_directories(${This} PUBLIC ${TargetIncludeDirs})
 
 target_link_libraries(${Executable} PUBLIC ${Libs} ${This})
 target_include_directories(${Executable} PUBLIC ${TargetIncludeDirs})
-
-target_precompile_headers(${This} PUBLIC pch.h)
+#target_precompile_headers(${This} PUBLIC pch.h)
 
 add_subdirectory(tests)
 

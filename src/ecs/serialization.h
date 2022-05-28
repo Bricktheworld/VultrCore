@@ -65,7 +65,7 @@ namespace Vultr
 				{
 					auto entity = component_array->m_index_to_entity.get(i);
 
-					o << YAML::Key << entity;
+					o << YAML::Key << world_get_uuid(world, entity);
 
 					o << YAML::Value << YAML::BeginMap;
 					for (auto &field : type.get_fields())
@@ -98,7 +98,7 @@ namespace Vultr
 
 			for (auto &[entity, info] : entity_manager->m_living_entities)
 			{
-				o << YAML::Key << entity;
+				o << YAML::Key << world_get_uuid(world, entity);
 				o << YAML::Value << YAML::BeginMap;
 
 				o << YAML::Key << "Label";
@@ -106,13 +106,18 @@ namespace Vultr
 
 				o << YAML::Key << "Parent";
 				if (info.parent != INVALID_ENTITY)
-					o << YAML::Value << info.parent;
+					o << YAML::Value << world_get_uuid(world, info.parent);
 				else
 					o << YAML::Null;
 
 				o << YAML::Key << "Children";
 
-				o << YAML::Value << info.children;
+				HashTable<UUID> children{};
+				for (auto child : info.children)
+				{
+					children.set(world_get_uuid(world, child));
+				}
+				o << YAML::Value << children;
 
 				o << YAML::EndMap;
 			}
@@ -152,41 +157,39 @@ namespace Vultr
 		auto *entity_manager    = &out->entity_manager;
 		auto *component_manager = &out->component_manager;
 
-		Hashmap<u32, Entity> id_to_entity{};
-
 		for (const auto &entity_node : em_node)
 		{
-			u32 id            = entity_node.first.as<u32>();
+			UUID uuid         = entity_node.first.as<UUID>();
 			Entity new_entity = entity_manager->m_queue.pop();
 
-			EntityInfo info   = {.label = String(entity_node.second["Label"].Scalar().c_str())};
+			EntityInfo info   = {.label = String(entity_node.second["Label"].Scalar().c_str()), .uuid = uuid};
 			entity_manager->m_living_entities.set(new_entity, info);
-			id_to_entity.set(id, new_entity);
+			entity_manager->m_uuid_to_entity.set(uuid, new_entity);
 		}
 
 		for (const auto &entity_node : em_node)
 		{
-			Entity entity    = id_to_entity.get(entity_node.first.as<u32>());
+			Entity entity    = entity_manager->m_uuid_to_entity.get(entity_node.first.as<UUID>());
 
 			EntityInfo *info = &entity_manager->m_living_entities.get(entity);
 			{
-				for (u32 child_id : entity_node.second["Children"].as<Vector<u32>>())
+				for (UUID child_uuid : entity_node.second["Children"].as<Vector<UUID>>())
 				{
-					if (!id_to_entity.contains(child_id))
+					if (!entity_manager->m_uuid_to_entity.contains(child_uuid))
 						return Error("Invalid child id!");
 
-					info->children.set<Entity>(id_to_entity.get(child_id));
+					info->children.set<Entity>(entity_manager->m_uuid_to_entity.get(child_uuid));
 				}
 			}
 			if (entity_node.second["Parent"].IsNull())
 				continue;
 
-			u32 parent_id = entity_node.second["Parent"].as<u32>();
+			UUID parent_uuid = entity_node.second["Parent"].as<UUID>();
 
-			if (!id_to_entity.contains(parent_id))
+			if (!entity_manager->m_uuid_to_entity.contains(parent_uuid))
 				return Error("Invalid parent id!");
 
-			info->parent = id_to_entity.get(parent_id);
+			info->parent = entity_manager->m_uuid_to_entity.get(parent_uuid);
 		}
 
 		{
@@ -218,7 +221,7 @@ namespace Vultr
 
 				for (const auto &component : component_array.second)
 				{
-					Entity entity = id_to_entity.get(component.first.as<u32>());
+					Entity entity = entity_manager->m_uuid_to_entity.get(component.first.as<UUID>());
 
 					entity_manager->add_signature(entity, signature);
 					void *component_memory;

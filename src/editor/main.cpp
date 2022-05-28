@@ -264,7 +264,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 		ASSERT(exists(resource_dir), "Resource directory does not exist!");
 		ASSERT(exists(build_dir), "Build directory does not exist!");
 
-		Vultr::open_borderless_windowed("Vultr Game Engine");
+		Vultr::open_windowed("Vultr Game Engine");
 		if check (Vultr::load_game(build_dir, resource_dir), auto project, auto err)
 		{
 
