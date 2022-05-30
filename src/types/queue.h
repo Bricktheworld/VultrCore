@@ -7,7 +7,8 @@
 namespace Vultr
 {
 	template <typename T, ssize_t capacity = 256>
-	requires(capacity > 0) struct Queue
+		requires(capacity > 0)
+	struct Queue
 	{
 		Queue()  = default;
 		~Queue() = default;
@@ -146,6 +147,8 @@ namespace Vultr
 				m_front++;
 			}
 
+			queue_cond.notify_one();
+
 			return data;
 		}
 
@@ -180,6 +183,9 @@ namespace Vultr
 			{
 				m_front++;
 			}
+
+			queue_cond.notify_one();
+
 			return data;
 		}
 
@@ -215,11 +221,12 @@ namespace Vultr
 			return false;
 		}
 
+		Platform::ConditionVar queue_cond{};
+
 	  private:
 		alignas(T) byte m_storage[capacity * sizeof(T)]{};
 		s64 m_front = -1;
 		s64 m_rear  = -1;
-		Platform::ConditionVar queue_cond{};
 		Platform::Mutex mutex{};
 
 		ErrorOr<T *> try_push_impl()

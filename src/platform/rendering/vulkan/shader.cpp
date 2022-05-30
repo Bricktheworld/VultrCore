@@ -601,7 +601,8 @@ namespace Vultr
 				}
 				else
 				{
-					mat->samplers.push_back(Resource<Platform::Texture *>(Path(spl[1])));
+					auto shader_uuid = Platform::parse_uuid(spl[1]);
+					mat->samplers.push_back(Resource<Platform::Texture *>(shader_uuid));
 				}
 			}
 

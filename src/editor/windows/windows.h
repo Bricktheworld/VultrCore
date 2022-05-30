@@ -1,7 +1,13 @@
 #pragma once
-
-#include "editor/runtime/runtime.h"
+#include <editor/runtime/runtime.h>
+#include <editor/project/project.h>
 #include <ImGuizmo/ImGuizmo.h>
+
+namespace ImGui
+{
+	bool InputText(const Vultr::StringView &label, Vultr::String *string);
+}
+
 namespace Vultr
 {
 	struct ResourceBrowserState
@@ -13,19 +19,45 @@ namespace Vultr
 		atomic_bool need_refresh   = true;
 	};
 
-	struct ResourceImportState
+	struct ProgressState
 	{
-		atomic_bool importing      = false;
-		atomic_u32 total           = 0;
-		atomic_u32 progress        = 0;
-		Option<Error> import_error = None;
+		atomic_bool done    = false;
+		atomic_u32 total    = 0;
+		atomic_u32 progress = 0;
+
+		StringView title{};
+		StringView message{};
+
+		ProgressState() = default;
+		ProgressState(const ProgressState &other)
+		{
+			total    = other.total.load();
+			progress = other.progress.load();
+			title    = other.title;
+			message  = other.message;
+		}
+
+		ProgressState &operator=(const ProgressState &other)
+		{
+			total    = other.total.load();
+			progress = other.progress.load();
+			title    = other.title;
+			message  = other.message;
+			return *this;
+		}
+	};
+
+	struct ErrorMessage
+	{
+		StringView title{};
+		String message{};
 	};
 
 	struct EditorWindowState
 	{
-		Vec2 render_window_offset = Vec2(0);
-		Vec2 render_window_size   = Vec2(0);
-		ResourceImportState resource_import_state;
+		Vec2 render_window_offset      = Vec2(0);
+		Vec2 render_window_size        = Vec2(0);
+
 		Option<Entity> selected_entity = None;
 		Camera editor_camera{};
 		Transform editor_camera_transform{.position = Vec3(0, 0, 10)};
@@ -44,17 +76,27 @@ namespace Vultr
 		Platform::Texture *folder               = nullptr;
 		Platform::Texture *mesh                 = nullptr;
 
-		Option<StringView> error_title          = None;
-		Option<String> error_message            = None;
+		Option<ProgressState> progress_state    = None;
+		Option<ErrorMessage> error_message      = None;
 
 		bool started                            = false;
 		bool playing                            = false;
 		void *game_memory                       = nullptr;
 
 		Platform::Semaphore<1> hot_reload_fence = Platform::Semaphore<1>(1);
-		atomic_bool hot_reloading               = false;
 	};
 
+	bool serialize_current_scene(EditorWindowState *state);
+	bool load_scene(EditorWindowState *state, const Path &file);
+
+	ProgressState *begin_progress_bar(EditorWindowState *state, const StringView &title);
+	void end_progress_bar(EditorWindowState *state, ProgressState *progress);
+
+	void display_error(EditorWindowState *state, const StringView &title, const String &message);
+
+	void begin_resource_import(Project *project, EditorWindowState *state);
+
+	void resource_window_init(Project *project, EditorWindowState *state);
 	void scene_window_update(EditorWindowState *state, f64 dt);
 	void scene_window_draw(RenderSystem::Component *render_system, Project *project, EditorWindowState *state, EditorRuntime *runtime);
 	void entity_hierarchy_window_draw(Project *project, EditorWindowState *state);
@@ -64,5 +106,4 @@ namespace Vultr
 	void update_windows(EditorWindowState *state, f64 dt);
 	void render_windows(Platform::CmdBuffer *cmd, RenderSystem::Component *render_system, Project *project, EditorWindowState *state, EditorRuntime *runtime, f64 dt);
 	void destroy_windows(EditorWindowState *state);
-	void begin_resource_import(Project *project, EditorWindowState *state);
 } // namespace Vultr

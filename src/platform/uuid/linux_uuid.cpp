@@ -28,8 +28,12 @@ namespace Vultr
 		UUID parse_uuid(const StringView &src)
 		{
 			static_assert(sizeof(uuid_t) == sizeof(UUID::m_uuid), "UUID size is not valid!");
+
+			UUID_String buf{};
+			strncpy(buf, src.c_str(), src.length());
+
 			uuid_t uuid;
-			uuid_parse(src.c_str(), uuid);
+			uuid_parse(buf, uuid);
 
 			UUID ret{};
 			memmove(ret.m_uuid, uuid, sizeof(ret.m_uuid));

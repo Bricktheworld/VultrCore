@@ -18,10 +18,10 @@ namespace Vultr
 	};
 
 	template <typename T>
-	requires(is_pointer<T>) struct ResourceInfo
+		requires(is_pointer<T>)
+	struct ResourceInfo
 	{
-		u32 count = 1;
-		Path path{};
+		u32 count                    = 1;
 		ResourceLoadState load_state = ResourceLoadState::NEED_TO_LOAD;
 		T data                       = nullptr;
 		Option<Error> error          = None;
@@ -29,22 +29,23 @@ namespace Vultr
 
 	struct ResourceLoadItem
 	{
-		u32 id = 0;
-		Path path{};
+		UUID id;
 		bool is_kill_request = false;
 	};
 
 	template <typename T>
-	requires(is_pointer<T>) struct ResourceAllocator
+		requires(is_pointer<T>)
+	struct ResourceAllocator
 	{
 		explicit ResourceAllocator() = default;
-		void incr(u32 id, const Path &path)
+
+		void incr(const UUID &id)
 		{
 			Platform::Lock lock(mutex);
 
 			if (!resources.contains(id))
 			{
-				resources.set(id, {.count = 1, .path = path});
+				resources.set(id, {.count = 1});
 				load_queue.push(id);
 			}
 			else
@@ -53,17 +54,10 @@ namespace Vultr
 			}
 		}
 
-		void incr(u32 id)
+		void decr(const UUID &id)
 		{
 			Platform::Lock lock(mutex);
-			ASSERT(resources.contains(id), "Cannot increment non-existent resource!");
-			resources.get(id).count++;
-		}
-
-		void decr(u32 id)
-		{
-			Platform::Lock lock(mutex);
-			ASSERT(resources.contains(id), "Cannot decrement non-existent resource %u", id);
+			ASSERT(resources.contains(id), "Cannot decrement non-existent resource");
 
 			auto count = --resources.get(id).count;
 			if (count > 0)
@@ -81,10 +75,10 @@ namespace Vultr
 			}
 		}
 
-		ErrorOr<T> try_get_loaded_resource(u32 id)
+		ErrorOr<T> try_get_loaded_resource(const UUID &id)
 		{
 			Platform::Lock lock(mutex);
-			ASSERT(resources.contains(id), "Cannot get invalid resources %u", id);
+			ASSERT(resources.contains(id), "Cannot get invalid resources");
 			if (resources.get(id).load_state == ResourceLoadState::LOADED)
 			{
 				return resources.get(id).data;
@@ -95,21 +89,21 @@ namespace Vultr
 			}
 		}
 
-		bool is_loaded(u32 id)
+		bool is_loaded(const UUID &id)
 		{
 			Platform::Lock lock(mutex);
-			ASSERT(resources.contains(id), "Cannot get invalid resources %u", id);
+			ASSERT(resources.contains(id), "Cannot get invalid resources");
 			return resources.get(id).load_state == ResourceLoadState::LOADED;
 		}
 
-		bool has_error(u32 id)
+		bool has_error(const UUID &id)
 		{
 			Platform::Lock lock(mutex);
-			ASSERT(resources.contains(id), "Cannot get invalid resource %u", id);
+			ASSERT(resources.contains(id), "Cannot get invalid resource");
 			return resources.get(id).load_state == ResourceLoadState::ERROR;
 		}
 
-		Error get_error(u32 id)
+		Error get_error(const UUID &id)
 		{
 			Platform::Lock lock(mutex);
 			ASSERT(has_error(id), "Cannot get error from resource which does not have an error!");
@@ -120,23 +114,23 @@ namespace Vultr
 		{
 			while (true)
 			{
-				u32 res = load_queue.pop_wait();
-				if (res == U32Max)
+				Option<UUID> res = load_queue.pop_wait();
+				if (!res)
 					return {.is_kill_request = true};
 
 				Platform::Lock lock(mutex);
 
-				if (!resources.contains(res) || resources.get(res).load_state != ResourceLoadState::NEED_TO_LOAD)
+				if (!resources.contains(res.value()) || resources.get(res.value()).load_state != ResourceLoadState::NEED_TO_LOAD)
 					continue;
 
-				resources.get(res).load_state = ResourceLoadState::LOADING;
-				return {.id = res, .path = resources.get(res).path, .is_kill_request = false};
+				resources.get(res.value()).load_state = ResourceLoadState::LOADING;
+				return {.id = res.value(), .is_kill_request = false};
 			}
 		}
 
 		T wait_pop_free_queue() { return free_queue.pop_wait(); }
 
-		ErrorOr<void> add_loaded_resource(u32 id, T data)
+		ErrorOr<void> add_loaded_resource(const UUID &id, T data)
 		{
 			ASSERT(data != nullptr, "Cannot load with nullptr data!");
 			Platform::Lock lock(mutex);
@@ -152,7 +146,7 @@ namespace Vultr
 			return Success;
 		}
 
-		ErrorOr<void> add_loaded_resource_error(u32 id, const Error &error)
+		ErrorOr<void> add_loaded_resource_error(const UUID &id, const Error &error)
 		{
 			Platform::Lock lock(mutex);
 			if (!resources.contains(id))
@@ -169,7 +163,7 @@ namespace Vultr
 		void kill_loading_threads()
 		{
 			load_queue.clear();
-			load_queue.push(U32Max);
+			load_queue.push(None);
 			while (!load_queue.empty())
 			{
 			}
@@ -188,38 +182,30 @@ namespace Vultr
 			}
 		}
 
-		Path get_resource_path(u32 id)
+		void notify_reload(const UUID &id)
 		{
 			Platform::Lock lock(mutex);
-			return resources.get(id).path;
-		}
+			if (!resources.contains(id))
+				return;
 
-		void notify_reload(const Path &path)
-		{
-			Platform::Lock lock(mutex);
-			for (auto &[id, info] : resources)
+			auto *info = &resources.get(id);
+			if (info->load_state == ResourceLoadState::LOADED)
 			{
-				if (info.path == path)
+				free_queue.push(info->data);
+				if (free_queue_listener != nullptr)
 				{
-					if (info.load_state == ResourceLoadState::LOADED)
-					{
-						free_queue.push(info.data);
-						if (free_queue_listener != nullptr)
-						{
-							free_queue_listener->push(info.data);
-						}
-					}
-					info.error      = None;
-					info.data       = nullptr;
-					info.load_state = ResourceLoadState::NEED_TO_LOAD;
-					load_queue.push(id);
-					return;
+					free_queue_listener->push(info->data);
 				}
 			}
+			info->error      = None;
+			info->data       = nullptr;
+			info->load_state = ResourceLoadState::NEED_TO_LOAD;
+			load_queue.push(id);
+			return;
 		}
 
-		Hashmap<u32, ResourceInfo<T>> resources{};
-		Queue<u32, 1024> load_queue{};
+		Hashmap<UUID, ResourceInfo<T>> resources{};
+		Queue<Option<UUID>, 1024> load_queue{};
 		Queue<T, 1024> free_queue{};
 		Queue<void *, 1024> *free_queue_listener = nullptr;
 		Platform::Mutex mutex{};
@@ -229,12 +215,12 @@ namespace Vultr
 	ResourceAllocator<T> *resource_allocator();
 
 	template <typename T>
-	requires(is_pointer<T>) struct Resource;
+		requires(is_pointer<T>)
+	struct Resource;
 
 	struct ResourceId
 	{
-		explicit consteval ResourceId(StringHash hash) : id(hash.value()) {}
-		explicit constexpr ResourceId(u32 id) : id(id) {}
+		explicit constexpr ResourceId(const UUID &id) : id(id) {}
 		constexpr ResourceId(const ResourceId &other) : id(other.id) {}
 		ResourceId &operator=(const ResourceId &other)
 		{
@@ -248,17 +234,20 @@ namespace Vultr
 		ResourceId &operator=(const Resource<T> &other);
 
 		constexpr bool operator==(const ResourceId &other) const { return id == other.id; }
-		constexpr operator u32() const { return id; }
+		constexpr operator UUID() const { return id; }
 
 		template <typename T>
 		bool loaded() const
 		{
-			return id && resource_allocator<T>()->is_loaded(id);
+			return resource_allocator<T>()->resources.contains(id) && resource_allocator<T>()->is_loaded(id);
 		}
 
 		template <typename T>
 		ErrorOr<T> try_value() const
 		{
+			if (!resource_allocator<T>()->resources.contains(id))
+				return Error("Resource hasn't been initialized by a Resource<T>");
+
 			return resource_allocator<T>()->try_get_loaded_resource(id);
 		}
 
@@ -282,24 +271,22 @@ namespace Vultr
 			}
 		}
 
-		u32 id;
+		UUID id;
 	};
 
 	template <>
 	struct Traits<ResourceId> : GenericTraits<ResourceId>
 	{
-		static constexpr u32 hash(const ResourceId value) { return value.id; }
-		static constexpr bool equals(const ResourceId a, const ResourceId b) { return a == b; }
-		static constexpr bool is_trivial() { return false; }
+		static constexpr u32 hash(const ResourceId &value) { return Traits<UUID>::hash(value.id); }
+		static constexpr bool equals(const ResourceId &a, const ResourceId &b) { return a == b; }
 	};
 
 	template <typename T>
-	requires(is_pointer<T>) struct Resource
+		requires(is_pointer<T>)
+	struct Resource
 	{
 		Resource() = default;
-		explicit Resource(StringHash hash) : id(hash.value()) { resource_allocator<T>()->incr(id.value(), Path(hash.c_str())); }
-
-		explicit Resource(const Path &path) : id(Traits<StringView>::hash(path.string())) { resource_allocator<T>()->incr(id.value(), path); }
+		explicit Resource(const UUID &id) : id(id) { resource_allocator<T>()->incr(id); }
 		explicit Resource(const ResourceId &other) : id(other.id)
 		{
 			if (id.has_value())
@@ -400,13 +387,9 @@ namespace Vultr
 
 		bool empty() const { return !id.has_value(); }
 
-		constexpr operator ResourceId() { return ResourceId(id.value_or(0)); }
+		constexpr operator ResourceId() { return ResourceId(id.value_or({})); }
 
-	  private:
-		Option<u32> id = None;
-
-		friend ResourceId;
-		friend Traits<Resource<T>>;
+		Option<UUID> id = None;
 	};
 
 	template <typename T>
@@ -424,9 +407,8 @@ namespace Vultr
 	template <typename T>
 	struct Traits<Resource<T>> : GenericTraits<Resource<T>>
 	{
-		static constexpr u32 hash(const Resource<T> &value) { return value.id.value_or(0); }
+		static constexpr u32 hash(const Resource<T> &value) { return Traits::hash(value.id.value_or({})); }
 		static constexpr bool equals(const Resource<T> &a, const Resource<T> &b) { return a == b; }
-		static constexpr bool is_trivial() { return false; }
 	};
 
 } // namespace Vultr

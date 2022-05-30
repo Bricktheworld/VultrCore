@@ -87,13 +87,43 @@ namespace YAML
 	};
 
 	template <typename T>
+	struct convert<Vultr::Option<T>>
+	{
+		static Node encode(const Vultr::Option<T> &rhs)
+		{
+			Node node;
+			if (rhs.has_value())
+			{
+				node = rhs.value();
+			}
+			else
+			{
+				node = YAML::Null;
+			}
+			return node;
+		}
+
+		static bool decode(const Node &node, Vultr::Option<T> &rhs)
+		{
+			if (node.IsNull())
+			{
+				rhs = Vultr::None;
+			}
+			else
+			{
+				rhs = node.as<T>();
+			}
+			return true;
+		}
+	};
+
+	template <typename T>
 	struct convert<Vultr::Resource<T>>
 	{
 		static Node encode(const Vultr::Resource<T> &rhs)
 		{
-			auto *allocator = resource_allocator<T>();
 			Node node;
-			node = allocator->get_resource_path(ResourceId(rhs).id).c_str();
+			node = rhs.id;
 			return node;
 		}
 
@@ -105,7 +135,7 @@ namespace YAML
 			}
 			else
 			{
-				rhs = Vultr::Resource<T>(node.as<Vultr::Path>());
+				rhs = Vultr::Resource<T>(node.as<Vultr::UUID>());
 			}
 			return true;
 		}
@@ -377,12 +407,18 @@ namespace Vultr
 	}
 
 	template <typename T>
+	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Option<T> &o)
+	{
+		if (!o.has_value())
+			return out << YAML::Null;
+		out << o.value();
+		return out;
+	}
+
+	template <typename T>
 	inline YAML::Emitter &operator<<(YAML::Emitter &out, const Resource<T> &r)
 	{
-		if (r.empty())
-			return out << YAML::Null;
-		auto *allocator = resource_allocator<T>();
-		out << allocator->get_resource_path(ResourceId(r).id);
+		out << r.id;
 		return out;
 	}
 

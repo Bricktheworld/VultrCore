@@ -135,8 +135,16 @@ namespace Vultr
 		Texture *init_texture(UploadContext *c, u32 width, u32 height, TextureFormat format);
 
 		void fill_texture(UploadContext *c, Texture *texture, byte *data, u32 size);
-		ErrorOr<void> import_texture_file(const Path &path, Buffer *out, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
-		ErrorOr<void> import_texture_memory(byte *data, u64 size, Buffer *out, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
+
+		struct ImportedTexture
+		{
+			u32 width;
+			u32 height;
+			Buffer src;
+		};
+
+		ErrorOr<void> import_texture_file(const Path &path, ImportedTexture *out, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
+		ErrorOr<void> import_texture_memory(byte *data, u64 size, ImportedTexture *out, TextureFormat format = TextureFormat::SRGBA8, bool flip_on_load = true);
 		Texture *init_white_texture(UploadContext *c);
 		Texture *init_black_texture(UploadContext *c);
 		Texture *init_normal_texture(UploadContext *c);
@@ -305,12 +313,12 @@ namespace Vultr
 		ErrorOr<ImportedMesh> import_mesh_file(const Path &path);
 		ErrorOr<ImportedMesh> import_mesh_memory(const Buffer &buffer);
 		void free_imported_mesh(ImportedMesh *mesh);
-		inline ErrorOr<void> export_mesh(const Path &vertex_output, const Path &index_output, const ImportedMesh *mesh)
-		{
-			TRY(try_fwrite_all(vertex_output, (byte *)mesh->vertices, sizeof(Vertex) * mesh->vertex_count, StreamWriteMode::OVERWRITE));
-			TRY(try_fwrite_all(index_output, (byte *)mesh->indices, sizeof(u16) * mesh->index_count, StreamWriteMode::OVERWRITE));
-			return Success;
-		}
+		//		inline ErrorOr<void> export_mesh(const Path &vertex_output, const Path &index_output, const ImportedMesh *mesh)
+		//		{
+		//			TRY(try_fwrite_all(vertex_output, (byte *)mesh->vertices, sizeof(Vertex) * mesh->vertex_count, StreamWriteMode::OVERWRITE));
+		//			TRY(try_fwrite_all(index_output, (byte *)mesh->indices, sizeof(u16) * mesh->index_count, StreamWriteMode::OVERWRITE));
+		//			return Success;
+		//		}
 
 		inline Mesh *load_mesh_memory(UploadContext *c, const Buffer &vertex_buffer, const Buffer &index_buffer)
 		{

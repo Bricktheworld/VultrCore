@@ -54,6 +54,7 @@ namespace Vultr
 
 		bool has_value() const { return !m_is_error; }
 		bool has_error() const { return !has_value(); }
+		bool is_error() const { return has_error(); }
 		operator bool() const { return has_value(); }
 
 	  private:
@@ -79,8 +80,9 @@ namespace Vultr
 		}
 
 		bool has_value() const { return !m_is_error; }
-		bool is_error() const { return m_is_error; }
-		operator bool() const { return !is_error(); }
+		bool has_error() const { return !has_value(); }
+		bool is_error() const { return has_error(); }
+		operator bool() const { return has_value(); }
 
 	  private:
 		Error m_error   = Error("Error has not been properly initialized", -1);

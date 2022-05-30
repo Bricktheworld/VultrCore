@@ -70,6 +70,62 @@ namespace Vultr
 	}
 
 	template <>
+	inline void ResourceAllocator<Platform::Shader *>::notify_reload(const UUID &id)
+	{
+		Platform::Lock lock(mutex);
+		if (!resources.contains(id))
+			return;
+
+		auto *info = &resources.get(id);
+		if (info->load_state == ResourceLoadState::LOADED)
+		{
+			info->load_state  = ResourceLoadState::NEED_TO_LOAD;
+			info->error       = None;
+
+			auto *shader_data = info->data;
+			info->data        = nullptr;
+
+			Vector<UUID> mat_uuids_to_reload{};
+			auto *mat_allocator = resource_allocator<Platform::Material *>();
+			{
+				Platform::Lock l(mat_allocator->mutex);
+
+				for (auto [mat_id, mat_info] : mat_allocator->resources)
+				{
+					auto *mat = mat_info.data;
+					if (mat == nullptr || mat->source.id != id)
+						continue;
+					mat_uuids_to_reload.push_back(mat_id);
+				}
+			}
+
+			for (auto &mat_id : mat_uuids_to_reload)
+			{
+				mat_allocator->notify_reload(mat_id);
+			}
+
+			while (!mat_allocator->free_queue.empty())
+			{
+				mat_allocator->free_queue.queue_cond.wait(lock);
+			}
+
+			free_queue.push(shader_data);
+			if (free_queue_listener != nullptr)
+			{
+				free_queue_listener->push(shader_data);
+			}
+		}
+		else
+		{
+			info->load_state = ResourceLoadState::NEED_TO_LOAD;
+			info->error      = None;
+			info->data       = nullptr;
+		}
+		load_queue.push(id);
+		return;
+	}
+
+	template <>
 	inline EditorType get_editor_type<Material>(Material *component)
 	{
 		EditorType type = {get_type<Material>, component};
