@@ -359,7 +359,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 		}
 		else
 		{
-			fprintf(stderr, "Failed to load project file: %s\n", (str)res.get_error().message);
+			fprintf(stderr, "Failed to load project file: %s\n", (str)res.get_error().message.c_str());
 			return_code = 1;
 		}
 	}

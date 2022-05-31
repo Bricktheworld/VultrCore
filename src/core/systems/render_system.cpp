@@ -70,7 +70,6 @@ namespace Vultr
 				auto *pipeline = system->pipelines.get(loaded_mat->source.value());
 
 				Platform::PushConstant push_constant{
-					.color = Vec4(1),
 					.model = model,
 				};
 

@@ -125,7 +125,9 @@ namespace Vultr
 
 // NOTE(Brandon): This is really, really stupid but I kinda like it and I'm stubborn.
 #define check(err_or, var, err)                                                                                                                                                                                       \
-	(auto __res = (err_or); err = !__res.has_value() ? __res.get_error() : Vultr::Error()) if (var = (__res).value(); false) {}                                                                                       \
+	(auto __res = (err_or); err = !__res.has_value() ? __res.get_error() : Vultr::Error()) if (var = (__res).value(); false)                                                                                          \
+	{                                                                                                                                                                                                                 \
+	}                                                                                                                                                                                                                 \
 	else
 
 } // namespace Vultr

@@ -20,8 +20,70 @@ namespace Vultr
 	namespace Platform
 	{
 #define ENTRY_NAME "main"
-		static constexpr StringView vertex_pragma   = "#pragma vertex\n";
-		static constexpr StringView fragment_pragma = "#pragma fragment\n";
+		static constexpr StringView version             = "#version 450\n";
+		static constexpr StringView vertex_pragma       = "#pragma vertex\n";
+		static constexpr StringView fragment_pragma     = "#pragma fragment\n";
+		static constexpr StringView uniforms_begin      = "[BEGIN_UNIFORMS]\n";
+		static constexpr StringView uniforms_end        = "[END_UNIFORMS]\n";
+
+		static constexpr StringView vertex_in           = "layout (location = 0) in vec3 v_Position;\n"
+														  "layout (location = 1) in vec3 v_Normal;\n"
+														  "layout (location = 2) in vec2 v_UV;\n"
+														  "layout (location = 3) in vec3 v_Tangent;\n"
+														  "layout (location = 4) in vec3 v_Bitangent;\n";
+
+		static constexpr StringView vertex_out          = "layout (location = 0) out vec3 f_Position;\n"
+														  "layout (location = 1) out vec3 f_Normal;\n"
+														  "layout (location = 2) out vec2 f_UV;\n"
+														  "layout (location = 3) out mat3 f_TBN;\n"
+														  "layout (location = 6) out mat3 f_Normal_matrix;\n";
+
+		static constexpr StringView vertex_main_default = "void vertex_main_default(mat4 mvp)\n"
+														  "{\n"
+														  "    gl_Position = mvp * vec4(v_Position, 1.0f);\n"
+														  "    f_Position  = vec3(u_Model.mat * vec4(v_Position, 1.0f));\n"
+														  "    f_Normal    = v_Normal;\n"
+														  "    f_UV        = v_UV;\n"
+														  "    f_Normal_matrix = mat3(transpose(inverse(u_Model.mat)));\n"
+														  "\n"
+														  "\n"
+														  "    // TBN matrix calculation\n"
+														  "    vec3 T = normalize(f_Normal_matrix * v_Tangent);\n"
+														  "    vec3 N = normalize(f_Normal_matrix * v_Normal);\n"
+														  "\n"
+														  "    // Re-orthogonalize T with respect to N\n"
+														  "    T = normalize(T - dot(T, N) * N);\n"
+														  "\n"
+														  "    vec3 B = cross(N, T);\n"
+														  "\n"
+														  "    f_TBN = mat3(T, B, N);\n"
+														  "}\n";
+
+		static constexpr StringView fragment_in         = "layout (location = 0) in vec3 f_Position;\n"
+														  "layout (location = 1) in vec3 f_Normal;\n"
+														  "layout (location = 2) in vec2 f_UV;\n"
+														  "layout (location = 3) in mat3 f_TBN;\n"
+														  "layout (location = 6) in mat3 f_Normal_mat;\n";
+
+		static constexpr StringView global_uniforms     = "layout(push_constant) uniform Constants\n"
+														  "{\n"
+														  "    mat4 mat;\n"
+														  "} u_Model;\n"
+														  "\n"
+														  "layout (set = 0, binding = 0) uniform Camera {\n"
+														  "    vec4 position;\n"
+														  "    mat4 view;\n"
+														  "    mat4 proj;\n"
+														  "    mat4 view_proj;\n"
+														  "} u_Camera;\n"
+														  "\n"
+														  "layout (set = 0, binding = 1) uniform DirectionalLight {\n"
+														  "    vec4 direction;\n"
+														  "    vec4 diffuse;\n"
+														  "    float specular;\n"
+														  "    float intensity;\n"
+														  "    float ambient;\n"
+														  "} u_Directional_light;\n";
 
 		static u32 get_uniform_type_size(const Type &type)
 		{
@@ -304,19 +366,34 @@ namespace Vultr
 
 		ErrorOr<CompiledShaderSrc> try_compile_shader(StringView src)
 		{
-			if (!contains(src, "#pragma vertex\n"))
+			if (!contains(src, vertex_pragma))
 				return Error("Source does not contain a vertex shader denoted by '#pragma vertex'");
-			if (!contains(src, "#pragma fragment\n"))
+			if (!contains(src, fragment_pragma))
 				return Error("Source does not contain a fragment shader denoted by '#pragma fragment'");
+
+			if (!contains(src, uniforms_begin))
+				return Error("Source does not contain a uniform begin denoted by '[BEGIN_UNIFORMS]' at the start of the program");
+			if (!contains(src, uniforms_end))
+				return Error("Source does not contain a uniform end denoted by '[END_UNIFORMS]'");
 
 			shaderc_compiler_t compiler       = shaderc_compiler_initialize();
 			shaderc_compile_options_t options = shaderc_compile_options_initialize();
 
 			auto vert_index                   = find(src, vertex_pragma).value() + vertex_pragma.length();
-			auto frag_index                   = find(src, fragment_pragma).value() + fragment_pragma.length();
+			auto uniforms_begin_index         = find(src, uniforms_begin).value();
+			auto uniforms_end_index           = find(src, uniforms_end).value();
+			if (uniforms_begin_index >= vert_index || uniforms_end_index >= vert_index)
+				return Error("Source uniforms do not begin before the vertex shader. Uniforms must be declared at the top of the source file.");
+
+			auto uniforms   = src.substr(uniforms_begin_index + uniforms_begin.length(), uniforms_end_index);
+
+			auto frag_index = find(src, fragment_pragma).value() + fragment_pragma.length();
+			if (vert_index >= frag_index)
+				return Error("Cannot compile shader where fragment source appears before the vertex source.");
+
 			CompiledShaderSrc compiled_src{};
 			{
-				auto vert_src                       = String(src.substr(vert_index, frag_index));
+				auto vert_src                       = version + vertex_in + vertex_out + global_uniforms + uniforms + vertex_main_default + src.substr(vert_index, frag_index - fragment_pragma.length());
 				shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, vert_src.c_str(), vert_src.length(), shaderc_vertex_shader, "vertex.glsl", ENTRY_NAME, options);
 
 				if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success)
@@ -334,7 +411,7 @@ namespace Vultr
 			}
 
 			{
-				auto frag_src                       = String(src.substr(frag_index));
+				auto frag_src                       = version + fragment_in + global_uniforms + uniforms + src.substr(frag_index);
 				shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, frag_src.c_str(), frag_src.length(), shaderc_fragment_shader, "fragment.glsl", ENTRY_NAME, options);
 
 				if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success)

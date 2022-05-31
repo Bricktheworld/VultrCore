@@ -173,7 +173,6 @@ namespace Vultr
 
 	void *slab_alloc(SlabAllocator *allocator, size_t size)
 	{
-		Platform::Lock lock(allocator->mutex);
 		SLAB_TRACE();
 		Slab *slab = nullptr;
 		ASSERT(size <= allocator->max_slab_size, "Slab allocator does not have a slab of big enough size.");
@@ -205,7 +204,6 @@ namespace Vultr
 
 	void slab_free(SlabAllocator *allocator, void *data)
 	{
-		Platform::Lock lock(allocator->mutex);
 		Slab *slab = nullptr;
 		for (u32 i = allocator->num_slabs; i > 0; i--)
 		{

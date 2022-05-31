@@ -10,12 +10,12 @@ TEST(Error, Create)
 	}
 	{
 		auto err = Error("Some message");
-		ASSERT_STRCASEEQ(err.message, "Some message");
+		ASSERT_STRCASEEQ(err.message.c_str(), "Some message");
 		ASSERT_EQ(err.code, -1);
 	}
 	{
 		auto err = Error("Some message", 20);
-		ASSERT_STRCASEEQ(err.message, "Some message");
+		ASSERT_STRCASEEQ(err.message.c_str(), "Some message");
 		ASSERT_EQ(err.code, 20);
 	}
 }

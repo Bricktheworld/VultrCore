@@ -372,7 +372,6 @@ namespace Vultr
 
 		struct PushConstant
 		{
-			Vec4 color{};
 			Mat4 model{};
 		};
 

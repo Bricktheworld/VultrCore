@@ -226,8 +226,7 @@ namespace Vultr
 				ImGui::OpenPopup(progress_state->title);
 			}
 		}
-
-		if (state->error_message.has_value())
+		else if (state->error_message.has_value())
 		{
 			auto *error_message = &state->error_message.value();
 			if (ImGui::BeginPopupModal(error_message->title))
@@ -340,7 +339,7 @@ namespace Vultr
 
 	static void resource_import_thread(Project *project, EditorWindowState *state, ProgressState *progress_state)
 	{
-		auto res = makedir(project->build_resource_dir);
+		auto res                = makedir(project->build_resource_dir);
 		progress_state->message = "Importing assets, please wait...";
 		if (!res.is_error())
 		{

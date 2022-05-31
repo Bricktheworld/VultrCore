@@ -1,7 +1,6 @@
 #pragma once
 #include <types/types.h>
 #include <math/min_max.h>
-#include <bitset>
 
 namespace Vultr
 {
@@ -11,7 +10,6 @@ namespace Vultr
 	  public:
 		constexpr Bitfield() = default;
 		constexpr Bitfield(u32 initialized_bit) { this->set(initialized_bit, true); };
-		//		constexpr Bitfield(u64 data[bits]) {m_elements = data;}
 		~Bitfield() = default;
 
 		constexpr auto &set(size_t index, bool val)
