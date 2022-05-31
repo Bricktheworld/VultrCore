@@ -21,10 +21,9 @@ namespace Vultr
 	{
 #define ENTRY_NAME "main"
 		static constexpr StringView version             = "#version 450\n";
-		static constexpr StringView vertex_pragma       = "#pragma vertex\n";
-		static constexpr StringView fragment_pragma     = "#pragma fragment\n";
-		static constexpr StringView uniforms_begin      = "[BEGIN_UNIFORMS]\n";
-		static constexpr StringView uniforms_end        = "[END_UNIFORMS]\n";
+		static constexpr StringView vertex_pragma       = "#[VERTEX]\n";
+		static constexpr StringView fragment_pragma     = "#[FRAGMENT]\n";
+		static constexpr StringView uniforms_begin      = "#[UNIFORMS]\n";
 
 		static constexpr StringView vertex_in           = "layout (location = 0) in vec3 v_Position;\n"
 														  "layout (location = 1) in vec3 v_Normal;\n"
@@ -367,25 +366,22 @@ namespace Vultr
 		ErrorOr<CompiledShaderSrc> try_compile_shader(StringView src)
 		{
 			if (!contains(src, vertex_pragma))
-				return Error("Source does not contain a vertex shader denoted by '#pragma vertex'");
+				return Error("Source does not contain a vertex shader denoted by '#[VERTEX]'");
 			if (!contains(src, fragment_pragma))
-				return Error("Source does not contain a fragment shader denoted by '#pragma fragment'");
+				return Error("Source does not contain a fragment shader denoted by '#[FRAGMENT]'");
 
 			if (!contains(src, uniforms_begin))
-				return Error("Source does not contain a uniform begin denoted by '[BEGIN_UNIFORMS]' at the start of the program");
-			if (!contains(src, uniforms_end))
-				return Error("Source does not contain a uniform end denoted by '[END_UNIFORMS]'");
+				return Error("Source does not contain a uniform begin denoted by '#[UNIFORMS]' at the start of the program");
 
 			shaderc_compiler_t compiler       = shaderc_compiler_initialize();
 			shaderc_compile_options_t options = shaderc_compile_options_initialize();
 
 			auto vert_index                   = find(src, vertex_pragma).value() + vertex_pragma.length();
 			auto uniforms_begin_index         = find(src, uniforms_begin).value();
-			auto uniforms_end_index           = find(src, uniforms_end).value();
-			if (uniforms_begin_index >= vert_index || uniforms_end_index >= vert_index)
+			if (uniforms_begin_index >= vert_index)
 				return Error("Source uniforms do not begin before the vertex shader. Uniforms must be declared at the top of the source file.");
 
-			auto uniforms   = src.substr(uniforms_begin_index + uniforms_begin.length(), uniforms_end_index);
+			auto uniforms   = src.substr(uniforms_begin_index + uniforms_begin.length(), vert_index - vertex_pragma.length());
 
 			auto frag_index = find(src, fragment_pragma).value() + fragment_pragma.length();
 			if (vert_index >= frag_index)
