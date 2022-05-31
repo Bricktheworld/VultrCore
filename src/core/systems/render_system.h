@@ -20,7 +20,10 @@ namespace Vultr
 			Platform::Framebuffer *output_framebuffer = nullptr;
 			Hashmap<void *, Platform::GraphicsPipeline *> pipelines{};
 			Queue<void *, 1024> free_queue_listener{};
-			Option<ResizeRequest> resize_request = None;
+			Option<ResizeRequest> resize_request                                = None;
+
+			Platform::Mesh *skybox_mesh                                         = nullptr;
+			Option<Tuple<void *, Platform::GraphicsPipeline *>> skybox_pipeline = None;
 		};
 
 		Component *init();

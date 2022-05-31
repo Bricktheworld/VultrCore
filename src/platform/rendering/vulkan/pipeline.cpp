@@ -47,6 +47,29 @@ namespace Vultr
 			}
 		}
 
+		static VkCompareOp vk_depth_compare_op(DepthTest test)
+		{
+			switch (test)
+			{
+				case DepthTest::ALWAYS:
+					return VK_COMPARE_OP_ALWAYS;
+				case DepthTest::NEVER:
+					return VK_COMPARE_OP_NEVER;
+				case DepthTest::LESS:
+					return VK_COMPARE_OP_LESS;
+				case DepthTest::EQUAL:
+					return VK_COMPARE_OP_EQUAL;
+				case DepthTest::LEQUAL:
+					return VK_COMPARE_OP_LESS_OR_EQUAL;
+				case DepthTest::GREATER:
+					return VK_COMPARE_OP_GREATER;
+				case DepthTest::NOTEQUAL:
+					return VK_COMPARE_OP_NOT_EQUAL;
+				case DepthTest::GEQUAL:
+					return VK_COMPARE_OP_GREATER_OR_EQUAL;
+			}
+		}
+
 		static GraphicsPipeline *init_vk_pipeline(RenderContext *c, const GraphicsPipelineInfo &info, VkRenderPass render_pass, bool has_depth)
 		{
 			using namespace Vulkan;
@@ -179,9 +202,9 @@ namespace Vultr
 
 			VkPipelineDepthStencilStateCreateInfo depth_stencil_info{
 				.sType             = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-				.depthTestEnable   = VK_TRUE,
-				.depthWriteEnable  = VK_TRUE,
-				.depthCompareOp    = VK_COMPARE_OP_LESS,
+				.depthTestEnable   = info.depth_test.has_value() && has_depth,
+				.depthWriteEnable  = info.write_depth,
+				.depthCompareOp    = info.depth_test.has_value() ? vk_depth_compare_op(info.depth_test.value()) : VK_COMPARE_OP_LESS,
 				.stencilTestEnable = VK_FALSE,
 			};
 

@@ -302,6 +302,34 @@ namespace Vultr
 			return init_mesh(c, vertices, 4, indices, 6);
 		}
 
+		inline Mesh *init_skybox(UploadContext *c)
+		{
+			Vertex vertices[] = {
+				{.position = Vec3(-1, -1, -1)}, // 0
+				{.position = Vec3(1, -1, -1)},  // 1
+				{.position = Vec3(1, 1, -1)},   // 2
+				{.position = Vec3(1, 1, 1)},    // 3
+				{.position = Vec3(-1, 1, -1)},  // 4
+				{.position = Vec3(-1, 1, 1)},   // 5
+				{.position = Vec3(-1, -1, 1)},  // 6
+				{.position = Vec3(1, -1, 1)},   // 7
+				{.position = Vec3(1, 1, -1)},   // 8
+			};
+
+			u16 indices[] = {1, 8, 4, 4, 0, 1,
+							 // Left
+							 6, 0, 4, 4, 5, 6,
+							 // Right
+							 1, 7, 3, 3, 8, 1,
+							 // Back
+							 6, 5, 3, 3, 7, 6,
+							 // Top
+							 4, 8, 3, 3, 5, 4,
+							 // Bottom
+							 0, 6, 1, 1, 6, 7};
+			return init_mesh(c, vertices, 9, indices, 36);
+		}
+
 		struct ImportedMesh
 		{
 			Vertex *vertices = nullptr;
@@ -392,7 +420,8 @@ namespace Vultr
 			Shader *shader                = nullptr;
 			VertexDescription description = get_vertex_description<Vertex>();
 			// TODO(Brandon): Make this actually used.
-			Option<DepthTest> depth_test = None;
+			Option<DepthTest> depth_test = DepthTest::LESS;
+			bool write_depth             = true;
 		};
 
 		struct GraphicsPipeline;

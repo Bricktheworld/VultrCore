@@ -12,6 +12,7 @@ namespace Vultr
 			auto *c               = v_alloc<Component>();
 
 			auto signature        = signature_from_components<Transform, Mesh, Material>();
+			c->skybox_mesh        = Platform::init_skybox(engine()->upload_context);
 
 			c->output_framebuffer = nullptr;
 			reinitialize(c);
@@ -30,6 +31,12 @@ namespace Vultr
 				{
 					Platform::destroy_pipeline(engine()->context, system->pipelines.get(shader));
 					system->pipelines.remove(shader);
+				}
+				if (system->skybox_pipeline.has_value() && system->skybox_pipeline.value().get<0>() == shader)
+				{
+					auto [_, pipeline] = system->skybox_pipeline.value();
+					Platform::destroy_pipeline(engine()->context, pipeline);
+					system->skybox_pipeline = None;
 				}
 			}
 			bool update_light = false;
@@ -76,6 +83,36 @@ namespace Vultr
 				Platform::push_constants(cmd, pipeline, push_constant);
 				Platform::bind_material(cmd, pipeline, loaded_mat);
 				Platform::draw_mesh(cmd, loaded_mesh);
+			}
+
+			for (auto [entity, _, material_component] : get_entities<Camera, Material>())
+			{
+				if (!material_component->source.loaded())
+					continue;
+
+				auto *skybox_mat = material_component->source.value();
+				auto *shader     = skybox_mat->source.value();
+				Platform::GraphicsPipeline *pipeline;
+				if (system->skybox_pipeline.has_value())
+				{
+					if (system->skybox_pipeline.value().get<0>() != shader)
+						continue;
+					pipeline = system->skybox_pipeline.value().get<1>();
+				}
+				else
+				{
+					Platform::GraphicsPipelineInfo info{
+						.shader      = shader,
+						.depth_test  = Platform::DepthTest::LEQUAL,
+						.write_depth = false,
+					};
+
+					pipeline                = Platform::init_pipeline(engine()->context, system->output_framebuffer, info);
+					system->skybox_pipeline = Tuple<void *, Platform::GraphicsPipeline *>({shader, pipeline});
+				}
+
+				Platform::bind_material(cmd, pipeline, skybox_mat);
+				Platform::draw_mesh(cmd, system->skybox_mesh);
 			}
 		}
 
@@ -161,6 +198,7 @@ namespace Vultr
 				Platform::destroy_pipeline(engine()->context, pipeline);
 			}
 			Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
+			Platform::destroy_mesh(engine()->context, c->skybox_mesh);
 			v_free(c);
 		}
 	} // namespace RenderSystem

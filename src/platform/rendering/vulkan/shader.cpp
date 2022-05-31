@@ -20,69 +20,36 @@ namespace Vultr
 	namespace Platform
 	{
 #define ENTRY_NAME "main"
-		static constexpr StringView version             = "#version 450\n";
-		static constexpr StringView vertex_pragma       = "#[VERTEX]\n";
-		static constexpr StringView fragment_pragma     = "#[FRAGMENT]\n";
-		static constexpr StringView uniforms_begin      = "#[UNIFORMS]\n";
+		static constexpr StringView version         = "#version 450\n";
+		static constexpr StringView vertex_pragma   = "#[VERTEX]\n";
+		static constexpr StringView fragment_pragma = "#[FRAGMENT]\n";
+		static constexpr StringView uniforms_begin  = "#[UNIFORMS]\n";
 
-		static constexpr StringView vertex_in           = "layout (location = 0) in vec3 v_Position;\n"
-														  "layout (location = 1) in vec3 v_Normal;\n"
-														  "layout (location = 2) in vec2 v_UV;\n"
-														  "layout (location = 3) in vec3 v_Tangent;\n"
-														  "layout (location = 4) in vec3 v_Bitangent;\n";
+		static constexpr StringView vertex_in       = "layout (location = 0) in vec3 v_Position;\n"
+													  "layout (location = 1) in vec3 v_Normal;\n"
+													  "layout (location = 2) in vec2 v_UV;\n"
+													  "layout (location = 3) in vec3 v_Tangent;\n"
+													  "layout (location = 4) in vec3 v_Bitangent;\n";
 
-		static constexpr StringView vertex_out          = "layout (location = 0) out vec3 f_Position;\n"
-														  "layout (location = 1) out vec3 f_Normal;\n"
-														  "layout (location = 2) out vec2 f_UV;\n"
-														  "layout (location = 3) out mat3 f_TBN;\n"
-														  "layout (location = 6) out mat3 f_Normal_matrix;\n";
-
-		static constexpr StringView vertex_main_default = "void vertex_main_default(mat4 mvp)\n"
-														  "{\n"
-														  "    gl_Position = mvp * vec4(v_Position, 1.0f);\n"
-														  "    f_Position  = vec3(u_Model.mat * vec4(v_Position, 1.0f));\n"
-														  "    f_Normal    = v_Normal;\n"
-														  "    f_UV        = v_UV;\n"
-														  "    f_Normal_matrix = mat3(transpose(inverse(u_Model.mat)));\n"
-														  "\n"
-														  "\n"
-														  "    // TBN matrix calculation\n"
-														  "    vec3 T = normalize(f_Normal_matrix * v_Tangent);\n"
-														  "    vec3 N = normalize(f_Normal_matrix * v_Normal);\n"
-														  "\n"
-														  "    // Re-orthogonalize T with respect to N\n"
-														  "    T = normalize(T - dot(T, N) * N);\n"
-														  "\n"
-														  "    vec3 B = cross(N, T);\n"
-														  "\n"
-														  "    f_TBN = mat3(T, B, N);\n"
-														  "}\n";
-
-		static constexpr StringView fragment_in         = "layout (location = 0) in vec3 f_Position;\n"
-														  "layout (location = 1) in vec3 f_Normal;\n"
-														  "layout (location = 2) in vec2 f_UV;\n"
-														  "layout (location = 3) in mat3 f_TBN;\n"
-														  "layout (location = 6) in mat3 f_Normal_mat;\n";
-
-		static constexpr StringView global_uniforms     = "layout(push_constant) uniform Constants\n"
-														  "{\n"
-														  "    mat4 mat;\n"
-														  "} u_Model;\n"
-														  "\n"
-														  "layout (set = 0, binding = 0) uniform Camera {\n"
-														  "    vec4 position;\n"
-														  "    mat4 view;\n"
-														  "    mat4 proj;\n"
-														  "    mat4 view_proj;\n"
-														  "} u_Camera;\n"
-														  "\n"
-														  "layout (set = 0, binding = 1) uniform DirectionalLight {\n"
-														  "    vec4 direction;\n"
-														  "    vec4 diffuse;\n"
-														  "    float specular;\n"
-														  "    float intensity;\n"
-														  "    float ambient;\n"
-														  "} u_Directional_light;\n";
+		static constexpr StringView global_uniforms = "layout(push_constant) uniform Constants\n"
+													  "{\n"
+													  "    mat4 mat;\n"
+													  "} u_Model;\n"
+													  "\n"
+													  "layout (set = 0, binding = 0) uniform Camera {\n"
+													  "    vec4 position;\n"
+													  "    mat4 view;\n"
+													  "    mat4 proj;\n"
+													  "    mat4 view_proj;\n"
+													  "} u_Camera;\n"
+													  "\n"
+													  "layout (set = 0, binding = 1) uniform DirectionalLight {\n"
+													  "    vec4 direction;\n"
+													  "    vec4 diffuse;\n"
+													  "    float specular;\n"
+													  "    float intensity;\n"
+													  "    float ambient;\n"
+													  "} u_Directional_light;\n";
 
 		static u32 get_uniform_type_size(const Type &type)
 		{
@@ -389,7 +356,7 @@ namespace Vultr
 
 			CompiledShaderSrc compiled_src{};
 			{
-				auto vert_src                       = version + vertex_in + vertex_out + global_uniforms + uniforms + vertex_main_default + src.substr(vert_index, frag_index - fragment_pragma.length());
+				auto vert_src                       = version + vertex_in + global_uniforms + uniforms + src.substr(vert_index, frag_index - fragment_pragma.length());
 				shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, vert_src.c_str(), vert_src.length(), shaderc_vertex_shader, "vertex.glsl", ENTRY_NAME, options);
 
 				if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success)
@@ -407,7 +374,7 @@ namespace Vultr
 			}
 
 			{
-				auto frag_src                       = version + fragment_in + global_uniforms + uniforms + src.substr(frag_index);
+				auto frag_src                       = version + global_uniforms + uniforms + src.substr(frag_index) + "\n";
 				shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, frag_src.c_str(), frag_src.length(), shaderc_fragment_shader, "fragment.glsl", ENTRY_NAME, options);
 
 				if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success)

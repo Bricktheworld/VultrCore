@@ -11,8 +11,9 @@ namespace Vultr
 
 	struct Engine
 	{
-		Platform::RenderContext *context = nullptr;
-		Platform::Window *window         = nullptr;
+		Platform::RenderContext *context        = nullptr;
+		Platform::UploadContext *upload_context = nullptr;
+		Platform::Window *window                = nullptr;
 	};
 
 	inline Engine *engine()
@@ -23,25 +24,28 @@ namespace Vultr
 
 	inline void open_windowed(str name, Option<u32> width = None, Option<u32> height = None)
 	{
-		auto *e    = engine();
+		auto *e           = engine();
 
-		e->window  = Platform::open_window(Platform::DisplayMode::WINDOWED, nullptr, name, IS_DEBUG, width.value_or(0), height.value_or(0));
-		e->context = Platform::get_render_context(e->window);
+		e->window         = Platform::open_window(Platform::DisplayMode::WINDOWED, nullptr, name, IS_DEBUG, width.value_or(0), height.value_or(0));
+		e->context        = Platform::get_render_context(e->window);
+		e->upload_context = Platform::init_upload_context(e->context);
 	}
 
 	inline void open_fullscreen(str name)
 	{
-		auto *e    = engine();
+		auto *e           = engine();
 
-		e->window  = Platform::open_window(Platform::DisplayMode::FULLSCREEN, nullptr, name, IS_DEBUG);
-		e->context = Platform::get_render_context(e->window);
+		e->window         = Platform::open_window(Platform::DisplayMode::FULLSCREEN, nullptr, name, IS_DEBUG);
+		e->context        = Platform::get_render_context(e->window);
+		e->upload_context = Platform::init_upload_context(e->context);
 	}
 
 	inline void open_borderless_windowed(str name)
 	{
-		auto *e    = engine();
+		auto *e           = engine();
 
-		e->window  = Platform::open_window(Platform::DisplayMode::BORDERLESS_WINDOWED, nullptr, name, IS_DEBUG);
-		e->context = Platform::get_render_context(e->window);
+		e->window         = Platform::open_window(Platform::DisplayMode::BORDERLESS_WINDOWED, nullptr, name, IS_DEBUG);
+		e->context        = Platform::get_render_context(e->window);
+		e->upload_context = Platform::init_upload_context(e->context);
 	}
 } // namespace Vultr
