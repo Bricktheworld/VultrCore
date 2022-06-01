@@ -19,20 +19,13 @@ namespace Vultr::Platform
 		f32 scale       = 1;
 		s32 cursor_mode = GLFW_CURSOR_NORMAL;
 		bool is_focused = true;
-		Vector<CallbackHandle> key_input_callbacks{};
+		Vector<Input::CallbackHandle> key_input_callbacks{};
 	};
+
 	struct Monitor
 	{
 		GLFWmonitor *glfw = nullptr;
 	};
-
-	CallbackHandle::CallbackHandle(KeyInputCallback callback, void *data) : counter_ptr(v_alloc<u32>()), callback(callback), data(data) { *counter_ptr = 1; }
-	CallbackHandle::~CallbackHandle()
-	{
-		decr();
-		if (count() == 0)
-			v_free(counter_ptr);
-	}
 
 	static GLFWmonitor *get_monitor_or_primary(Monitor *monitor)
 	{
@@ -417,7 +410,7 @@ namespace Vultr::Platform
 
 	bool is_cursor_locked(Window *window) { return window->cursor_mode == GLFW_CURSOR_DISABLED; }
 
-	CallbackHandle register_key_callback(Window *window, void *data, KeyInputCallback callback) { return window->key_input_callbacks.push_back(CallbackHandle(callback, data)); }
+	Input::CallbackHandle register_key_callback(Window *window, void *data, Input::KeyInputCallback callback) { return window->key_input_callbacks.push_back(Input::CallbackHandle(callback, data)); }
 
 	Input::Key get_down_keys(Window *window)
 	{

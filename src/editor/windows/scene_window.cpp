@@ -1,4 +1,4 @@
-#include "windows.h"
+#include "../editor.h"
 #include <vultr_input.h>
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -7,9 +7,9 @@
 
 namespace Vultr
 {
-	void scene_window_update(EditorWindowState *state, f64 dt)
+	void scene_window_update(Editor *e, f64 dt)
 	{
-		if (state->playing)
+		if (e->playing)
 			return;
 		if (Input::mouse_down(Input::MOUSE_RIGHT))
 		{
@@ -18,7 +18,7 @@ namespace Vultr
 			static constexpr f32 speed = 2;
 			static constexpr f32 sens  = 70;
 			f32 delta                  = speed * (f32)dt;
-			auto &transform            = state->editor_camera_transform;
+			auto &transform            = e->scene_window.editor_camera_transform;
 
 			if (Input::key_down(Input::KEY_W))
 				transform.position += forward(transform) * delta;
@@ -45,93 +45,94 @@ namespace Vultr
 		}
 	}
 
-	static void hot_reload_game_thread(EditorWindowState *state, Project *project, ProgressState *progress_state)
+	static void hot_reload_game_thread(Editor *e, ProgressState *progress_state)
 	{
-		state->hot_reload_fence.acquire();
+		e->hot_reload_fence.acquire();
 		progress_state->message  = "Hot-reloading gameplay DLL, please wait...";
 		progress_state->total    = 100;
 		progress_state->progress = 0;
-		if let (auto scene, state->scene_path)
+		if let (auto scene, e->scene_path)
 		{
-			if (!serialize_current_scene(state))
+			if (!serialize_current_scene(e))
 				return;
 
-			auto res = reload_game(project);
-			end_progress_bar(state, progress_state);
+			auto res = reload_game(&e->project);
+			end_progress_bar(e, progress_state);
 			if (res)
 			{
 				world()->component_manager.destroy_component_arrays();
 				world()->entity_manager = EntityManager();
 				world()->component_manager.deregister_non_system_components();
-				project->register_components();
-				load_scene(state, state->scene_path.value());
+				e->project.register_components();
+				load_scene(e, e->scene_path.value());
 			}
 			else
 			{
-				display_error(state, "Hot Reload Gameplay DLL Failed", String(res.get_error().message));
+				display_error(e, "Hot Reload Gameplay DLL Failed", String(res.get_error().message));
 			}
 		}
 		else
 		{
-			display_error(state, "No Scene Open", String("Cannot hot-reload gameplay DLL without an open scene. Please open a scene."));
+			display_error(e, "No Scene Open", String("Cannot hot-reload gameplay DLL without an open scene. Please open a scene."));
 		}
-		state->hot_reload_fence.release();
+		e->hot_reload_fence.release();
 	}
 
-	static void hot_reload_game(EditorWindowState *state, Project *project)
+	static void hot_reload_game(Editor *e)
 	{
-		auto *progress_state = begin_progress_bar(state, "Hot-reloading game");
-		Platform::Thread thread(hot_reload_game_thread, state, project, progress_state);
+		auto *progress_state = begin_progress_bar(e, "Hot-reloading game");
+		Platform::Thread thread(hot_reload_game_thread, e, progress_state);
 		thread.detach();
 	}
 
-	static void play_game(EditorWindowState *state, Project *project)
+	static void play_game(Editor *e)
 	{
-		ASSERT(!state->playing, "Cannot play game that is already playing!");
-		if (!state->started)
+		ASSERT(!e->playing, "Cannot play game that is already playing!");
+		if (!e->started)
 		{
-			if let (auto scene, state->scene_path)
+			if let (auto scene, e->scene_path)
 			{
-				if (!serialize_current_scene(state))
+				if (!serialize_current_scene(e))
 					return;
 
-				if (!state->started)
+				if (!e->started)
 				{
-					state->game_memory = project->init();
+					e->game_memory = e->project.init();
 				}
 			}
 			else
 			{
-				display_error(state, "No Scene Open", String("Cannot hot-reload gameplay DLL without an open scene. Please open a scene."));
+				display_error(e, "No Scene Open", String("Cannot hot-reload gameplay DLL without an open scene. Please open a scene."));
 			}
 		}
-		state->started = true;
-		state->playing = true;
+		e->started = true;
+		e->playing = true;
 	}
 
-	static void pause_game(EditorWindowState *state, Project *project)
+	static void pause_game(Editor *e)
 	{
-		ASSERT(state->started, "Cannot pause game that has not been started!");
-		ASSERT(state->playing, "Cannot pause game that is already paused!");
-		state->playing = false;
+		ASSERT(e->started, "Cannot pause game that has not been started!");
+		ASSERT(e->playing, "Cannot pause game that is already paused!");
+		e->playing = false;
 	}
 
-	static void stop_game(EditorWindowState *state, Project *project)
+	static void stop_game(Editor *e)
 	{
-		ASSERT(state->started, "Cannot stop game that has not been started!");
+		ASSERT(e->started, "Cannot stop game that has not been started!");
 
-		project->destroy(state->game_memory);
-		load_scene(state, state->scene_path.value());
+		e->project.destroy(e->game_memory);
+		load_scene(e, e->scene_path.value());
 
-		state->playing = false;
-		state->started = false;
+		e->playing = false;
+		e->started = false;
 	}
 
-	void scene_window_draw(RenderSystem::Component *render_system, Project *project, EditorWindowState *state, EditorRuntime *runtime)
+	void scene_window_draw(Editor *e, RenderSystem::Component *render_system)
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 		ImGui::Begin("Game");
-		if (state->hot_reload_fence.try_acquire())
+		auto *state = &e->scene_window;
+		if (e->hot_reload_fence.try_acquire())
 		{
 			if (ImGui::IsWindowHovered() && !Input::mouse_down(Input::MOUSE_RIGHT))
 			{
@@ -158,26 +159,26 @@ namespace Vultr
 
 				auto disabled_flag                          = [](bool expr) { return expr ? 0 : ImGuiSelectableFlags_Disabled; };
 
-				if (ImGui::Selectable("Play", false, flags | disabled_flag(!state->playing || !state->started), button_size))
-					play_game(state, project);
+				if (ImGui::Selectable("Play", false, flags | disabled_flag(!e->playing || !e->started), button_size))
+					play_game(e);
 
 				ImGui::SameLine();
-				if (ImGui::Selectable("Pause", false, flags | disabled_flag(state->started && state->playing), button_size))
-					pause_game(state, project);
+				if (ImGui::Selectable("Pause", false, flags | disabled_flag(e->started && e->playing), button_size))
+					pause_game(e);
 
 				ImGui::SameLine();
-				if (ImGui::Selectable("Stop", false, flags | disabled_flag(state->started), button_size))
-					stop_game(state, project);
+				if (ImGui::Selectable("Stop", false, flags | disabled_flag(e->started), button_size))
+					stop_game(e);
 
 				ImGui::SameLine();
-				if (ImGui::Selectable("Reload", false, flags | disabled_flag(!state->started && !state->playing), button_size))
-					hot_reload_game(state, project);
+				if (ImGui::Selectable("Reload", false, flags | disabled_flag(!e->started && !e->playing), button_size))
+					hot_reload_game(e);
 
 				ImGui::PopStyleVar();
 			}
 
 			ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
-			auto output_texture        = Platform::imgui_get_texture_id(Platform::get_attachment_texture(runtime->render_system->output_framebuffer, 0));
+			auto output_texture        = Platform::imgui_get_texture_id(Platform::get_attachment_texture(render_system->output_framebuffer, 0));
 			ImGui::Image(output_texture, viewport_panel_size);
 
 			if (Platform::get_width(render_system->output_framebuffer) != viewport_panel_size.x || Platform::get_height(render_system->output_framebuffer) != viewport_panel_size.y)
@@ -194,9 +195,9 @@ namespace Vultr
 					UUID asset_uuid;
 					memcpy(asset_uuid.m_uuid, payload->Data, payload->DataSize);
 
-					if let (auto file, project->asset_map.try_get(asset_uuid))
+					if let (auto file, e->project.asset_map.try_get(asset_uuid))
 					{
-						load_scene(state, file);
+						load_scene(e, file);
 					}
 					else
 					{
@@ -205,12 +206,12 @@ namespace Vultr
 				ImGui::EndDragDropTarget();
 			}
 
-			ImVec2 top_left             = ImVec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y + (ImGui::GetWindowHeight() - viewport_panel_size.y));
+			ImVec2 top_left      = ImVec2(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y + (ImGui::GetWindowHeight() - viewport_panel_size.y));
 
-			state->render_window_offset = Vec2(top_left.x, top_left.y);
-			state->render_window_size   = Vec2(viewport_panel_size.x, viewport_panel_size.y);
+			state->window_offset = Vec2(top_left.x, top_left.y);
+			state->window_size   = Vec2(viewport_panel_size.x, viewport_panel_size.y);
 
-			if (!state->playing)
+			if (!e->playing)
 			{
 				ImVec2 bottom_left = ImVec2(top_left.x + viewport_panel_size.x, top_left.y + viewport_panel_size.y);
 				ImGui::PushClipRect(top_left, bottom_left, true);
@@ -220,9 +221,9 @@ namespace Vultr
 
 				ImGuizmo::SetRect(top_left.x, top_left.y, viewport_panel_size.x, viewport_panel_size.y);
 
-				if (state->selected_entity.has_value())
+				if (e->selected_entity.has_value())
 				{
-					auto ent = state->selected_entity.value();
+					auto ent = e->selected_entity.value();
 					if (has_component<Transform>(ent))
 					{
 						auto transform_mat = get_world_transform(ent);
@@ -245,7 +246,7 @@ namespace Vultr
 				}
 				ImGui::PopClipRect();
 			}
-			state->hot_reload_fence.release();
+			e->hot_reload_fence.release();
 		}
 
 		ImGui::End();

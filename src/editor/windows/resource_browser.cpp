@@ -1,122 +1,180 @@
-#include "windows.h"
+#include "../editor.h"
 
 namespace Vultr
 {
 
-#define WIDGET_SIZE 170.0f
-#define ASSET_BROWSER_PADDING 2
-#define ICON_SIZE 100.0f
-
-	static u32 get_num_cols()
+	static void change_dir(Editor *e, Path dir)
 	{
-
-		s32 num_cols = static_cast<s32>(ImGui::GetWindowWidth()) / WIDGET_SIZE - ASSET_BROWSER_PADDING;
-
-		if (num_cols < 1)
-			return 1;
-
-		return static_cast<u32>(num_cols);
-	}
-
-	static void change_dir(Project *project, Path dir, EditorWindowState *state)
-	{
-		state->resource_browser_state.selected_index = None;
-		state->resource_browser_state.current_dir    = dir;
-		state->resource_browser_state.dirs.clear();
-		state->resource_browser_state.files.clear();
-		state->resource_browser_state.need_refresh = false;
+		auto *state           = &e->resource_browser;
+		state->selected_index = None;
+		state->current_dir    = dir;
+		state->dirs.clear();
+		state->files.clear();
+		state->need_refresh = false;
 		for (auto path : DirectoryIterator(dir))
 		{
 			if (path.is_directory())
 			{
-				state->resource_browser_state.dirs.push_back(path);
+				state->dirs.push_back(path);
 			}
 			else
 			{
-				if (is_asset_imported(project, path))
-					state->resource_browser_state.files.push_back(path);
+				if (is_asset_imported(&e->project, path))
+				{
+					auto metadata = get_resource_metadata(path).value();
+					state->files.push_back(ResourceFile{
+						.path                 = path,
+						.uuid                 = metadata.uuid,
+						.metadata             = metadata,
+						.rendered_framebuffer = None,
+					});
+				}
 			}
 		}
 	}
 
-	void resource_window_init(Project *project, EditorWindowState *state) { change_dir(project, project->resource_dir, state); }
+	void resource_window_init(Editor *e)
+	{
+		change_dir(e, e->project.resource_dir);
+		auto *state            = &e->resource_browser;
+		state->material_sphere = Platform::init_sphere(engine()->upload_context, 1, 50, 50);
+	}
 
-	static void asset_drag_drop_src(const Path &path)
+	static void asset_drag_drop_src(const MetadataHeader &metadata)
 	{
 		if (ImGui::BeginDragDropSource())
 		{
-			if let (auto metadata, get_resource_metadata(path))
-			{
-				ImGui::SetDragDropPayload(resource_type_to_string(metadata.resource_type), metadata.uuid.m_uuid, sizeof(metadata.uuid.m_uuid));
-			}
-			else
-			{
-				ImGui::SetDragDropPayload("INVALID", UUID().m_uuid, sizeof(UUID::m_uuid));
-			}
+			ImGui::SetDragDropPayload(resource_type_to_string(metadata.resource_type), metadata.uuid.m_uuid, sizeof(metadata.uuid.m_uuid));
 			ImGui::EndDragDropSource();
 		}
 	}
 
-	static Platform::Texture *get_texture_for_resource(const Path &path, EditorWindowState *state)
+	static Platform::Texture *get_file_resource_texture(Editor *e, Platform::CmdBuffer *cmd, ResourceFile *file, u32 preview_size)
 	{
-		switch (get_resource_type(path))
+		auto *rm = &e->resource_manager;
+		switch (file->metadata.resource_type)
 		{
 			case ResourceType::TEXTURE:
-				return state->texture;
+			{
+				if (file->resource_texture.empty())
+				{
+					file->resource_texture = Resource<Platform::Texture *>(file->uuid);
+				}
+
+				return file->resource_texture.value_or(rm->texture);
+			}
 			case ResourceType::SHADER:
-				return state->shader;
+				return rm->shader;
 			case ResourceType::MATERIAL:
+			{
+				if (!file->rendered_framebuffer)
+				{
+					Vector<Platform::AttachmentDescription> attachments({{.format = Platform::TextureFormat::SRGBA8}});
+					file->rendered_framebuffer = Platform::init_framebuffer(engine()->context, attachments, preview_size, preview_size);
+				}
+
+				if (file->resource_material.empty())
+					file->resource_material = Resource<Platform::Material *>(file->uuid);
+
+				//				if (file->resource_material.loaded())
+				//				{
+				//					if (!file->rendered_pipeline)
+				//					{
+				//						Platform::GraphicsPipelineInfo info{};
+				//						file->rendered_pipeline = Platform::init_pipeline(engine()->context, file->rendered_framebuffer.value(), info);
+				//					}
+				//					auto camera_transform = Transform{.position = Vec3(0, 0, -1)};
+				//					auto camera_component = Camera{};
+				//					auto light_transform  = Transform{};
+				//					auto light_component  = DirectionalLight{
+				//						 .intensity = 3,
+				//						 .specular  = 1,
+				//						 .ambient   = 0.140,
+				//                    };
+				//
+				//					Platform::CameraUBO camera_ubo{
+				//						.position  = Vec4(camera_transform.position, 0),
+				//						.view      = view_matrix(camera_transform),
+				//						.proj      = projection_matrix(camera_component, preview_size, preview_size),
+				//						.view_proj = camera_ubo.proj * camera_ubo.view,
+				//
+				//					};
+				//					Platform::DirectionalLightUBO light_ubo{
+				//						.direction = Vec4(forward(light_transform), 0),
+				//						.diffuse   = light_component.diffuse,
+				//						.specular  = light_component.specular,
+				//						.intensity = light_component.intensity,
+				//						.ambient   = light_component.ambient,
+				//					};
+				//					Platform::update_default_descriptor_set(cmd, &camera_ubo, &light_ubo);
+				//
+				//					Platform::begin_framebuffer(cmd, file->rendered_framebuffer.value(), Vec4(1));
+				//					Platform::PushConstant push{
+				//						.model = model_matrix({}),
+				//					};
+				//					Platform::push_constants(cmd, file->rendered_pipeline.value(), push);
+				//					Platform::bind_material(cmd, file->rendered_pipeline.value(), file->resource_material.value());
+				//					Platform::draw_mesh(cmd, e->resource_browser.material_sphere);
+				//					Platform::end_framebuffer(cmd);
+				//
+				//					return get_attachment_texture(file->rendered_framebuffer.value(), 0);
+				//				}
+				//				else
+				//				{
 				// TODO(Brandon): Get an actual icon for materials.
-				return state->file;
+				return rm->file;
+				//				}
+			}
 			case ResourceType::MESH:
-				return state->mesh;
+			{
+				if (!file->rendered_framebuffer)
+				{
+					Vector<Platform::AttachmentDescription> attachments({{.format = Platform::TextureFormat::SRGBA8}});
+					file->rendered_framebuffer = Platform::init_framebuffer(engine()->context, attachments, preview_size, preview_size);
+				}
+
+				if (file->resource_mesh.empty())
+					file->resource_mesh = Resource<Platform::Mesh *>(file->uuid);
+
+				if (file->resource_mesh.loaded())
+				{
+					Platform::begin_framebuffer(cmd, file->rendered_framebuffer.value(), Vec4(1));
+					Platform::end_framebuffer(cmd);
+					return get_attachment_texture(file->rendered_framebuffer.value(), 0);
+				}
+				else
+				{
+					return rm->mesh;
+				}
+			}
 			case ResourceType::CPP_SRC:
-				return state->cpp_source;
+				return rm->cpp_source;
 			case ResourceType::SCENE:
 				// TODO(Brandon): Get an actual icon for scenes.
-				return state->file;
+				return rm->file;
 			case ResourceType::OTHER:
-				return state->file;
+				return rm->file;
 		}
 	}
 
-	static void draw_resource(const Path &path, Platform::Texture *texture)
+	static void resource_browser_refresh(Editor *e)
 	{
-		auto name           = path.basename();
-
-		auto folder_texture = Platform::imgui_get_texture_id(texture);
-		ImGui::SameLine((WIDGET_SIZE - ICON_SIZE) / 2);
-		ImGui::Image(folder_texture, ImVec2(ICON_SIZE, ICON_SIZE));
-
-		f32 padding_left = (WIDGET_SIZE - ImGui::CalcTextSize(name.c_str()).x) / 2;
-
-		ImGui::SameLine(padding_left);
-		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ICON_SIZE);
-
-		ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + WIDGET_SIZE - padding_left);
-		ImGui::Text("%s", name.c_str());
-		ImGui::PopTextWrapPos();
-	}
-
-	static void resource_browser_refresh(Project *project, EditorWindowState *state)
-	{
-		if (!state->resource_browser_state.need_refresh)
+		if (!e->resource_browser.need_refresh)
 			return;
-		change_dir(project, state->resource_browser_state.current_dir, state);
+		change_dir(e, e->resource_browser.current_dir);
 	}
 
-	void resource_browser_window_draw(Project *project, EditorWindowState *editor_state)
+	void resource_browser_window_draw(Editor *e, Platform::CmdBuffer *cmd)
 	{
-		resource_browser_refresh(project, editor_state);
+		resource_browser_refresh(e);
 		ImGui::Begin("Asset Browser");
-		u32 num_cols = get_num_cols();
-		auto *state  = &editor_state->resource_browser_state;
+		auto *state = &e->resource_browser;
 
-		if (ImGui::Button("Back"))
+		if (ImGui::Button("<-"))
 		{
 			if check (get_parent(state->current_dir), auto parent, auto err)
 			{
-				change_dir(project, parent, editor_state);
+				change_dir(e, parent);
 				ImGui::End();
 				return;
 			}
@@ -127,151 +185,210 @@ namespace Vultr
 		ImGui::SameLine();
 
 		if (ImGui::Button("Reimport"))
-			begin_resource_import(project, editor_state);
+			begin_resource_import(e);
 
-		if (ImGui::BeginTable("Asset Table", static_cast<s32>(num_cols)))
+		static constexpr f32 PADDING        = 16.0f;
+		static constexpr f32 THUMBNAIL_SIZE = 128.0f;
+		static constexpr f32 CELL_SIZE      = THUMBNAIL_SIZE + PADDING;
+
+		f32 panel_width                     = ImGui::GetContentRegionAvail().x;
+		u32 column_count                    = max<u32>(static_cast<u32>(panel_width / CELL_SIZE), 1);
+
+		ImGui::Columns(column_count, 0, false);
+
+		for (u32 i = 0; i < state->dirs.size(); i++)
 		{
-			ImGui::TableNextRow();
-			u32 col = 0;
-			for (u32 i = 0; i < state->files.size(); i++)
+			ImGui::PushID(i);
+
+			auto *texture = Platform::imgui_get_texture_id(e->resource_manager.folder);
+
+			auto pos      = ImGui::GetCursorPos();
+			ImGui::Image(texture, {THUMBNAIL_SIZE, THUMBNAIL_SIZE}, {0, 1}, {1, 0});
+
+			ImGui::SetCursorPos(pos);
+			if (ImGui::Selectable("##", state->selected_index.has_value() && state->selected_index.value() == i, ImGuiSelectableFlags_AllowDoubleClick, {THUMBNAIL_SIZE, THUMBNAIL_SIZE}))
 			{
-				if (col >= num_cols)
-				{
-					ImGui::TableNextRow();
-					col = 0;
-				}
-				ImGui::TableSetColumnIndex(static_cast<s32>(col));
-				auto &file = state->files[i];
-
-				ImGui::PushID(i);
-				if (ImGui::Selectable("##", state->selected_index.has_value() && state->selected_index.value() == i, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(WIDGET_SIZE, WIDGET_SIZE)))
-				{
-					state->selected_index = i;
-				}
-
-				if (ImGui::BeginPopupContextItem())
-				{
-					if (get_resource_type(file) == ResourceType::SHADER)
-					{
-						if (ImGui::Selectable("New Material"))
-						{
-							if check (get_resource_metadata(file), auto metadata, auto _)
-							{
-								Platform::Shader *shader;
-								{
-									Buffer src;
-									fread_all(get_editor_optimized_path(project, metadata.uuid), &src);
-									CHECK_UNWRAP(shader, load_editor_optimized_shader(engine()->context, src));
-								}
-
-								u32 count    = 1;
-								auto new_mat = state->current_dir / "new_material.mat";
-								while (exists(new_mat))
-								{
-									new_mat = state->current_dir / (String("new_material_") + serialize_u64(count) + String(".mat"));
-									count++;
-								}
-
-								Platform::UUID_String shader_uuid;
-								Platform::stringify_uuid(metadata.uuid, shader_uuid);
-
-								String out_buf{};
-								out_buf += shader_uuid;
-
-								auto *reflection = Platform::get_reflection_data(shader);
-
-								byte buf[Platform::MAX_MATERIAL_SIZE];
-								for (auto &uniform_member : reflection->uniform_members)
-								{
-									out_buf += "\n" + uniform_member.name + ":" + serialize_member(buf, uniform_member);
-								}
-
-								for (auto &sampler_refl : reflection->samplers)
-								{
-									out_buf += "\n" + sampler_refl.name + ":" + Platform::VULTR_NULL_FILE_HANDLE;
-								}
-
-								Platform::destroy_shader(engine()->context, shader);
-
-								fwrite_all(new_mat, out_buf, StreamWriteMode::OVERWRITE);
-
-								ImGui::CloseCurrentPopup();
-
-								begin_resource_import(project, editor_state);
-							}
-							else
-							{
-								display_error(editor_state, "Shader has not been import", String("Cannot create material from shader which has not been imported, please import first."));
-							}
-						}
-					}
-
-					ImGui::EndPopup();
-				}
-
-				asset_drag_drop_src(file);
-
-				draw_resource(file, get_texture_for_resource(file, editor_state));
-
-				ImGui::PopID();
-
-				col++;
+				state->selected_index = i;
 			}
 
-			for (u32 i = 0; i < state->dirs.size(); i++)
+			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
 			{
-				if (col >= num_cols)
-				{
-					ImGui::TableNextRow();
-					col = 0;
-				}
-				ImGui::TableSetColumnIndex(static_cast<s32>(col));
-				u32 full_index = i + state->files.size();
-				auto &dir      = state->dirs[i];
-
-				ImGui::PushID(full_index);
-
-				if (ImGui::Selectable("##", state->selected_index.has_value() && state->selected_index.value() == full_index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(WIDGET_SIZE, WIDGET_SIZE)))
-				{
-					state->selected_index = full_index;
-				}
-
-				if (ImGui::BeginDragDropTarget())
-				{
-					const auto *payload = ImGui::AcceptDragDropPayload("File");
-
-					if (payload != nullptr)
-					{
-						auto *path = static_cast<char *>(payload->Data);
-
-						change_dir(project, state->current_dir, editor_state);
-
-						ImGui::PopID();
-						ImGui::EndTable();
-						ImGui::End();
-						return;
-					}
-					ImGui::EndDragDropTarget();
-				}
-
-				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
-				{
-					change_dir(project, dir, editor_state);
-					ImGui::PopID();
-					ImGui::EndTable();
-					ImGui::End();
-					return;
-				}
-
-				draw_resource(dir, editor_state->folder);
-
+				change_dir(e, state->dirs[i]);
 				ImGui::PopID();
-				col++;
+				ImGui::End();
+				return;
 			}
 
-			ImGui::EndTable();
+			ImGui::TextWrapped("%s", state->dirs[i].basename().c_str());
+
+			ImGui::NextColumn();
+
+			ImGui::PopID();
 		}
 
+		for (u32 i = 0; i < state->files.size(); i++)
+		{
+			u32 full_index = i + state->dirs.size();
+			ImGui::PushID(full_index);
+
+			auto *texture = Platform::imgui_get_texture_id(get_file_resource_texture(e, cmd, &state->files[i], THUMBNAIL_SIZE));
+
+			auto pos      = ImGui::GetCursorPos();
+			ImGui::Image(texture, {THUMBNAIL_SIZE, THUMBNAIL_SIZE}, {0, 1}, {1, 0});
+
+			ImGui::SetCursorPos(pos);
+			if (ImGui::Selectable("##", state->selected_index.has_value() && state->selected_index.value() == full_index, ImGuiSelectableFlags_AllowDoubleClick, {THUMBNAIL_SIZE, THUMBNAIL_SIZE}))
+			{
+				state->selected_index = full_index;
+			}
+
+			asset_drag_drop_src(state->files[i].metadata);
+
+			ImGui::TextWrapped("%s", state->files[i].path.basename().c_str());
+
+			ImGui::NextColumn();
+
+			ImGui::PopID();
+		}
+
+		ImGui::Columns(1);
+		//		if (ImGui::BeginTable("Asset Table", static_cast<s32>(num_cols)))
+		//		{
+		//			ImGui::TableNextRow();
+		//			u32 col = 0;
+		//			for (u32 i = 0; i < state->files.size(); i++)
+		//			{
+		//				if (col >= num_cols)
+		//				{
+		//					ImGui::TableNextRow();
+		//					col = 0;
+		//				}
+		//				ImGui::TableSetColumnIndex(static_cast<s32>(col));
+		//				auto &file = state->files[i];
+		//
+		//				ImGui::PushID(i);
+		//
+		//				if (ImGui::BeginPopupContextItem())
+		//				{
+		//					if (get_resource_type(file) == ResourceType::SHADER)
+		//					{
+		//						if (ImGui::Selectable("New Material"))
+		//						{
+		//							if check (get_resource_metadata(file), auto metadata, auto _)
+		//							{
+		//								Platform::Shader *shader;
+		//								{
+		//									Buffer src;
+		//									fread_all(get_editor_optimized_path(project, metadata.uuid), &src);
+		//									CHECK_UNWRAP(shader, load_editor_optimized_shader(engine()->context, src));
+		//								}
+		//
+		//								u32 count    = 1;
+		//								auto new_mat = state->current_dir / "new_material.mat";
+		//								while (exists(new_mat))
+		//								{
+		//									new_mat = state->current_dir / (String("new_material_") + serialize_u64(count) + String(".mat"));
+		//									count++;
+		//								}
+		//
+		//								Platform::UUID_String shader_uuid;
+		//								Platform::stringify_uuid(metadata.uuid, shader_uuid);
+		//
+		//								String out_buf{};
+		//								out_buf += shader_uuid;
+		//
+		//								auto *reflection = Platform::get_reflection_data(shader);
+		//
+		//								byte buf[Platform::MAX_MATERIAL_SIZE];
+		//								for (auto &uniform_member : reflection->uniform_members)
+		//								{
+		//									out_buf += "\n" + uniform_member.name + ":" + serialize_member(buf, uniform_member);
+		//								}
+		//
+		//								for (auto &sampler_refl : reflection->samplers)
+		//								{
+		//									out_buf += "\n" + sampler_refl.name + ":" + Platform::VULTR_NULL_FILE_HANDLE;
+		//								}
+		//
+		//								Platform::destroy_shader(engine()->context, shader);
+		//
+		//								fwrite_all(new_mat, out_buf, StreamWriteMode::OVERWRITE);
+		//
+		//								ImGui::CloseCurrentPopup();
+		//
+		//								begin_resource_import(project, editor_state);
+		//							}
+		//							else
+		//							{
+		//								display_error(editor_state, "Shader has not been import", String("Cannot create material from shader which has not been imported, please import first."));
+		//							}
+		//						}
+		//					}
+		//
+		//					ImGui::EndPopup();
+		//				}
+		//
+		//				asset_drag_drop_src(file);
+		//
+		//				draw_resource(file, get_texture_for_resource(file, editor_state));
+		//
+		//				ImGui::PopID();
+		//
+		//				col++;
+		//			}
+		//
+		//			for (u32 i = 0; i < state->dirs.size(); i++)
+		//			{
+		//				if (col >= num_cols)
+		//				{
+		//					ImGui::TableNextRow();
+		//					col = 0;
+		//				}
+		//				ImGui::TableSetColumnIndex(static_cast<s32>(col));
+		//				u32 full_index = i + state->files.size();
+		//				auto &dir      = state->dirs[i];
+		//
+		//				ImGui::PushID(full_index);
+		//
+		//				if (ImGui::Selectable("##", state->selected_index.has_value() && state->selected_index.value() == full_index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(WIDGET_SIZE, WIDGET_SIZE)))
+		//				{
+		//					state->selected_index = full_index;
+		//				}
+		//
+		//				if (ImGui::BeginDragDropTarget())
+		//				{
+		//					const auto *payload = ImGui::AcceptDragDropPayload("File");
+		//
+		//					if (payload != nullptr)
+		//					{
+		//						auto *path = static_cast<char *>(payload->Data);
+		//
+		//						change_dir(project, state->current_dir, editor_state);
+		//
+		//						ImGui::PopID();
+		//						ImGui::EndTable();
+		//						ImGui::End();
+		//						return;
+		//					}
+		//					ImGui::EndDragDropTarget();
+		//				}
+		//
+		//
+		//				draw_resource(dir, editor_state->folder);
+		//
+		//				ImGui::PopID();
+		//				col++;
+		//			}
+		//
+		//			ImGui::EndTable();
+		//		}
+
 		ImGui::End();
+	}
+
+	void resource_browser_destroy(Editor *e)
+	{
+		e->resource_browser.files.clear();
+		Platform::destroy_mesh(engine()->context, e->resource_browser.material_sphere);
 	}
 } // namespace Vultr

@@ -144,69 +144,10 @@ namespace Vultr
 		bool is_focused(Window *window);
 		Vec2 get_mouse_pos(Window *window);
 
-		typedef void (*KeyInputCallback)(void *data, Input::Key key, Input::Action action, Input::Key modifiers);
-
-		struct CallbackHandle
-		{
-			CallbackHandle() = default;
-			CallbackHandle(KeyInputCallback callback, void *data);
-			CallbackHandle(const CallbackHandle &other)
-			{
-				if (count() != 0)
-					decr();
-
-				counter_ptr = other.counter_ptr;
-				data        = other.data;
-				callback    = other.callback;
-				incr();
-			}
-
-			CallbackHandle &operator=(const CallbackHandle &other)
-			{
-				if (&other == this)
-					return *this;
-
-				if (count() != 0)
-					decr();
-
-				counter_ptr = other.counter_ptr;
-				data        = other.data;
-				callback    = other.callback;
-				incr();
-				return *this;
-			}
-
-			~CallbackHandle();
-
-			void call(Input::Key key, Input::Action action, Input::Key modifiers)
-			{
-				ASSERT(count() != 0, "Attempting to call handle that no longer has any references.");
-				callback(data, key, action, modifiers);
-			}
-
-			u32 count()
-			{
-				if (counter_ptr == nullptr)
-					return 0;
-				return *counter_ptr;
-			}
-
-		  private:
-			void incr() { (*counter_ptr)++; }
-			void decr()
-			{
-				ASSERT(count() != 0, "Decrementing past 0");
-				(*counter_ptr)--;
-			}
-			u32 *counter_ptr          = nullptr;
-			KeyInputCallback callback = nullptr;
-			void *data                = nullptr;
-		};
-
 		void lock_cursor(Window *window);
 		void unlock_cursor(Window *window);
 		bool is_cursor_locked(Window *window);
-		CallbackHandle register_key_callback(Window *window, void *data, KeyInputCallback callback);
+		Input::CallbackHandle register_key_callback(Window *window, void *data, Input::KeyInputCallback callback);
 
 		bool window_should_close(Window *window);
 		void swap_buffers(Window *window);

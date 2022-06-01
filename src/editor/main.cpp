@@ -2,8 +2,7 @@
 #include <vultr.h>
 #include <vultr_input.h>
 #include "project/project.h"
-#include "windows/windows.h"
-#include "editor/runtime/runtime.h"
+#include "editor.h"
 #include <core/systems/render_system.h>
 #include <filesystem/filestream.h>
 #include <vultr_resource_allocator.h>
@@ -254,91 +253,88 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 		ASSERT(exists(build_dir), "Build directory does not exist!");
 
 		Vultr::open_windowed("Vultr Game Engine");
-		Project project;
-		auto res = Vultr::load_game(build_dir, resource_dir, &project);
+		Editor editor{};
+		auto res = Vultr::load_game(build_dir, resource_dir, &editor.project);
 		if (res)
 		{
+			auto *project = &editor.project;
 			Vultr::init_resource_allocators();
 
-			Platform::Thread mesh_loading_thread(mesh_loader_thread, &project);
+			Platform::Thread mesh_loading_thread(mesh_loader_thread, project);
 			mesh_loading_thread.detach();
 			Platform::Thread mesh_freeing_thread(mesh_free_thread);
 			mesh_freeing_thread.detach();
-			Platform::Thread material_loading_thread(material_loader_thread, &project);
+			Platform::Thread material_loading_thread(material_loader_thread, project);
 			material_loading_thread.detach();
 			Platform::Thread material_freeing_thread(material_free_thread);
 			material_freeing_thread.detach();
-			Platform::Thread shader_loading_thread(shader_loader_thread, &project);
+			Platform::Thread shader_loading_thread(shader_loader_thread, project);
 			shader_loading_thread.detach();
 			Platform::Thread shader_freeing_thread(shader_free_thread);
 			shader_freeing_thread.detach();
-			Platform::Thread texture_loading_thread(texture_loader_thread, &project);
+			Platform::Thread texture_loading_thread(texture_loader_thread, project);
 			texture_loading_thread.detach();
 			Platform::Thread texture_freeing_thread(texture_free_thread);
 			texture_freeing_thread.detach();
 
-			EditorRuntime runtime{};
-			runtime.render_system  = RenderSystem::init();
-			runtime.upload_context = Vultr::Platform::init_upload_context(Vultr::engine()->context);
-			runtime.imgui_c        = Platform::init_imgui(engine()->window, runtime.upload_context, EditorResources::GET_ROBOTO_TTF(), EditorResources::ROBOTO_TTF_LEN, 15);
+			auto *render_system                    = RenderSystem::init();
+			editor.resource_manager.upload_context = Vultr::Platform::init_upload_context(Vultr::engine()->context);
+			editor.imgui_c                         = Platform::init_imgui(engine()->window, editor.resource_manager.upload_context, EditorResources::GET_ROBOTO_TTF(), EditorResources::ROBOTO_TTF_LEN, 15);
 
-			EditorWindowState state;
-			begin_resource_import(&project, &state);
+			begin_resource_import(&editor);
 
-			project.register_components();
+			project->register_components();
 
-			init_windows(&runtime, &project, &state);
+			init_windows(&editor);
 
 			while (!Platform::window_should_close(engine()->window))
 			{
-				reload_necessary_assets(&project);
+				reload_necessary_assets(project);
 				Platform::poll_events(engine()->window);
-				Input::update_input(Input::input_manager(), state.render_window_offset, state.render_window_size);
+				Input::update_input(Input::input_manager(), editor.scene_window.window_offset, editor.scene_window.window_size);
 				auto dt = Platform::update_window(engine()->window);
 
-				if (state.hot_reload_fence.try_acquire())
+				if (editor.hot_reload_fence.try_acquire())
 				{
-					if (state.playing)
-						project.update(state.game_memory, dt);
+					if (editor.playing)
+						project->update(editor.game_memory, dt);
 
-					update_windows(&state, dt);
-					state.hot_reload_fence.release();
+					update_windows(&editor, dt);
+					editor.hot_reload_fence.release();
 				}
 
 				if check (Platform::begin_cmd_buffer(engine()->window), auto *cmd, auto _)
 				{
-					if (state.hot_reload_fence.try_acquire())
+					if (editor.hot_reload_fence.try_acquire())
 					{
-						if (state.playing)
+						if (editor.playing)
 						{
-							RenderSystem::update(cmd, runtime.render_system);
+							RenderSystem::update(cmd, render_system);
 						}
 						else
 						{
-							RenderSystem::update(state.editor_camera, state.editor_camera_transform, cmd, runtime.render_system);
+							RenderSystem::update(editor.scene_window.editor_camera, editor.scene_window.editor_camera_transform, cmd, render_system);
 						}
-						state.hot_reload_fence.release();
+						editor.hot_reload_fence.release();
 					}
 
-					Platform::begin_window_framebuffer(cmd);
-					render_windows(cmd, runtime.render_system, &project, &state, &runtime, dt);
-					Platform::end_framebuffer(cmd);
+					render_windows(&editor, cmd, render_system, dt);
 
 					Platform::end_cmd_buffer(cmd);
 				}
 				else
 				{
-					RenderSystem::reinitialize(runtime.render_system);
+					RenderSystem::reinitialize(render_system);
 				}
 			}
 
-			if (state.hot_reload_fence.try_acquire())
+			if (editor.hot_reload_fence.try_acquire())
 			{
-				if (state.started)
-					project.destroy(state.game_memory);
+				if (editor.started)
+					project->destroy(editor.game_memory);
 
 				world()->component_manager.deregister_non_system_components();
-				state.hot_reload_fence.release();
+				editor.hot_reload_fence.release();
 			}
 
 			Platform::wait_idle(engine()->context);
@@ -351,10 +347,11 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			resource_allocator<Platform::Texture *>()->kill_loading_threads();
 			resource_allocator<Platform::Texture *>()->kill_freeing_threads();
 
-			destroy_windows(&state);
-			RenderSystem::destroy(runtime.render_system);
-			Platform::destroy_imgui(engine()->context, runtime.imgui_c);
-			Platform::destroy_upload_context(runtime.upload_context);
+			destroy_windows(&editor);
+			RenderSystem::destroy(render_system);
+			Platform::destroy_imgui(engine()->context, editor.imgui_c);
+			Platform::destroy_upload_context(editor.resource_manager.upload_context);
+			Platform::destroy_upload_context(engine()->upload_context);
 			Platform::close_window(engine()->window);
 		}
 		else

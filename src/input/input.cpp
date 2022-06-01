@@ -5,6 +5,15 @@ namespace Vultr
 {
 	namespace Input
 	{
+		CallbackHandle::CallbackHandle(KeyInputCallback callback, void *data) : counter_ptr(v_alloc<u32>()), callback(callback), data(data) { *counter_ptr = 1; }
+		CallbackHandle::~CallbackHandle()
+		{
+			if (count() > 0)
+				decr();
+			if (count() == 0 && counter_ptr != nullptr)
+				v_free(counter_ptr);
+		}
+
 		void update_input(InputManager *manager, Vec2 window_offset, Vec2 window_size)
 		{
 
@@ -53,5 +62,6 @@ namespace Vultr
 
 		Vec2 mouse_position(const InputManager *manager) { return manager->current_mouse_pos; }
 		Vec2 mouse_delta(const InputManager *manager) { return manager->mouse_delta; }
+		CallbackHandle register_key_callback(void *data, KeyInputCallback callback) { return Platform::register_key_callback(engine()->window, data, callback); }
 	} // namespace Input
 } // namespace Vultr

@@ -144,5 +144,65 @@ namespace Vultr
 
 		Vec2 mouse_position(const InputManager *manager);
 		Vec2 mouse_delta(const InputManager *manager);
+
+		typedef void (*KeyInputCallback)(void *data, Input::Key key, Input::Action action, Input::Key modifiers);
+		struct CallbackHandle
+		{
+			CallbackHandle() = default;
+			CallbackHandle(KeyInputCallback callback, void *data);
+			CallbackHandle(const CallbackHandle &other)
+			{
+				if (count() != 0)
+					decr();
+
+				counter_ptr = other.counter_ptr;
+				data        = other.data;
+				callback    = other.callback;
+				incr();
+			}
+
+			CallbackHandle &operator=(const CallbackHandle &other)
+			{
+				if (&other == this)
+					return *this;
+
+				if (count() != 0)
+					decr();
+
+				counter_ptr = other.counter_ptr;
+				data        = other.data;
+				callback    = other.callback;
+				incr();
+				return *this;
+			}
+
+			~CallbackHandle();
+
+			void call(Input::Key key, Input::Action action, Input::Key modifiers)
+			{
+				ASSERT(count() != 0, "Attempting to call handle that no longer has any references.");
+				callback(data, key, action, modifiers);
+			}
+
+			u32 count()
+			{
+				if (counter_ptr == nullptr)
+					return 0;
+				return *counter_ptr;
+			}
+
+		  private:
+			void incr() { (*counter_ptr)++; }
+			void decr()
+			{
+				ASSERT(count() != 0, "Decrementing past 0");
+				(*counter_ptr)--;
+			}
+			u32 *counter_ptr          = nullptr;
+			KeyInputCallback callback = nullptr;
+			void *data                = nullptr;
+		};
+
+		CallbackHandle register_key_callback(void *data, KeyInputCallback callback);
 	} // namespace Input
 } // namespace Vultr

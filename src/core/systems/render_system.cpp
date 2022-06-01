@@ -197,6 +197,12 @@ namespace Vultr
 			{
 				Platform::destroy_pipeline(engine()->context, pipeline);
 			}
+
+			if (c->skybox_pipeline)
+			{
+				Platform::destroy_pipeline(engine()->context, c->skybox_pipeline.value().get<1>());
+			}
+
 			Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
 			Platform::destroy_mesh(engine()->context, c->skybox_mesh);
 			v_free(c);

@@ -1,4 +1,4 @@
-#include "windows.h"
+#include "../editor.h"
 #include <editor/res/resources.h>
 #include <ecs/serialization.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -25,53 +25,53 @@ namespace ImGui
 
 namespace Vultr
 {
-	ProgressState *begin_progress_bar(EditorWindowState *state, const StringView &title)
+	ProgressState *begin_progress_bar(Editor *e, const StringView &title)
 	{
-		ASSERT(!state->progress_state, "Currently we don't support multiple progress bars in the editor!");
-		state->progress_state               = ProgressState();
-		state->progress_state.value().title = title;
-		return &state->progress_state.value();
+		ASSERT(!e->progress_state, "Currently we don't support multiple progress bars in the editor!");
+		e->progress_state               = ProgressState();
+		e->progress_state.value().title = title;
+		return &e->progress_state.value();
 	}
 
-	void end_progress_bar(EditorWindowState *state, ProgressState *progress)
+	void end_progress_bar(Editor *e, ProgressState *progress)
 	{
-		ASSERT(state->progress_state, "Cannot end non-existent progress bar!");
-		state->progress_state.value().done = true;
+		ASSERT(e->progress_state, "Cannot end non-existent progress bar!");
+		e->progress_state.value().done = true;
 	}
 
-	void display_error(EditorWindowState *state, const StringView &title, const String &message) { state->error_message = ErrorMessage{.title = title, .message = message}; }
+	void display_error(Editor *e, const StringView &title, const String &message) { e->error_message = ErrorMessage{.title = title, .message = message}; }
 
-	bool serialize_current_scene(EditorWindowState *state)
+	bool serialize_current_scene(Editor *e)
 	{
-		if (!state->started)
+		if (!e->started)
 		{
-			if let (const auto &scene_path, state->scene_path)
+			if let (const auto &scene_path, e->scene_path)
 			{
-				auto out = FileOutputStream(state->scene_path.value(), StreamFormat::BINARY, StreamWriteMode::OVERWRITE);
+				auto out = FileOutputStream(e->scene_path.value(), StreamFormat::BINARY, StreamWriteMode::OVERWRITE);
 				auto res = serialize_world_yaml(world(), &out);
 				if (res.is_error())
 				{
-					display_error(state, "Scene Serialization Failed", String(res.get_error().message));
+					display_error(e, "Scene Serialization Failed", String(res.get_error().message));
 					return false;
 				}
 				return true;
 			}
 			else
 			{
-				display_error(state, "No Scene Open", String("Please open a scene before saving."));
+				display_error(e, "No Scene Open", String("Please open a scene before saving."));
 				return false;
 			}
 		}
 		else
 		{
-			display_error(state, "Cannot Save When Playing", String("In order to save the current scene, please exit play mode."));
+			display_error(e, "Cannot Save When Playing", String("In order to save the current scene, please exit play mode."));
 			return false;
 		}
 	}
 
-	bool load_scene(EditorWindowState *state, const Path &file)
+	bool load_scene(Editor *e, const Path &file)
 	{
-		state->scene_path = file;
+		e->scene_path = file;
 		String src;
 		fread_all(file, &src);
 		world()->component_manager.destroy_component_arrays();
@@ -79,7 +79,7 @@ namespace Vultr
 		auto res                = read_world_yaml(src, world());
 		if (res.is_error())
 		{
-			display_error(state, "Failed To Load Scene", String(res.get_error().message));
+			display_error(e, "Failed To Load Scene", String(res.get_error().message));
 			return false;
 		}
 		else
@@ -90,18 +90,18 @@ namespace Vultr
 
 	static void on_key_press(void *data, Input::Key key, Input::Action action, Input::Key modifiers)
 	{
-		auto *state = static_cast<EditorWindowState *>(data);
+		auto *e = static_cast<Editor *>(data);
 		if (action == Input::ACTION_PRESS)
 		{
 			if ((modifiers & Input::KEY_CONTROL) == Input::KEY_CONTROL)
 			{
 				if (key == Input::KEY_S)
 				{
-					serialize_current_scene(state);
+					serialize_current_scene(e);
 				}
 				else if (key == Input::KEY_D)
 				{
-					if let (auto entity, state->selected_entity)
+					if let (auto entity, e->selected_entity)
 					{
 						Entity duplicate;
 						if (has_parent(entity))
@@ -150,29 +150,35 @@ namespace Vultr
 		}
 	}
 
-	void init_windows(EditorRuntime *runtime, Project *project, EditorWindowState *state)
+	static void load_resources(Editor *e)
 	{
-		state->key_listener = Platform::register_key_callback(engine()->window, state, on_key_press);
-		resource_window_init(project, state);
-		state->texture = Platform::init_texture(runtime->upload_context, EditorResources::TEXTURE_PNG_WIDTH, EditorResources::TEXTURE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->texture, EditorResources::GET_TEXTURE_PNG(), EditorResources::TEXTURE_PNG_LEN);
-		state->cpp_source = Platform::init_texture(runtime->upload_context, EditorResources::CPP_PNG_WIDTH, EditorResources::CPP_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->cpp_source, EditorResources::GET_CPP_PNG(), EditorResources::CPP_PNG_LEN);
-		state->shader = Platform::init_texture(runtime->upload_context, EditorResources::SHADER_PNG_WIDTH, EditorResources::SHADER_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->shader, EditorResources::GET_SHADER_PNG(), EditorResources::SHADER_PNG_LEN);
-		state->file = Platform::init_texture(runtime->upload_context, EditorResources::FILE_PNG_WIDTH, EditorResources::FILE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->file, EditorResources::GET_FILE_PNG(), EditorResources::FILE_PNG_LEN);
-		state->folder = Platform::init_texture(runtime->upload_context, EditorResources::FOLDER_PNG_WIDTH, EditorResources::FOLDER_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->folder, EditorResources::GET_FOLDER_PNG(), EditorResources::FOLDER_PNG_LEN);
-		state->mesh = Platform::init_texture(runtime->upload_context, EditorResources::MESH_PNG_WIDTH, EditorResources::MESH_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
-		Platform::fill_texture(runtime->upload_context, state->mesh, EditorResources::GET_MESH_PNG(), EditorResources::MESH_PNG_LEN);
+		auto *rm    = &e->resource_manager;
+		rm->texture = Platform::init_texture(rm->upload_context, EditorResources::TEXTURE_PNG_WIDTH, EditorResources::TEXTURE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(rm->upload_context, rm->texture, EditorResources::GET_TEXTURE_PNG(), EditorResources::TEXTURE_PNG_LEN);
+		rm->cpp_source = Platform::init_texture(rm->upload_context, EditorResources::CPP_PNG_WIDTH, EditorResources::CPP_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(rm->upload_context, rm->cpp_source, EditorResources::GET_CPP_PNG(), EditorResources::CPP_PNG_LEN);
+		rm->shader = Platform::init_texture(rm->upload_context, EditorResources::SHADER_PNG_WIDTH, EditorResources::SHADER_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(rm->upload_context, rm->shader, EditorResources::GET_SHADER_PNG(), EditorResources::SHADER_PNG_LEN);
+		rm->file = Platform::init_texture(rm->upload_context, EditorResources::FILE_PNG_WIDTH, EditorResources::FILE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(rm->upload_context, rm->file, EditorResources::GET_FILE_PNG(), EditorResources::FILE_PNG_LEN);
+		rm->folder = Platform::init_texture(rm->upload_context, EditorResources::FOLDER_PNG_WIDTH, EditorResources::FOLDER_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(rm->upload_context, rm->folder, EditorResources::GET_FOLDER_PNG(), EditorResources::FOLDER_PNG_LEN);
+		rm->mesh = Platform::init_texture(rm->upload_context, EditorResources::MESH_PNG_WIDTH, EditorResources::MESH_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		Platform::fill_texture(rm->upload_context, rm->mesh, EditorResources::GET_MESH_PNG(), EditorResources::MESH_PNG_LEN);
 	}
 
-	void update_windows(EditorWindowState *state, f64 dt) { scene_window_update(state, dt); }
-
-	void render_windows(Platform::CmdBuffer *cmd, RenderSystem::Component *render_system, Project *project, EditorWindowState *state, EditorRuntime *runtime, f64 dt)
+	void init_windows(Editor *e)
 	{
-		Platform::imgui_begin_frame(cmd, runtime->imgui_c);
+		e->key_listener = Input::register_key_callback(e, on_key_press);
+		resource_window_init(e);
+		load_resources(e);
+	}
+
+	void update_windows(Editor *e, f64 dt) { scene_window_update(e, dt); }
+
+	void render_windows(Editor *e, Platform::CmdBuffer *cmd, RenderSystem::Component *render_system, f64 dt)
+	{
+		Platform::imgui_begin_frame(cmd, e->imgui_c);
 
 		ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
 										ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
@@ -185,7 +191,7 @@ namespace Vultr
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
-		ImGui::Begin("VultrDockspace", &state->dockspace_open, window_flags);
+		ImGui::Begin("VultrDockspace", nullptr, window_flags);
 		ImGui::PopStyleVar(3);
 
 		ImGui::Text("%.3f ms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -196,7 +202,7 @@ namespace Vultr
 			{
 				if (ImGui::MenuItem("Save Scene"))
 				{
-					serialize_current_scene(state);
+					serialize_current_scene(e);
 				}
 				ImGui::EndMenu();
 			}
@@ -207,9 +213,9 @@ namespace Vultr
 			ImGui::EndMenuBar();
 		}
 
-		if (state->progress_state.has_value())
+		if (e->progress_state.has_value())
 		{
-			auto *progress_state = &state->progress_state.value();
+			auto *progress_state = &e->progress_state.value();
 			if (ImGui::BeginPopupModal(progress_state->title))
 			{
 				ImGui::Text("%s", progress_state->message.c_str());
@@ -217,7 +223,7 @@ namespace Vultr
 				if (progress_state->done)
 				{
 					ImGui::CloseCurrentPopup();
-					state->progress_state = None;
+					e->progress_state = None;
 				}
 				ImGui::EndPopup();
 			}
@@ -226,15 +232,15 @@ namespace Vultr
 				ImGui::OpenPopup(progress_state->title);
 			}
 		}
-		else if (state->error_message.has_value())
+		else if (e->error_message.has_value())
 		{
-			auto *error_message = &state->error_message.value();
+			auto *error_message = &e->error_message.value();
 			if (ImGui::BeginPopupModal(error_message->title))
 			{
 				ImGui::Text("%s", error_message->message.c_str());
 				if (ImGui::Button("Ok"))
 				{
-					state->error_message = None;
+					e->error_message = None;
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::EndPopup();
@@ -267,35 +273,39 @@ namespace Vultr
 		ImGui::DockSpace(dockspace, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoResize);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
-		scene_window_draw(render_system, project, state, runtime);
+		scene_window_draw(e, render_system);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		ImGui::ShowDemoWindow();
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
-		entity_hierarchy_window_draw(project, state);
+		entity_hierarchy_window_draw(e);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
-		component_inspector_window_draw(project, state);
+		component_inspector_window_draw(e);
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
-		resource_browser_window_draw(project, state);
+		resource_browser_window_draw(e, cmd);
 
 		ImGui::End();
 
-		Platform::imgui_end_frame(cmd, runtime->imgui_c);
+		Platform::begin_window_framebuffer(cmd);
+		Platform::imgui_end_frame(cmd, e->imgui_c);
+		Platform::end_framebuffer(cmd);
 	}
 
-	void destroy_windows(EditorWindowState *state)
+	void destroy_windows(Editor *e)
 	{
-		auto *c = engine()->context;
+		resource_browser_destroy(e);
+		auto *c  = engine()->context;
 
-		Platform::destroy_texture(c, state->texture);
-		Platform::destroy_texture(c, state->cpp_source);
-		Platform::destroy_texture(c, state->shader);
-		Platform::destroy_texture(c, state->file);
-		Platform::destroy_texture(c, state->folder);
-		Platform::destroy_texture(c, state->mesh);
+		auto *rm = &e->resource_manager;
+		Platform::destroy_texture(c, rm->texture);
+		Platform::destroy_texture(c, rm->cpp_source);
+		Platform::destroy_texture(c, rm->shader);
+		Platform::destroy_texture(c, rm->file);
+		Platform::destroy_texture(c, rm->folder);
+		Platform::destroy_texture(c, rm->mesh);
 	}
 
 	static u32 count_resource_imports(const Project *project, const Path &dir)
@@ -337,32 +347,32 @@ namespace Vultr
 		}
 	}
 
-	static void resource_import_thread(Project *project, EditorWindowState *state, ProgressState *progress_state)
+	static void resource_import_thread(Editor *e, ProgressState *progress_state)
 	{
-		auto res                = makedir(project->build_resource_dir);
+		auto res                = makedir(e->project.build_resource_dir);
 		progress_state->message = "Importing assets, please wait...";
 		if (!res.is_error())
 		{
-			progress_state->total = count_resource_imports(project, project->resource_dir);
-			auto res              = import_dir(project, project->resource_dir, &progress_state->progress);
+			progress_state->total = count_resource_imports(&e->project, e->project.resource_dir);
+			auto res              = import_dir(&e->project, e->project.resource_dir, &progress_state->progress);
 			if (res.is_error())
-				display_error(state, "Failed to import resources!", String(res.get_error().message));
+				display_error(e, "Failed to import resources!", String(res.get_error().message));
 		}
 		else
 		{
-			display_error(state, "Failed to import resources!", String(res.get_error().message));
+			display_error(e, "Failed to import resources!", String(res.get_error().message));
 		}
 
-		map_asset_uuids(project, project->resource_dir);
+		map_asset_uuids(&e->project, e->project.resource_dir);
 
-		end_progress_bar(state, progress_state);
-		state->resource_browser_state.need_refresh = true;
+		end_progress_bar(e, progress_state);
+		e->resource_browser.need_refresh = true;
 	}
 
-	void begin_resource_import(Project *project, EditorWindowState *state)
+	void begin_resource_import(Editor *e)
 	{
-		auto *progress_state = begin_progress_bar(state, "Importing Resources");
-		Platform::Thread thread(resource_import_thread, project, state, progress_state);
+		auto *progress_state = begin_progress_bar(e, "Importing Resources");
+		Platform::Thread thread(resource_import_thread, e, progress_state);
 		thread.detach();
 	}
 } // namespace Vultr

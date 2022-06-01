@@ -1,12 +1,12 @@
-#include "windows.h"
+#include "../editor.h"
 
 namespace Vultr
 {
 
-	void asset_inpsector_draw(Project *project, EditorWindowState *state)
+	void asset_inpsector_draw(Editor *e)
 	{
 		ImGui::Begin("Asset Inpsector");
-		if let (u32 index, state->resource_browser_state.selected_index)
+		if let (u32 index, e->resource_browser.selected_index)
 		{
 		}
 		else

@@ -330,6 +330,69 @@ namespace Vultr
 			return init_mesh(c, vertices, 9, indices, 36);
 		}
 
+		inline Mesh *init_sphere(UploadContext *c, u32 radius, u32 latitudes, u32 longitudes)
+		{
+			Vector<Vertex> vertices{};
+			Vector<u16> indices{};
+
+			f32 length_inv          = 1.0f / radius;
+
+			static constexpr f32 PI = 3.14159265359;
+
+			f32 delta_latitude      = PI / latitudes;
+			f32 delta_longitude     = 2 * PI / longitudes;
+			f32 latitude_angle;
+			f32 longitude_angle;
+
+			for (u32 i = 0; i <= latitudes; i++)
+			{
+				latitude_angle = PI / 2 - i * delta_latitude;
+				f32 xy         = radius * cosf(latitude_angle);
+				f32 z          = radius * sinf(latitude_angle);
+
+				for (u32 j = 0; j <= longitudes; j++)
+				{
+					longitude_angle = j * delta_longitude;
+
+					Vertex vertex;
+					vertex.position.x = xy * cosf(longitude_angle);
+					vertex.position.y = xy * sinf(longitude_angle);
+					vertex.position.z = z;
+					vertex.uv.x       = (f32)j / longitudes;
+					vertex.uv.y       = (f32)i / latitudes;
+					vertex.normal.x   = vertex.position.x * length_inv;
+					vertex.normal.y   = vertex.position.y * length_inv;
+					vertex.normal.z   = vertex.position.z * length_inv;
+					vertices.push_back(vertex);
+				}
+			}
+
+			for (u32 i = 0; i < latitudes; i++)
+			{
+				u32 k1 = i * (longitudes + 1);
+				u32 k2 = k1 + longitudes + 1;
+
+				for (u32 j = 0; j < longitudes; j++, k1++, k2++)
+				{
+					if (i != 0)
+					{
+						indices.push_back(k1);
+						indices.push_back(k2);
+						indices.push_back(k1 + 1);
+					}
+
+					if (i != (latitudes - 1))
+					{
+						indices.push_back(k1 + 1);
+						indices.push_back(k2);
+						indices.push_back(k2 + 1);
+					}
+				}
+			}
+
+			return init_mesh(c, &vertices[0], vertices.size(), &indices[0], indices.size());
+		}
+
 		struct ImportedMesh
 		{
 			Vertex *vertices = nullptr;
@@ -369,6 +432,7 @@ namespace Vultr
 			Utils::move((byte *)mesh->indices, index_buffer.storage, index_buffer.size());
 
 			mesh->index_buffer = init_index_buffer(c, mesh->indices, sizeof(u16) * mesh->index_count);
+
 			return mesh;
 		}
 

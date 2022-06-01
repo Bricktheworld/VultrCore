@@ -1,4 +1,4 @@
-#include "windows.h"
+#include "../editor.h"
 
 namespace Vultr
 {
@@ -110,14 +110,14 @@ namespace Vultr
 		return Success;
 	}
 
-	static void render_entity_hierarchy(Entity entity, EditorWindowState *state, Project *project)
+	static void render_entity_hierarchy(Editor *e, Entity entity)
 	{
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanFullWidth;
 
 		if (get_children(entity).size() == 0)
 			flags |= ImGuiTreeNodeFlags_Leaf;
 
-		bool already_selected = state->selected_entity.has_value() && state->selected_entity.value() == entity;
+		bool already_selected = e->selected_entity.has_value() && e->selected_entity.value() == entity;
 
 		if (already_selected)
 			flags |= ImGuiTreeNodeFlags_Selected;
@@ -127,19 +127,19 @@ namespace Vultr
 		bool open = ImGui::TreeNodeEx((void *)(u64)(entity), flags, "%s", get_label(entity)->c_str());
 		if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen() && !already_selected)
 		{
-			if (state->selected_entity.has_value() && has_component<Material>(state->selected_entity.value()))
+			if (e->selected_entity.has_value() && has_component<Material>(e->selected_entity.value()))
 			{
-				auto &mat_component = get_component<Material>(state->selected_entity.value());
+				auto &mat_component = get_component<Material>(e->selected_entity.value());
 				if (mat_component.source.loaded())
 				{
-					auto res = serialize_material(project, mat_component.source);
+					auto res = serialize_material(&e->project, mat_component.source);
 					if (res.is_error())
 						fprintf(stderr, "Something went wrong saving material %s", res.get_error().message.c_str());
 
-					begin_resource_import(project, state);
+					begin_resource_import(e);
 				}
 			}
-			state->selected_entity = entity;
+			e->selected_entity = entity;
 		}
 
 		if (has_component<Transform>(entity))
@@ -177,9 +177,9 @@ namespace Vultr
 			}
 			if (ImGui::Selectable("Delete"))
 			{
-				if (state->selected_entity == entity)
+				if (e->selected_entity == entity)
 				{
-					state->selected_entity = None;
+					e->selected_entity = None;
 				}
 				destroy_entity(entity);
 				ImGui::CloseCurrentPopup();
@@ -194,7 +194,7 @@ namespace Vultr
 			{
 				for (auto child : get_children(entity))
 				{
-					render_entity_hierarchy(child, state, project);
+					render_entity_hierarchy(e, child);
 				}
 			}
 			ImGui::TreePop();
@@ -203,10 +203,10 @@ namespace Vultr
 		ImGui::PopID();
 	}
 
-	void entity_hierarchy_window_draw(Project *project, EditorWindowState *state)
+	void entity_hierarchy_window_draw(Editor *e)
 	{
 		ImGui::Begin("Hierarchy");
-		if (state->hot_reload_fence.try_acquire())
+		if (e->hot_reload_fence.try_acquire())
 		{
 			for (Entity entity = 1; entity < MAX_ENTITIES; entity++)
 			{
@@ -216,7 +216,7 @@ namespace Vultr
 				if (has_parent(entity))
 					continue;
 
-				render_entity_hierarchy(entity, state, project);
+				render_entity_hierarchy(e, entity);
 			}
 
 			if (ImGui::Button("Create Entity"))
@@ -230,7 +230,7 @@ namespace Vultr
 				{
 					StringView label = "Mesh Entity";
 					Entity entity;
-					if let (auto parent, state->selected_entity)
+					if let (auto parent, e->selected_entity)
 					{
 						if (has_component<Transform>(parent))
 						{
@@ -245,7 +245,7 @@ namespace Vultr
 					{
 						entity = create_entity(label, Transform{}, Material{}, Mesh{});
 					}
-					state->selected_entity = entity;
+					e->selected_entity = entity;
 					ImGui::CloseCurrentPopup();
 				}
 
@@ -253,7 +253,7 @@ namespace Vultr
 				{
 					StringView label = "Empty Entity";
 					Entity entity;
-					if let (auto parent, state->selected_entity)
+					if let (auto parent, e->selected_entity)
 					{
 						if (has_component<Transform>(parent))
 						{
@@ -268,12 +268,12 @@ namespace Vultr
 					{
 						entity = create_entity(label, Transform{});
 					}
-					state->selected_entity = entity;
+					e->selected_entity = entity;
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::EndPopup();
 			}
-			state->hot_reload_fence.release();
+			e->hot_reload_fence.release();
 		}
 		ImGui::End();
 	}
