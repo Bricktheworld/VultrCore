@@ -63,13 +63,22 @@ namespace Vultr
 			set->updated.set_all();
 		}
 
-		void bind_descriptor_set(CmdBuffer *cmd, GraphicsPipeline *pipeline, DescriptorSet *set)
+		void bind_descriptor_set(CmdBuffer *cmd, Shader *shader, DescriptorSet *set, const GraphicsPipelineInfo &info, const Option<PushConstant> &constant)
 		{
-			auto vk_set = set->vk_frame_descriptor_sets[cmd->frame_index];
-			ASSERT(set->shader == pipeline->layout.shader, "Descriptor set is not compatible with pipeline!");
+			auto vk_set    = set->vk_frame_descriptor_sets[cmd->frame_index];
+
+			auto *pipeline = Vulkan::get_or_create_pipeline(cmd->render_context, shader, info, cmd->current_framebuffer);
+			Vulkan::bind_pipeline(cmd, pipeline);
+
+			if (constant)
+				vkCmdPushConstants(cmd->cmd_buffer, pipeline->vk_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstant), &constant.value());
+
 			vkCmdBindDescriptorSets(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_layout, 1, 1, &vk_set, 0, nullptr);
+
+			Vulkan::depend_resource(cmd, shader);
 			Vulkan::depend_resource(cmd, set);
 			Vulkan::depend_resource(cmd, &set->uniform_buffer_binding.buffer);
+
 			for (auto &sampler_optional : set->sampler_bindings)
 			{
 				if let (ResourceId sampler, sampler_optional)

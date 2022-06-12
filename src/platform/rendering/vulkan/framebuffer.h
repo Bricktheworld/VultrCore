@@ -1,5 +1,6 @@
 #pragma once
 #include "render_context.h"
+#include "pipeline.h"
 
 namespace Vultr
 {
@@ -17,9 +18,11 @@ namespace Vultr
 			VkFramebuffer vk_framebuffer = nullptr;
 			VkFramebufferCreateInfo vk_fb_info{};
 
-			Hashmap<u32, GraphicsPipeline *> pipelines{};
+			Hashmap<Shader *, Hashmap<Platform::GraphicsPipelineInfo, Vulkan::GraphicsPipeline *>> pipelines{};
+			Platform::Mutex mutex{};
 		};
 	} // namespace Platform
+
 	namespace Vulkan
 	{
 		bool has_depth(Platform::Framebuffer *framebuffer);

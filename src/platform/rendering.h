@@ -404,12 +404,6 @@ namespace Vultr
 		ErrorOr<ImportedMesh> import_mesh_file(const Path &path);
 		ErrorOr<ImportedMesh> import_mesh_memory(const Buffer &buffer);
 		void free_imported_mesh(ImportedMesh *mesh);
-		//		inline ErrorOr<void> export_mesh(const Path &vertex_output, const Path &index_output, const ImportedMesh *mesh)
-		//		{
-		//			TRY(try_fwrite_all(vertex_output, (byte *)mesh->vertices, sizeof(Vertex) * mesh->vertex_count, StreamWriteMode::OVERWRITE));
-		//			TRY(try_fwrite_all(index_output, (byte *)mesh->indices, sizeof(u16) * mesh->index_count, StreamWriteMode::OVERWRITE));
-		//			return Success;
-		//		}
 
 		inline Mesh *load_mesh_memory(UploadContext *c, const Buffer &vertex_buffer, const Buffer &index_buffer)
 		{
@@ -481,19 +475,11 @@ namespace Vultr
 
 		struct GraphicsPipelineInfo
 		{
-			Shader *shader                = nullptr;
-			VertexDescription description = get_vertex_description<Vertex>();
-			// TODO(Brandon): Make this actually used.
 			Option<DepthTest> depth_test = DepthTest::LESS;
 			bool write_depth             = true;
-		};
 
-		struct GraphicsPipeline;
-		GraphicsPipeline *init_pipeline(RenderContext *c, const GraphicsPipelineInfo &info);
-		GraphicsPipeline *init_pipeline(RenderContext *c, Framebuffer *framebuffer, const GraphicsPipelineInfo &info);
-		void destroy_pipeline(RenderContext *c, GraphicsPipeline *pipeline);
-		void attach_pipeline(RenderContext *c, Framebuffer *framebuffer, const GraphicsPipelineInfo &info, u32 id);
-		void remove_pipeline(RenderContext *c, Framebuffer *framebuffer, u32 id);
+			bool operator==(const GraphicsPipelineInfo &other) const { return depth_test == other.depth_test && write_depth == other.write_depth; }
+		};
 
 		struct CmdBuffer;
 
@@ -503,16 +489,14 @@ namespace Vultr
 		void begin_framebuffer(CmdBuffer *cmd, Framebuffer *framebuffer, Vec4 clear_color = Vec4(0, 0, 0, 1));
 		void end_framebuffer(CmdBuffer *cmd);
 
-		void bind_pipeline(CmdBuffer *cmd, GraphicsPipeline *pipeline);
 		void bind_vertex_buffer(CmdBuffer *cmd, VertexBuffer *vbo);
 		void bind_index_buffer(CmdBuffer *cmd, IndexBuffer *ibo);
 		void draw_indexed(CmdBuffer *cmd, u32 index_count, u32 instance_count = 1, u32 first_index = 0, s32 vertex_offset = 0, u32 first_instance_id = 0);
-		void push_constants(CmdBuffer *cmd, GraphicsPipeline *pipeline, const PushConstant &constant);
 		void update_descriptor_set(DescriptorSet *set, void *data);
 		void update_descriptor_set(DescriptorSet *set, const Option<ResourceId> &texture, u32 binding);
 		void update_default_descriptor_set(CmdBuffer *cmd, CameraUBO *camera_ubo, DirectionalLightUBO *directional_light_ubo);
-		void bind_descriptor_set(CmdBuffer *cmd, GraphicsPipeline *pipeline, DescriptorSet *set);
-		void bind_material(CmdBuffer *cmd, GraphicsPipeline *pipeline, Material *material);
+		void bind_descriptor_set(CmdBuffer *cmd, Shader *shader, DescriptorSet *set, const GraphicsPipelineInfo &info = {}, const Option<PushConstant> &constant = None);
+		void bind_material(CmdBuffer *cmd, Material *mat, const GraphicsPipelineInfo &info = {}, const Option<PushConstant> &constant = None);
 
 		inline void bind_mesh(CmdBuffer *cmd, Mesh *mesh)
 		{
@@ -570,4 +554,23 @@ namespace Vultr
 																  generic_type_deserializer<Resource<Platform::Mesh *>>,
 																  generic_copy_constructor<Resource<Platform::Mesh *>>,
 																  "Mesh"};
+
+	template <>
+	struct Traits<Platform::GraphicsPipelineInfo> : GenericTraits<Platform::GraphicsPipelineInfo>
+	{
+		static u64 hash(const Platform::GraphicsPipelineInfo &info)
+		{
+			// TODO(Brandon): This is rather hacky, and if we add more fields to the pipeline info maintaining this will be a pain in the ass.
+			byte data[sizeof(bool) * 2 + sizeof(Platform::DepthTest)]{};
+			memcpy(data, &info.write_depth, sizeof(info.write_depth));
+
+			bool depth_test_has_value = info.depth_test.has_value();
+
+			memcpy(data + sizeof(info.write_depth), &depth_test_has_value, sizeof(depth_test_has_value));
+
+			if (depth_test_has_value)
+				memcpy(data + sizeof(info.write_depth) + sizeof(depth_test_has_value), &info.depth_test.value(), sizeof(info.depth_test.value()));
+			return string_hash((const char *)(data), sizeof(info));
+		}
+	};
 } // namespace Vultr

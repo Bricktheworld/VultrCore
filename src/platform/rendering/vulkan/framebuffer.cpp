@@ -97,7 +97,7 @@ namespace Vultr
 			VkSubpassDescription subpass_description    = {
 				   .pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS,
 				   .colorAttachmentCount = static_cast<u32>(color_attachments.size()),
-                // TODO(Brandon): Test this.
+				   // TODO(Brandon): Test this.
 				   .pColorAttachments       = !color_attachments.empty() ? &color_attachments[0] : nullptr,
 				   .pDepthStencilAttachment = &depth_attachment,
             };
@@ -130,6 +130,8 @@ namespace Vultr
 		void destroy_framebuffer(RenderContext *c, Framebuffer *framebuffer)
 		{
 			Vulkan::wait_resource_not_in_use(Vulkan::get_swapchain(c), framebuffer);
+
+			Platform::Lock lock(framebuffer->mutex);
 			auto *d = Vulkan::get_device(c);
 
 			vkDestroyFramebuffer(d->device, framebuffer->vk_framebuffer, nullptr);
@@ -139,6 +141,16 @@ namespace Vultr
 			{
 				destroy_texture(c, texture);
 			}
+
+			for (auto &[shader, pipelines] : framebuffer->pipelines)
+			{
+				shader->framebuffers_with_pipelines.remove(framebuffer);
+				for (auto &[info, pipeline] : pipelines)
+				{
+					Vulkan::destroy_pipeline(c, pipeline);
+				}
+			}
+			framebuffer->pipelines.clear();
 
 			v_free(framebuffer);
 		}
@@ -151,21 +163,6 @@ namespace Vultr
 
 		u32 get_width(Framebuffer *framebuffer) { return framebuffer->width; }
 		u32 get_height(Framebuffer *framebuffer) { return framebuffer->height; }
-
-		void attach_pipeline(RenderContext *c, Framebuffer *framebuffer, const GraphicsPipelineInfo &info, u32 id)
-		{
-			ASSERT(!framebuffer->pipelines.contains(id), "Framebuffer already has pipeline attached!");
-			auto *pipeline = init_pipeline(c, framebuffer, info);
-			framebuffer->pipelines.set(id, pipeline);
-		}
-
-		void remove_pipeline(RenderContext *c, Framebuffer *framebuffer, u32 id)
-		{
-			ASSERT(framebuffer->pipelines.contains(id), "Framebuffer does not have pipeline attached!");
-			auto *pipeline = framebuffer->pipelines.get(id);
-			destroy_pipeline(c, pipeline);
-			framebuffer->pipelines.remove(id);
-		}
 	} // namespace Platform
 
 	namespace Vulkan

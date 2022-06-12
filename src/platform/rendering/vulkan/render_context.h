@@ -18,6 +18,7 @@ namespace Vultr
 			Texture *white_texture  = nullptr;
 			Texture *normal_texture = nullptr;
 			CmdBuffer cmd{};
+			Hashmap<Shader *, Hashmap<Platform::GraphicsPipelineInfo, Vulkan::GraphicsPipeline *>> pipelines{};
 		};
 
 	} // namespace Platform

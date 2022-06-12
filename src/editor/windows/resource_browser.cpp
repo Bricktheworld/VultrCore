@@ -76,54 +76,49 @@ namespace Vultr
 				if (file->resource_material.empty())
 					file->resource_material = Resource<Platform::Material *>(file->uuid);
 
-				//				if (file->resource_material.loaded())
-				//				{
-				//					if (!file->rendered_pipeline)
-				//					{
-				//						Platform::GraphicsPipelineInfo info{};
-				//						file->rendered_pipeline = Platform::init_pipeline(engine()->context, file->rendered_framebuffer.value(), info);
-				//					}
-				//					auto camera_transform = Transform{.position = Vec3(0, 0, -1)};
-				//					auto camera_component = Camera{};
-				//					auto light_transform  = Transform{};
-				//					auto light_component  = DirectionalLight{
-				//						 .intensity = 3,
-				//						 .specular  = 1,
-				//						 .ambient   = 0.140,
-				//                    };
-				//
-				//					Platform::CameraUBO camera_ubo{
-				//						.position  = Vec4(camera_transform.position, 0),
-				//						.view      = view_matrix(camera_transform),
-				//						.proj      = projection_matrix(camera_component, preview_size, preview_size),
-				//						.view_proj = camera_ubo.proj * camera_ubo.view,
-				//
-				//					};
-				//					Platform::DirectionalLightUBO light_ubo{
-				//						.direction = Vec4(forward(light_transform), 0),
-				//						.diffuse   = light_component.diffuse,
-				//						.specular  = light_component.specular,
-				//						.intensity = light_component.intensity,
-				//						.ambient   = light_component.ambient,
-				//					};
-				//					Platform::update_default_descriptor_set(cmd, &camera_ubo, &light_ubo);
-				//
-				//					Platform::begin_framebuffer(cmd, file->rendered_framebuffer.value(), Vec4(1));
-				//					Platform::PushConstant push{
-				//						.model = model_matrix({}),
-				//					};
-				//					Platform::push_constants(cmd, file->rendered_pipeline.value(), push);
-				//					Platform::bind_material(cmd, file->rendered_pipeline.value(), file->resource_material.value());
-				//					Platform::draw_mesh(cmd, e->resource_browser.material_sphere);
-				//					Platform::end_framebuffer(cmd);
-				//
-				//					return get_attachment_texture(file->rendered_framebuffer.value(), 0);
-				//				}
-				//				else
-				//				{
-				// TODO(Brandon): Get an actual icon for materials.
-				return rm->file;
-				//				}
+				if (file->resource_material.loaded())
+				{
+					auto camera_transform = Transform{.position = Vec3(0, 0, -1)};
+					auto camera_component = Camera{};
+					auto light_transform  = Transform{};
+					auto light_component  = DirectionalLight{
+						 .intensity = 3,
+						 .specular  = 1,
+						 .ambient   = 0.140,
+                    };
+
+					Platform::CameraUBO camera_ubo{
+						.position  = Vec4(camera_transform.position, 0),
+						.view      = view_matrix(camera_transform),
+						.proj      = projection_matrix(camera_component, preview_size, preview_size),
+						.view_proj = camera_ubo.proj * camera_ubo.view,
+
+					};
+					Platform::DirectionalLightUBO light_ubo{
+						.direction = Vec4(forward(light_transform), 0),
+						.diffuse   = light_component.diffuse,
+						.specular  = light_component.specular,
+						.intensity = light_component.intensity,
+						.ambient   = light_component.ambient,
+					};
+					//					Platform::update_default_descriptor_set(cmd, &camera_ubo, &light_ubo);
+
+					//					Platform::begin_framebuffer(cmd, file->rendered_framebuffer.value(), Vec4(1));
+					//					Platform::PushConstant push{
+					//						.model = model_matrix({}),
+					//					};
+					//					Platform::bind_material(cmd, file->resource_material.value(), {}, push);
+					//					Platform::draw_mesh(cmd, e->resource_browser.material_sphere);
+					//					Platform::end_framebuffer(cmd);
+
+					//					return get_attachment_texture(file->rendered_framebuffer.value(), 0);
+					return rm->file;
+				}
+				else
+				{
+					// TODO(Brandon): Get an actual icon for materials.
+					return rm->file;
+				}
 			}
 			case ResourceType::MESH:
 			{

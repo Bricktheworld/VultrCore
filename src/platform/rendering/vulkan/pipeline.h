@@ -1,11 +1,10 @@
 #pragma once
 #include "render_context.h"
-#include "shader.h"
-#include "descriptor_set.h"
+#include <utils/traits.h>
 
 namespace Vultr
 {
-	namespace Platform
+	namespace Vulkan
 	{
 		struct GraphicsPipeline
 		{
@@ -13,5 +12,10 @@ namespace Vultr
 			VkPipelineLayout vk_layout = nullptr;
 			VkPipeline vk_pipeline     = nullptr;
 		};
-	} // namespace Platform
+
+		GraphicsPipeline *init_pipeline(Platform::RenderContext *c, Platform::Shader *shader, const Platform::GraphicsPipelineInfo &info);
+		GraphicsPipeline *init_pipeline(Platform::RenderContext *c, Platform::Framebuffer *framebuffer, Platform::Shader *shader, const Platform::GraphicsPipelineInfo &info);
+		void bind_pipeline(Platform::CmdBuffer *cmd, GraphicsPipeline *pipeline);
+		void destroy_pipeline(Platform::RenderContext *c, GraphicsPipeline *pipeline);
+	} // namespace Vulkan
 } // namespace Vultr

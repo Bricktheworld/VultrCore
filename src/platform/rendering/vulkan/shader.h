@@ -4,6 +4,7 @@
 #include <filesystem/filesystem.h>
 #include <platform/rendering.h>
 #include "descriptor_set.h"
+#include "pipeline.h"
 
 namespace Vultr
 {
@@ -12,7 +13,6 @@ namespace Vultr
 	{
 		struct Shader
 		{
-			byte empty_bytes[8]{0};
 			VkShaderModule vert_module = nullptr;
 			VkShaderModule frag_module = nullptr;
 
@@ -26,6 +26,13 @@ namespace Vultr
 			Queue<DescriptorSet *, MAX_DESCRIPTOR_SETS> free_descriptor_sets{};
 			Vector<DescriptorSet *, MAX_DESCRIPTOR_SETS> allocated_descriptor_sets{};
 			Platform::Mutex mutex{};
+
+			HashTable<Framebuffer *> framebuffers_with_pipelines{};
 		};
 	} // namespace Platform
+
+	namespace Vulkan
+	{
+		GraphicsPipeline *get_or_create_pipeline(Platform::RenderContext *c, Platform::Shader *shader, const Platform::GraphicsPipelineInfo &info, Option<Platform::Framebuffer *> framebuffer = None);
+	}
 } // namespace Vultr

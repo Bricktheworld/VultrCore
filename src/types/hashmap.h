@@ -5,7 +5,8 @@
 namespace Vultr
 {
 	template <typename K, typename V, typename TraitsForK = Traits<K>>
-	requires(!is_l_value<V> && !is_r_value<V> && !is_l_value<K> && !is_r_value<K>) struct Hashmap
+		requires(!is_l_value<V> && !is_r_value<V> && !is_l_value<K> && !is_r_value<K> && requires(const K &a, const K &b) { a == b; })
+	struct Hashmap
 	{
 		struct Entry
 		{
@@ -14,7 +15,8 @@ namespace Vultr
 		};
 
 		template <typename U, typename TraitsForU>
-		requires(requires(const U &key) { TraitsForU::hash(key); }) struct EntryTraits
+			requires(requires(const U &key) { TraitsForU::hash(key); })
+		struct EntryTraits
 		{
 			static u32 hash(const Entry &entry) { return TraitsForK::hash(entry.key); }
 			static u32 hash(const U &key) { return TraitsForU::hash(key); }

@@ -18,7 +18,8 @@ namespace Vultr
 	};
 
 	template <typename T>
-	requires(is_integral<T>) struct Traits<T> : public GenericTraits<T>
+		requires(is_integral<T>)
+	struct Traits<T> : public GenericTraits<T>
 	{
 		static constexpr bool is_trivial() { return true; }
 		static constexpr u32 hash(T value)
@@ -35,14 +36,16 @@ namespace Vultr
 	};
 
 	template <typename T>
-	requires(is_pointer<T> && !is_pointer_of_type<char, T>) struct Traits<T> : public GenericTraits<T>
+		requires(is_pointer<T> && !is_pointer_of_type<char, T>)
+	struct Traits<T> : public GenericTraits<T>
 	{
 		static constexpr bool is_trivial() { return true; }
 		static constexpr u32 hash(T value) { return ptr_hash(value); }
 	};
 
 	template <typename T>
-	requires(is_pointer_of_type<char, T>) struct Traits<T> : public GenericTraits<T>
+		requires(is_pointer_of_type<char, T>)
+	struct Traits<T> : public GenericTraits<T>
 	{
 		static constexpr u32 hash(const T value) { return string_hash(value, strlen(value)); }
 		static constexpr bool equals(const T a, const T b) { return strcmp(a, b) == 0; }
@@ -50,8 +53,5 @@ namespace Vultr
 	};
 
 	template <typename Trait, typename Type1, typename Type2>
-	concept Equalable = requires(const Type1 &a, const Type2 &b)
-	{
-		Trait::equals(a, b);
-	};
+	concept Equalable = requires(const Type1 &a, const Type2 &b) { Trait::equals(a, b); };
 } // namespace Vultr

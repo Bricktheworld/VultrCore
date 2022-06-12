@@ -136,8 +136,13 @@ namespace Vultr
 
 			begin_vk_framebuffer(cmd->cmd_buffer, framebuffer->vk_renderpass, framebuffer->vk_framebuffer, framebuffer->width, framebuffer->height, clear_colors);
 			Vulkan::depend_resource(cmd, framebuffer);
+			cmd->current_framebuffer = framebuffer;
 		}
-		void end_framebuffer(CmdBuffer *cmd) { vkCmdEndRenderPass(cmd->cmd_buffer); }
+		void end_framebuffer(CmdBuffer *cmd)
+		{
+			vkCmdEndRenderPass(cmd->cmd_buffer);
+			cmd->current_framebuffer = None;
+		}
 
 		void end_cmd_buffer(CmdBuffer *cmd)
 		{

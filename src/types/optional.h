@@ -24,6 +24,7 @@ namespace Vultr
 			m_has_value = true;
 			new (m_storage) T(value);
 		}
+
 		Option(const Option &other) : m_has_value(other.has_value())
 		{
 			if (!other.has_value())
@@ -101,7 +102,11 @@ namespace Vultr
 		bool has_value() const { return m_has_value; }
 
 		template <typename U = T>
-		requires(!is_same<U, bool>) operator bool() const { return has_value(); }
+			requires(!is_same<U, bool>)
+		operator bool() const
+		{
+			return has_value();
+		}
 
 		bool operator==(const Option &other) const
 		{
@@ -240,7 +245,9 @@ namespace Vultr
 
 	// NOTE(Brandon): This is really, really stupid but I kinda like it and I'm stubborn.
 #define let(var, option)                                                                                                                                                                                              \
-	(auto __opt = (option)) if (var = __opt.value(); false) {}                                                                                                                                                        \
+	(auto __opt = (option)) if (var = __opt.value(); false)                                                                                                                                                           \
+	{                                                                                                                                                                                                                 \
+	}                                                                                                                                                                                                                 \
 	else
 
 } // namespace Vultr

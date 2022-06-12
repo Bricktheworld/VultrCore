@@ -1,13 +1,15 @@
 #include "pipeline.h"
 #include "framebuffer.h"
 #include "texture.h"
+#include "shader.h"
 
 namespace Vultr
 {
-	namespace Platform
+	namespace Vulkan
 	{
-		static VkFormat vk_format(VertexAttributeType type)
+		static VkFormat vk_format(Platform::VertexAttributeType type)
 		{
+			using namespace Platform;
 			switch (type)
 			{
 				case VertexAttributeType::F32:
@@ -47,8 +49,9 @@ namespace Vultr
 			}
 		}
 
-		static VkCompareOp vk_depth_compare_op(DepthTest test)
+		static VkCompareOp vk_depth_compare_op(Platform::DepthTest test)
 		{
+			using namespace Platform;
 			switch (test)
 			{
 				case DepthTest::ALWAYS:
@@ -70,7 +73,7 @@ namespace Vultr
 			}
 		}
 
-		static GraphicsPipeline *init_vk_pipeline(RenderContext *c, const GraphicsPipelineInfo &info, VkRenderPass render_pass, bool has_depth)
+		static GraphicsPipeline *init_vk_pipeline(Platform::RenderContext *c, VkRenderPass render_pass, Platform::Shader *shader, const Platform::GraphicsPipelineInfo &info, bool has_depth)
 		{
 			using namespace Vulkan;
 
@@ -82,24 +85,26 @@ namespace Vultr
 			VkPipelineShaderStageCreateInfo stages[] = {{
 															.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 															.stage  = VK_SHADER_STAGE_VERTEX_BIT,
-															.module = info.shader->vert_module,
+															.module = shader->vert_module,
 															.pName  = "main",
 														},
 														{
 															.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 															.stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
-															.module = info.shader->frag_module,
+															.module = shader->frag_module,
 															.pName  = "main",
 														}};
+			auto vert_description                    = Platform::get_vertex_description<Platform::Vertex>();
+
 			VkVertexInputBindingDescription binding_description{
 				.binding   = 0,
-				.stride    = info.description.stride,
+				.stride    = vert_description.stride,
 				.inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
 			};
 
-			VkVertexInputAttributeDescription attribute_descriptions[info.description.attribute_descriptions.size()];
+			VkVertexInputAttributeDescription attribute_descriptions[vert_description.attribute_descriptions.size()];
 			u32 i = 0;
-			for (auto &description : info.description.attribute_descriptions)
+			for (auto &description : vert_description.attribute_descriptions)
 			{
 				attribute_descriptions[i].location = i;
 				attribute_descriptions[i].binding  = 0;
@@ -112,7 +117,7 @@ namespace Vultr
 				.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 				.vertexBindingDescriptionCount   = 1,
 				.pVertexBindingDescriptions      = &binding_description,
-				.vertexAttributeDescriptionCount = static_cast<u32>(info.description.attribute_descriptions.size()),
+				.vertexAttributeDescriptionCount = static_cast<u32>(vert_description.attribute_descriptions.size()),
 				.pVertexAttributeDescriptions    = &attribute_descriptions[0],
 			};
 
@@ -185,10 +190,10 @@ namespace Vultr
 			VkPushConstantRange push_constant_range{
 				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				.offset     = 0,
-				.size       = sizeof(PushConstant),
+				.size       = sizeof(Platform::PushConstant),
 			};
 
-			VkDescriptorSetLayout layouts[2] = {sc->default_descriptor_set_layout, pipeline->layout.shader->vk_custom_layout};
+			VkDescriptorSetLayout layouts[2] = {sc->default_descriptor_set_layout, shader->vk_custom_layout};
 
 			VkPipelineLayoutCreateInfo pipeline_layout_info{
 				.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -231,11 +236,17 @@ namespace Vultr
 			return pipeline;
 		}
 
-		GraphicsPipeline *init_pipeline(RenderContext *c, const GraphicsPipelineInfo &info) { return init_vk_pipeline(c, info, Vulkan::get_swapchain(c)->render_pass, false); }
+		GraphicsPipeline *init_pipeline(Platform::RenderContext *c, Platform::Shader *shader, const Platform::GraphicsPipelineInfo &info)
+		{
+			return init_vk_pipeline(c, Vulkan::get_swapchain(c)->render_pass, shader, info, false);
+		}
 
-		GraphicsPipeline *init_pipeline(RenderContext *c, Framebuffer *framebuffer, const GraphicsPipelineInfo &info) { return init_vk_pipeline(c, info, framebuffer->vk_renderpass, Vulkan::has_depth(framebuffer)); }
+		GraphicsPipeline *init_pipeline(Platform::RenderContext *c, Platform::Framebuffer *framebuffer, Platform::Shader *shader, const Platform::GraphicsPipelineInfo &info)
+		{
+			return init_vk_pipeline(c, framebuffer->vk_renderpass, shader, info, Vulkan::has_depth(framebuffer));
+		}
 
-		void destroy_pipeline(RenderContext *c, GraphicsPipeline *pipeline)
+		void destroy_pipeline(Platform::RenderContext *c, GraphicsPipeline *pipeline)
 		{
 			auto *d = Vulkan::get_device(c);
 			Vulkan::wait_resource_not_in_use(Vulkan::get_swapchain(c), pipeline);
@@ -246,125 +257,14 @@ namespace Vultr
 			v_free(pipeline);
 		}
 
-		static Platform::Texture *get_placeholder_texture(RenderContext *c, SamplerType type)
-		{
-			switch (type)
-			{
-				case SamplerType::NORMAL:
-					return c->normal_texture;
-				case SamplerType::ALBEDO:
-				case SamplerType::METALLIC:
-				case SamplerType::ROUGHNESS:
-				case SamplerType::AMBIENT_OCCLUSION:
-					return c->white_texture;
-			}
-		}
-
-		void bind_pipeline(CmdBuffer *cmd, GraphicsPipeline *pipeline)
+		void bind_pipeline(Platform::CmdBuffer *cmd, GraphicsPipeline *pipeline)
 		{
 			ASSERT(pipeline != nullptr && pipeline->vk_pipeline != nullptr, "Cannot bind nullptr pipeline!");
 
-			Vector<VkWriteDescriptorSet> write_sets{};
-			Vector<VkDescriptorBufferInfo> ubo_info{};
-			Vector<VkDescriptorImageInfo> tex_info{};
-
-			auto *shader = pipeline->layout.shader;
-			auto *c      = cmd->render_context;
-			auto *d      = Vulkan::get_device(c);
-			Platform::Lock lock(shader->mutex);
-
-			u32 ubo_info_len   = 0;
-			u32 tex_info_len   = 0;
-			u32 write_sets_len = 0;
-			for (auto &set : shader->allocated_descriptor_sets)
-			{
-				if (!set->updated.at(cmd->frame_index))
-					continue;
-				ubo_info_len++;
-				write_sets_len++;
-				for (auto &sampler : set->sampler_bindings)
-				{
-					tex_info_len++;
-					write_sets_len++;
-				}
-			}
-
-			write_sets.resize(write_sets_len);
-			ubo_info.resize(ubo_info_len);
-			tex_info.resize(tex_info_len);
-
-			u32 ubo_info_index  = 0;
-			u32 tex_info_index  = 0;
-			u32 write_set_index = 0;
-			for (auto &set : shader->allocated_descriptor_sets)
-			{
-				if (!set->updated.at(cmd->frame_index))
-					continue;
-
-				set->updated.set(cmd->frame_index, false);
-				auto *vk_set             = set->vk_frame_descriptor_sets[cmd->frame_index];
-
-				ubo_info[ubo_info_index] = {
-					.buffer = set->uniform_buffer_binding.buffer.buffer,
-					.offset = 0,
-					.range  = pad_size(d, set->shader->reflection.uniform_size),
-				};
-				write_sets[write_set_index] = {
-					.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-					.pNext           = nullptr,
-					.dstSet          = vk_set,
-					.dstBinding      = 0,
-					.descriptorCount = 1,
-					.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-					.pBufferInfo     = &ubo_info[ubo_info_index],
-				};
-				write_set_index++;
-				ubo_info_index++;
-
-				u32 i = 1;
-				for (auto &sampler : set->sampler_bindings)
-				{
-					auto type                  = shader->reflection.samplers[i - 1].type;
-					Platform::Texture *texture = get_placeholder_texture(c, type);
-
-					if (sampler.has_value())
-					{
-						if (!sampler.value().loaded<Platform::Texture *>())
-							continue;
-						texture = sampler.value().value<Platform::Texture *>();
-					}
-
-					tex_info[tex_info_index] = {
-						.sampler     = texture->sampler,
-						.imageView   = texture->image_view,
-						.imageLayout = texture->layout,
-					};
-
-					write_sets[write_set_index] = {
-						.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-						.pNext           = nullptr,
-						.dstSet          = vk_set,
-						.dstBinding      = i,
-						.descriptorCount = 1,
-						.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-						.pImageInfo      = &tex_info[tex_info_index],
-					};
-					write_set_index++;
-					tex_info_index++;
-					i++;
-				}
-			}
-
-			if (write_sets_len > 0)
-			{
-				vkUpdateDescriptorSets(d->device, write_sets_len, &write_sets[0], 0, nullptr);
-			}
-
 			vkCmdBindPipeline(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_pipeline);
 			vkCmdBindDescriptorSets(cmd->cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_layout, 0, 1, &cmd->frame->default_uniform_descriptor, 0, nullptr);
-			Vulkan::depend_resource(cmd, shader);
 			Vulkan::depend_resource(cmd, pipeline);
 		}
-	} // namespace Platform
+	} // namespace Vulkan
 
 } // namespace Vultr

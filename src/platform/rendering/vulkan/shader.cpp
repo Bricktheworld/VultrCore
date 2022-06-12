@@ -17,6 +17,61 @@ namespace Vultr
 	template <>
 	inline constexpr Type get_type<Color> = {PrimitiveType::COLOR, []() { return sizeof(Vec4); }, generic_type_serializer<Vec4>, generic_type_deserializer<Vec4>, generic_copy_constructor<Vec4>, "Color"};
 
+	namespace Vulkan
+	{
+		GraphicsPipeline *get_or_create_pipeline(Platform::RenderContext *c, Platform::Shader *shader, const Platform::GraphicsPipelineInfo &info, Option<Platform::Framebuffer *> opt_framebuffer)
+		{
+			Platform::Lock shader_lock(shader->mutex);
+			if let (auto *framebuffer, opt_framebuffer)
+			{
+				Platform::Lock framebuffer_lock(framebuffer->mutex);
+				if let (auto &pipelines, framebuffer->pipelines.try_get(shader))
+				{
+					if let (auto *pipeline, pipelines.try_get(info))
+					{
+						return pipeline;
+					}
+					else
+					{
+						auto *pipeline = init_pipeline(c, framebuffer, shader, info);
+						pipelines.set(info, pipeline);
+						return pipeline;
+					}
+				}
+				else
+				{
+					auto *pipeline = init_pipeline(c, framebuffer, shader, info);
+					framebuffer->pipelines.set(shader, {});
+					framebuffer->pipelines.get(shader).set(info, pipeline);
+					return pipeline;
+				}
+			}
+			else
+			{
+				if let (auto &pipelines, c->pipelines.try_get(shader))
+				{
+					if let (auto *pipeline, pipelines.try_get(info))
+					{
+						return pipeline;
+					}
+					else
+					{
+						auto *pipeline = init_pipeline(c, shader, info);
+						pipelines.set(info, pipeline);
+						return pipeline;
+					}
+				}
+				else
+				{
+					auto *pipeline = init_pipeline(c, shader, info);
+					c->pipelines.set(shader, {});
+					c->pipelines.get(shader).set(info, pipeline);
+					return pipeline;
+				}
+			}
+		}
+	} // namespace Vulkan
+
 	namespace Platform
 	{
 #define ENTRY_NAME "main"
@@ -496,6 +551,16 @@ namespace Vultr
 				Vulkan::destroy_descriptor_pool(d, pool);
 			}
 
+			for (auto *framebuffer : shader->framebuffers_with_pipelines)
+			{
+				Platform::Lock l(framebuffer->mutex);
+				for (auto &[info, pipeline] : framebuffer->pipelines.get(shader))
+				{
+					Vulkan::destroy_pipeline(c, pipeline);
+				}
+				framebuffer->pipelines.remove(shader);
+			}
+
 			shader->vert_module      = nullptr;
 			shader->frag_module      = nullptr;
 			shader->vk_custom_layout = nullptr;
@@ -653,8 +718,24 @@ namespace Vultr
 			return mat;
 		}
 
-		void bind_material(CmdBuffer *cmd, GraphicsPipeline *pipeline, Material *mat)
+		static Platform::Texture *get_placeholder_texture(RenderContext *c, SamplerType type)
 		{
+			switch (type)
+			{
+				case SamplerType::NORMAL:
+					return c->normal_texture;
+				case SamplerType::ALBEDO:
+				case SamplerType::METALLIC:
+				case SamplerType::ROUGHNESS:
+				case SamplerType::AMBIENT_OCCLUSION:
+					return c->white_texture;
+			}
+		}
+
+		void bind_material(CmdBuffer *cmd, Material *mat, const GraphicsPipelineInfo &info, const Option<PushConstant> &constant)
+		{
+			ASSERT(mat->source.loaded(), "Cannot bind material before it has been loaded!");
+
 			update_descriptor_set(mat->descriptor, mat->uniform_data);
 			u32 binding = 1;
 			for (auto &sampler : mat->samplers)
@@ -669,8 +750,107 @@ namespace Vultr
 				}
 				binding++;
 			}
-			bind_pipeline(cmd, pipeline);
-			bind_descriptor_set(cmd, pipeline, mat->descriptor);
+
+			auto *shader = mat->source.value();
+			{
+				// TODO(Brandon): Add a bitset here that before any of this is done checks if anything at all has been written to the descriptor sets in the shader, so that we don't do this every time we bind...
+				Vector<VkWriteDescriptorSet> write_sets{};
+				Vector<VkDescriptorBufferInfo> ubo_info{};
+				Vector<VkDescriptorImageInfo> tex_info{};
+
+				auto *c = cmd->render_context;
+				auto *d = Vulkan::get_device(c);
+				Platform::Lock lock(shader->mutex);
+
+				u32 ubo_info_len   = 0;
+				u32 tex_info_len   = 0;
+				u32 write_sets_len = 0;
+				for (auto &set : shader->allocated_descriptor_sets)
+				{
+					if (!set->updated.at(cmd->frame_index))
+						continue;
+					ubo_info_len++;
+					write_sets_len++;
+					for (auto &sampler : set->sampler_bindings)
+					{
+						tex_info_len++;
+						write_sets_len++;
+					}
+				}
+
+				write_sets.resize(write_sets_len);
+				ubo_info.resize(ubo_info_len);
+				tex_info.resize(tex_info_len);
+
+				u32 ubo_info_index  = 0;
+				u32 tex_info_index  = 0;
+				u32 write_set_index = 0;
+				for (auto &set : shader->allocated_descriptor_sets)
+				{
+					if (!set->updated.at(cmd->frame_index))
+						continue;
+
+					set->updated.set(cmd->frame_index, false);
+					auto *vk_set             = set->vk_frame_descriptor_sets[cmd->frame_index];
+
+					ubo_info[ubo_info_index] = {
+						.buffer = set->uniform_buffer_binding.buffer.buffer,
+						.offset = 0,
+						.range  = pad_size(d, set->shader->reflection.uniform_size),
+					};
+					write_sets[write_set_index] = {
+						.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+						.pNext           = nullptr,
+						.dstSet          = vk_set,
+						.dstBinding      = 0,
+						.descriptorCount = 1,
+						.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+						.pBufferInfo     = &ubo_info[ubo_info_index],
+					};
+					write_set_index++;
+					ubo_info_index++;
+
+					u32 i = 1;
+					for (auto &sampler : set->sampler_bindings)
+					{
+						auto type                  = shader->reflection.samplers[i - 1].type;
+						Platform::Texture *texture = get_placeholder_texture(c, type);
+
+						if (sampler.has_value())
+						{
+							if (!sampler.value().loaded<Platform::Texture *>())
+								continue;
+							texture = sampler.value().value<Platform::Texture *>();
+						}
+
+						tex_info[tex_info_index] = {
+							.sampler     = texture->sampler,
+							.imageView   = texture->image_view,
+							.imageLayout = texture->layout,
+						};
+
+						write_sets[write_set_index] = {
+							.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+							.pNext           = nullptr,
+							.dstSet          = vk_set,
+							.dstBinding      = i,
+							.descriptorCount = 1,
+							.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+							.pImageInfo      = &tex_info[tex_info_index],
+						};
+						write_set_index++;
+						tex_info_index++;
+						i++;
+					}
+				}
+
+				if (write_sets_len > 0)
+				{
+					vkUpdateDescriptorSets(d->device, write_sets_len, &write_sets[0], 0, nullptr);
+				}
+			}
+
+			bind_descriptor_set(cmd, shader, mat->descriptor, info, constant);
 		}
 
 		void destroy_material(RenderContext *c, Material *mat)
