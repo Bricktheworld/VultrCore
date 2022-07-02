@@ -278,7 +278,8 @@ namespace Vultr::Platform
 
 	Window *open_window(DisplayMode mode, Monitor *monitor, const char *title, bool debug, u32 width, u32 height)
 	{
-		ASSERT(glfwInit(), "Failed to initialize glfw");
+		int res = glfwInit();
+		ASSERT(res, "Failed to initialize glfw");
 		ASSERT(title != nullptr, "Invalid title.");
 
 		auto *window = static_cast<Window *>(persist_alloc(sizeof(Window)));

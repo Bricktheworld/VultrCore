@@ -288,7 +288,10 @@ namespace Vultr
 
 			Device device;
 			PRODUCTION_ASSERT(vkCreateInstance(&instance_create_info, nullptr, &device.instance) == VK_SUCCESS, "Failed to init vulkan.");
-			init_debug_messenger(&device, debug_cb);
+			if (debug)
+			{
+				init_debug_messenger(&device, debug_cb);
+			}
 			init_surface(&device, window);
 			pick_physical_device(&device);
 			init_logical_device(&device);
