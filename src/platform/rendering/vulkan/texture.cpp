@@ -26,53 +26,59 @@ namespace Vultr
 					return VK_FORMAT_R8G8B8_UNORM;
 			}
 		}
-
-		VkFormat get_vk_texture_format_linear(VkFormat format)
-		{
-			switch (format)
-			{
-				case VK_FORMAT_R8G8B8_SRGB:
-					return VK_FORMAT_R8G8B8_UNORM;
-				case VK_FORMAT_R8G8B8A8_SRGB:
-					return VK_FORMAT_R8G8B8A8_UNORM;
-				default:
-					return format;
-			}
-		}
 	} // namespace Vulkan
 	namespace Platform
 	{
-		static Texture *init_texture(Vulkan::Device *d, u32 width, u32 height, TextureFormat format)
+		static Texture *init_texture(Vulkan::Device *d, u32 width, u32 height, TextureFormat format, u16 texture_usage)
 		{
-			auto *texture   = v_alloc<Texture>();
+			auto *texture          = v_alloc<Texture>();
 
-			texture->width  = width;
-			texture->height = height;
+			texture->width         = width;
+			texture->height        = height;
 
-			texture->format = format;
+			texture->format        = format;
+			texture->texture_usage = texture_usage;
 
-			auto extent     = VkExtent3D{
-					.width  = width,
-					.height = height,
+			auto extent            = VkExtent3D{
+						   .width  = width,
+						   .height = height,
                 // TODO(Brandon): Figure out what this value even does.
-					.depth = 1,
+						   .depth = 1,
             };
 
-			VkImageUsageFlags usage_flags = format != TextureFormat::DEPTH ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-			texture->image_info           = {
-						  .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-						  .imageType   = VK_IMAGE_TYPE_2D,
-						  .format      = Vulkan::get_vk_texture_format(d, format),
-						  .extent      = extent,
-						  .mipLevels   = 1,
-						  .arrayLayers = 1,
-						  .samples     = VK_SAMPLE_COUNT_1_BIT,
-						  .tiling      = VK_IMAGE_TILING_OPTIMAL,
-                // NOTE(Brandon): We are just marking all of the flags that MIGHT be used, this should probably be something that we should flag depending on if performance is impacted
-						  .usage         = usage_flags | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-						  .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
-						  .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            };
+			VkImageUsageFlags usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT;
+			if (texture_usage & TextureUsage::ATTACHMENT)
+			{
+				if (format == TextureFormat::DEPTH)
+				{
+					usage_flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+				}
+				else
+				{
+					usage_flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+				}
+			}
+			if (texture_usage & TextureUsage::TEXTURE)
+			{
+				usage_flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+			}
+			if (texture_usage & TextureUsage::STORAGE)
+			{
+				usage_flags |= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+			}
+			texture->image_info = {
+				.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+				.imageType     = VK_IMAGE_TYPE_2D,
+				.format        = Vulkan::get_vk_texture_format(d, format),
+				.extent        = extent,
+				.mipLevels     = 1,
+				.arrayLayers   = 1,
+				.samples       = VK_SAMPLE_COUNT_1_BIT,
+				.tiling        = VK_IMAGE_TILING_OPTIMAL,
+				.usage         = usage_flags,
+				.sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
+				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			};
 
 			VmaAllocationCreateInfo alloc_info{
 				.usage         = VMA_MEMORY_USAGE_GPU_ONLY,
@@ -112,21 +118,20 @@ namespace Vultr
 						.layerCount     = 1,
 					},
 			};
-
-			texture->layout = VK_IMAGE_LAYOUT_GENERAL;
 			VK_CHECK(vkCreateImageView(d->device, &texture->image_view_info, nullptr, &texture->image_view));
 
+			texture->layout            = VK_IMAGE_LAYOUT_GENERAL;
 			texture->cached_texture_id = nullptr;
 
 			return texture;
 		}
 
-		Texture *init_texture(RenderContext *c, u32 width, u32 height, TextureFormat format) { return init_texture(Vulkan::get_device(c), width, height, format); }
-		Texture *init_texture(UploadContext *c, u32 width, u32 height, TextureFormat format) { return init_texture(Vulkan::get_device(c), width, height, format); }
+		Texture *init_texture(RenderContext *c, u32 width, u32 height, TextureFormat format, u16 texture_usage) { return init_texture(Vulkan::get_device(c), width, height, format, texture_usage); }
+		Texture *init_texture(UploadContext *c, u32 width, u32 height, TextureFormat format, u16 texture_usage) { return init_texture(Vulkan::get_device(c), width, height, format, texture_usage); }
 
 		Texture *init_white_texture(UploadContext *c)
 		{
-			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8);
+			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8, TextureUsage::TEXTURE);
 			byte data[4]  = {255, 255, 255, 255};
 			fill_texture(c, texture, data, get_pixel_size(texture->format));
 			return texture;
@@ -134,7 +139,7 @@ namespace Vultr
 
 		Texture *init_black_texture(UploadContext *c)
 		{
-			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8);
+			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8, TextureUsage::TEXTURE);
 			byte data[4]  = {0};
 			fill_texture(c, texture, data, get_pixel_size(texture->format));
 			return texture;
@@ -142,7 +147,7 @@ namespace Vultr
 
 		Texture *init_normal_texture(UploadContext *c)
 		{
-			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8);
+			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8, TextureUsage::TEXTURE);
 			byte data[4]  = {128, 128, 255, 0};
 			fill_texture(c, texture, data, get_pixel_size(texture->format));
 			return texture;

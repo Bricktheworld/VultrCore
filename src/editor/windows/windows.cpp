@@ -153,17 +153,17 @@ namespace Vultr
 	static void load_resources(Editor *e)
 	{
 		auto *rm    = &e->resource_manager;
-		rm->texture = Platform::init_texture(rm->upload_context, EditorResources::TEXTURE_PNG_WIDTH, EditorResources::TEXTURE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		rm->texture = Platform::init_texture(rm->upload_context, EditorResources::TEXTURE_PNG_WIDTH, EditorResources::TEXTURE_PNG_HEIGHT, Platform::TextureFormat::RGBA8, Platform::TextureUsage::TEXTURE);
 		Platform::fill_texture(rm->upload_context, rm->texture, EditorResources::GET_TEXTURE_PNG(), EditorResources::TEXTURE_PNG_LEN);
-		rm->cpp_source = Platform::init_texture(rm->upload_context, EditorResources::CPP_PNG_WIDTH, EditorResources::CPP_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		rm->cpp_source = Platform::init_texture(rm->upload_context, EditorResources::CPP_PNG_WIDTH, EditorResources::CPP_PNG_HEIGHT, Platform::TextureFormat::RGBA8, Platform::TextureUsage::TEXTURE);
 		Platform::fill_texture(rm->upload_context, rm->cpp_source, EditorResources::GET_CPP_PNG(), EditorResources::CPP_PNG_LEN);
-		rm->shader = Platform::init_texture(rm->upload_context, EditorResources::SHADER_PNG_WIDTH, EditorResources::SHADER_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		rm->shader = Platform::init_texture(rm->upload_context, EditorResources::SHADER_PNG_WIDTH, EditorResources::SHADER_PNG_HEIGHT, Platform::TextureFormat::RGBA8, Platform::TextureUsage::TEXTURE);
 		Platform::fill_texture(rm->upload_context, rm->shader, EditorResources::GET_SHADER_PNG(), EditorResources::SHADER_PNG_LEN);
-		rm->file = Platform::init_texture(rm->upload_context, EditorResources::FILE_PNG_WIDTH, EditorResources::FILE_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		rm->file = Platform::init_texture(rm->upload_context, EditorResources::FILE_PNG_WIDTH, EditorResources::FILE_PNG_HEIGHT, Platform::TextureFormat::RGBA8, Platform::TextureUsage::TEXTURE);
 		Platform::fill_texture(rm->upload_context, rm->file, EditorResources::GET_FILE_PNG(), EditorResources::FILE_PNG_LEN);
-		rm->folder = Platform::init_texture(rm->upload_context, EditorResources::FOLDER_PNG_WIDTH, EditorResources::FOLDER_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		rm->folder = Platform::init_texture(rm->upload_context, EditorResources::FOLDER_PNG_WIDTH, EditorResources::FOLDER_PNG_HEIGHT, Platform::TextureFormat::RGBA8, Platform::TextureUsage::TEXTURE);
 		Platform::fill_texture(rm->upload_context, rm->folder, EditorResources::GET_FOLDER_PNG(), EditorResources::FOLDER_PNG_LEN);
-		rm->mesh = Platform::init_texture(rm->upload_context, EditorResources::MESH_PNG_WIDTH, EditorResources::MESH_PNG_HEIGHT, Platform::TextureFormat::RGBA8);
+		rm->mesh = Platform::init_texture(rm->upload_context, EditorResources::MESH_PNG_WIDTH, EditorResources::MESH_PNG_HEIGHT, Platform::TextureFormat::RGBA8, Platform::TextureUsage::TEXTURE);
 		Platform::fill_texture(rm->upload_context, rm->mesh, EditorResources::GET_MESH_PNG(), EditorResources::MESH_PNG_LEN);
 	}
 

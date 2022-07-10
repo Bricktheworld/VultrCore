@@ -6,7 +6,7 @@
 
 namespace Vultr
 {
-	using ResourceTypes = TypeList<Platform::Texture *, Platform::Mesh *, Platform::Shader *, Platform::Material *>;
+	using ResourceTypes = TypeList<Platform::Texture *, Platform::Mesh *, Platform::Shader *, Platform::ComputeShader *, Platform::Material *>;
 
 	template <typename T>
 	inline ResourceAllocator<T> *resource_allocator()

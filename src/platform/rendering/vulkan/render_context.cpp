@@ -51,19 +51,19 @@ namespace Vultr
 			if (res.has_value())
 			{
 				auto [frame, framebuffer, image_index] = res.value();
-				auto *cmd_pool                         = &frame->cmd_pool;
 
-				Vulkan::recycle_cmd_pool(Vulkan::get_device(c), cmd_pool);
+				Vulkan::recycle_cmd_pool(Vulkan::get_device(c), &frame->cmd_pool);
 				Vulkan::get_swapchain(c)->cmd_buffer_resource_mutex.lock();
-				auto cmd = Vulkan::begin_cmd_buffer(Vulkan::get_device(c), cmd_pool);
 
-				c->cmd   = {
-					  .render_context  = c,
-					  .cmd_buffer      = cmd,
-					  .frame           = frame,
-					  .out_framebuffer = framebuffer,
-					  .image_index     = image_index,
-					  .frame_index     = Vulkan::get_swapchain(c)->current_frame,
+				auto *d = Vulkan::get_device(c);
+
+				c->cmd  = {
+					 .render_context  = c,
+					 .cmd_buffer      = Vulkan::begin_cmd_buffer(d, &frame->cmd_pool),
+					 .frame           = frame,
+					 .out_framebuffer = framebuffer,
+					 .image_index     = image_index,
+					 .frame_index     = Vulkan::get_swapchain(c)->current_frame,
                 };
 
 				return &c->cmd;

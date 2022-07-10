@@ -45,7 +45,7 @@ namespace Vultr
 			PRODUCTION_ASSERT(glfwCreateWindowSurface(d->instance, static_cast<GLFWwindow *>(Platform::get_window_implementation(window)), nullptr, &d->surface) == VK_SUCCESS, "Failed to create vulkan c surface!");
 		}
 
-		static bool is_complete(const QueueFamilyIndices &indices) { return indices.graphics_family && indices.present_family; }
+		static bool is_complete(const QueueFamilyIndices &indices) { return indices.graphics_family && indices.compute_family && indices.present_family; }
 		static bool is_complete(const SwapChainSupportDetails &details) { return !details.present_modes.empty() && !details.formats.empty(); }
 
 		static QueueFamilyIndices find_queue_families(VkSurfaceKHR surface, VkPhysicalDevice physical_device)
@@ -60,9 +60,14 @@ namespace Vultr
 
 			for (u32 i = 0; i < count; i++)
 			{
-				if (properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+				if (properties[i].queueFlags & (VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT))
 				{
 					indices.graphics_family = i;
+					indices.compute_family  = i;
+				}
+				else if (properties[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
+				{
+					indices.compute_family = i;
 				}
 
 				VkBool32 present_support = false;
@@ -78,7 +83,7 @@ namespace Vultr
 
 			return indices;
 		}
-		QueueFamilyIndices find_queue_families(Device *d) { return find_queue_families(d->surface, d->physical_device); }
+		static QueueFamilyIndices find_queue_families(Device *d) { return find_queue_families(d->surface, d->physical_device); }
 
 		static bool check_device_extension_support(VkPhysicalDevice device)
 		{
@@ -194,13 +199,14 @@ namespace Vultr
 
 		static void init_logical_device(Device *d)
 		{
-			auto indices       = find_queue_families(d);
+			d->queue_family_indices = find_queue_families(d);
 
-			f32 queue_priority = 1.0f;
+			f32 queue_priority      = 1.0f;
 
-			Vector<u32, 2> queue_indices;
-			queue_indices.push_if_not_contains(indices.graphics_family.value());
-			queue_indices.push_if_not_contains(indices.present_family.value());
+			Vector<u32, 3> queue_indices;
+			queue_indices.push_if_not_contains(d->queue_family_indices.graphics_family.value());
+			queue_indices.push_if_not_contains(d->queue_family_indices.present_family.value());
+			queue_indices.push_if_not_contains(d->queue_family_indices.compute_family.value());
 
 			VkDeviceQueueCreateInfo queue_create_infos[queue_indices.size()];
 
@@ -226,8 +232,9 @@ namespace Vultr
 				.pEnabledFeatures        = &device_features,
 			};
 			PRODUCTION_ASSERT(vkCreateDevice(d->physical_device, &create_info, nullptr, &d->device) == VK_SUCCESS, "Failed to create vulkan logical device!");
-			vkGetDeviceQueue(d->device, indices.graphics_family.value(), 0, &d->graphics_queue);
-			vkGetDeviceQueue(d->device, indices.present_family.value(), 0, &d->present_queue);
+			vkGetDeviceQueue(d->device, d->queue_family_indices.graphics_family.value(), 0, &d->graphics_queue);
+			vkGetDeviceQueue(d->device, d->queue_family_indices.compute_family.value(), 0, &d->compute_queue);
+			vkGetDeviceQueue(d->device, d->queue_family_indices.present_family.value(), 0, &d->present_queue);
 		}
 
 		static void init_memory_allocator(Device *d)
@@ -314,6 +321,16 @@ namespace Vultr
 			Platform::Lock lock(d->graphics_queue_mutex);
 			VK_CHECK(vkResetFences(d->device, 1, &fence));
 			VK_CHECK(vkQueueSubmit(d->graphics_queue, submit_count, p_submits, fence));
+		}
+
+		void compute_queue_submit(Device *d, u32 submit_count, const VkSubmitInfo *p_submits, VkFence fence)
+		{
+			ASSERT(d != nullptr, "Cannot submit to nullptr device!");
+			ASSERT(p_submits != nullptr, "Cannot submit nullptr p_submits!");
+
+			Platform::Lock lock(d->compute_queue_mutex);
+			VK_CHECK(vkResetFences(d->device, 1, &fence));
+			VK_CHECK(vkQueueSubmit(d->compute_queue, submit_count, p_submits, fence));
 		}
 
 		VkResult present_queue_submit(Device *d, const VkPresentInfoKHR *p_submit)

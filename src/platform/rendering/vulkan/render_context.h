@@ -5,10 +5,15 @@
 #include "device.h"
 #include "swap_chain.h"
 #include "gpu_buffer.h"
-#include "pipeline.h"
+#include "../../rendering.h"
 
 namespace Vultr
 {
+	namespace Vulkan
+	{
+		struct GraphicsPipeline;
+	}
+
 	namespace Platform
 	{
 		struct RenderContext

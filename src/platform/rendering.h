@@ -110,6 +110,13 @@ namespace Vultr
 			DEPTH,
 		};
 
+		namespace TextureUsage
+		{
+			constexpr u16 ATTACHMENT = 0x1;
+			constexpr u16 TEXTURE    = 0x2;
+			constexpr u16 STORAGE    = 0x4;
+		} // namespace TextureUsage
+
 		inline u32 get_pixel_size(TextureFormat format)
 		{
 			switch (format)
@@ -131,8 +138,8 @@ namespace Vultr
 			}
 		}
 
-		Texture *init_texture(RenderContext *c, u32 width, u32 height, TextureFormat format);
-		Texture *init_texture(UploadContext *c, u32 width, u32 height, TextureFormat format);
+		Texture *init_texture(RenderContext *c, u32 width, u32 height, TextureFormat format, u16 texture_usage);
+		Texture *init_texture(UploadContext *c, u32 width, u32 height, TextureFormat format, u16 texture_usage);
 
 		void fill_texture(UploadContext *c, Texture *texture, byte *data, u32 size);
 
@@ -174,6 +181,7 @@ namespace Vultr
 		struct AttachmentDescription
 		{
 			TextureFormat format = TextureFormat::RGBA8;
+			u16 texture_usage    = TextureUsage::ATTACHMENT;
 
 			LoadOp load_op       = LoadOp::CLEAR;
 			StoreOp store_op     = StoreOp::STORE;
@@ -186,6 +194,7 @@ namespace Vultr
 		void destroy_framebuffer(RenderContext *c, Framebuffer *framebuffer);
 
 		struct Shader;
+		struct ComputeShader;
 
 		struct UniformMember
 		{
@@ -221,7 +230,7 @@ namespace Vultr
 		struct DescriptorSet;
 
 		DescriptorSet *alloc_descriptor_set(UploadContext *c, Shader *shader);
-		void free_descriptor_set(RenderContext *c, DescriptorSet *set);
+		void free_descriptor_set(RenderContext *c, DescriptorSet *set, Shader *shader);
 
 		static constexpr u64 MAX_MATERIAL_SIZE = Kilobyte(2);
 
@@ -237,8 +246,11 @@ namespace Vultr
 		ErrorOr<ShaderReflection> try_reflect_shader(const CompiledShaderSrc &compiled_shader);
 		ErrorOr<Shader *> try_load_shader(RenderContext *c, const CompiledShaderSrc &compiled_shader, const ShaderReflection &reflection);
 		const ShaderReflection *get_reflection_data(const Shader *shader);
-
 		void destroy_shader(RenderContext *c, Shader *shader);
+
+		ErrorOr<Buffer> try_compile_compute_shader(StringView src);
+		ErrorOr<ComputeShader *> try_load_compute_shader(RenderContext *c, const Buffer &compiled_shader);
+		void destroy_compute_shader(RenderContext *c, ComputeShader *shader);
 
 		static constexpr StringView VULTR_NULL_FILE_HANDLE = "VULTR_NULL_FILE";
 		ErrorOr<Material *> try_load_material(UploadContext *c, const Resource<Shader *> &shader, const StringView &src);
@@ -473,10 +485,18 @@ namespace Vultr
 			GEQUAL,
 		};
 
+		enum struct ShaderUsage
+		{
+			VERT_FRAG,
+			VERT_ONLY,
+			FRAG_ONLY,
+		};
+
 		struct GraphicsPipelineInfo
 		{
 			Option<DepthTest> depth_test = DepthTest::LESS;
 			bool write_depth             = true;
+			ShaderUsage shader_usage     = ShaderUsage::VERT_FRAG;
 
 			bool operator==(const GraphicsPipelineInfo &other) const { return depth_test == other.depth_test && write_depth == other.write_depth; }
 		};
@@ -492,11 +512,14 @@ namespace Vultr
 		void bind_vertex_buffer(CmdBuffer *cmd, VertexBuffer *vbo);
 		void bind_index_buffer(CmdBuffer *cmd, IndexBuffer *ibo);
 		void draw_indexed(CmdBuffer *cmd, u32 index_count, u32 instance_count = 1, u32 first_index = 0, s32 vertex_offset = 0, u32 first_instance_id = 0);
-		void update_descriptor_set(DescriptorSet *set, void *data);
-		void update_descriptor_set(DescriptorSet *set, const Option<ResourceId> &texture, u32 binding);
+		void update_descriptor_set(DescriptorSet *set, void *data, size_t size);
+		void update_descriptor_set(DescriptorSet *set, Texture *texture, u32 binding);
 		void update_default_descriptor_set(CmdBuffer *cmd, CameraUBO *camera_ubo, DirectionalLightUBO *directional_light_ubo);
 		void bind_descriptor_set(CmdBuffer *cmd, Shader *shader, DescriptorSet *set, const GraphicsPipelineInfo &info = {}, const Option<PushConstant> &constant = None);
 		void bind_material(CmdBuffer *cmd, Material *mat, const GraphicsPipelineInfo &info = {}, const Option<PushConstant> &constant = None);
+		void bind_depth_only(CmdBuffer *cmd);
+		void update_compute_shader(ComputeShader *shader, Texture *input, Texture *output);
+		void dispatch_compute(CmdBuffer *cmd, ComputeShader *shader);
 
 		inline void bind_mesh(CmdBuffer *cmd, Mesh *mesh)
 		{
@@ -561,7 +584,7 @@ namespace Vultr
 		static u64 hash(const Platform::GraphicsPipelineInfo &info)
 		{
 			// TODO(Brandon): This is rather hacky, and if we add more fields to the pipeline info maintaining this will be a pain in the ass.
-			byte data[sizeof(bool) * 2 + sizeof(Platform::DepthTest)]{};
+			byte data[sizeof(bool) * 2 + sizeof(Platform::DepthTest) + sizeof(Platform::ShaderUsage)]{};
 			memcpy(data, &info.write_depth, sizeof(info.write_depth));
 
 			bool depth_test_has_value = info.depth_test.has_value();
@@ -570,6 +593,9 @@ namespace Vultr
 
 			if (depth_test_has_value)
 				memcpy(data + sizeof(info.write_depth) + sizeof(depth_test_has_value), &info.depth_test.value(), sizeof(info.depth_test.value()));
+
+			memcpy(data + sizeof(info.write_depth) + sizeof(depth_test_has_value) + sizeof(info.depth_test.value()), &info.shader_usage, sizeof(info.shader_usage));
+
 			return string_hash((const char *)(data), sizeof(info));
 		}
 	};

@@ -95,6 +95,10 @@ namespace Vultr
 			{
 				return ResourceType::SHADER;
 			}
+			else if (extension == ".compute")
+			{
+				return ResourceType::COMPUTE_SHADER;
+			}
 			else if (extension == ".png" || extension == ".jpg" || extension == ".bmp")
 			{
 				return ResourceType::TEXTURE;
@@ -165,6 +169,9 @@ namespace Vultr
 				TRY(save_texture_metadata(path, header, {}));
 				break;
 			case ResourceType::SHADER:
+				TRY(save_metadata(path, header));
+				break;
+			case ResourceType::COMPUTE_SHADER:
 				TRY(save_metadata(path, header));
 				break;
 			case ResourceType::MATERIAL:
@@ -367,6 +374,19 @@ namespace Vultr
 
 						break;
 					}
+					case ResourceType::COMPUTE_SHADER:
+					{
+						String src{};
+						TRY(try_fread_all(entry, &src));
+						TRY_UNWRAP(auto compute_shader, Platform::try_compile_compute_shader(src));
+
+						Buffer imported{};
+						build_editor_optimized_compute_shader(&imported, compute_shader);
+
+						TRY(try_fwrite_all(out_path, imported, StreamWriteMode::OVERWRITE));
+
+						break;
+					}
 					case ResourceType::MESH:
 					{
 						TRY_UNWRAP(auto mesh, Platform::import_mesh_file(entry));
@@ -429,7 +449,7 @@ namespace Vultr
 		u16 header_size = sizeof(header);
 		byte *src       = buffer.storage + header_size;
 
-		auto *texture   = Platform::init_texture(c, header.width, header.height, Platform::TextureFormat::RGBA8);
+		auto *texture   = Platform::init_texture(c, header.width, header.height, Platform::TextureFormat::RGBA8, Platform::TextureUsage::TEXTURE);
 		Platform::fill_texture(c, texture, src, buffer.size() - header_size);
 		return texture;
 	}
@@ -464,6 +484,30 @@ namespace Vultr
 		return Platform::try_load_shader(c, src, reflection);
 	}
 
+	void build_editor_optimized_compute_shader(Buffer *out, const Buffer &compiled)
+	{
+		ComputeShaderBuildHeader header{};
+		header.version  = 1;
+		header.size     = compiled.size();
+
+		u16 header_size = sizeof(header);
+		out->resize(header_size + header.size);
+
+		out->fill(reinterpret_cast<byte *>(&header), header_size, 0);
+		out->fill(compiled.storage, header.size, header_size);
+	}
+
+	ErrorOr<Platform::ComputeShader *> load_editor_optimized_compute_shader(Platform::RenderContext *c, const Buffer &buffer)
+	{
+		auto header     = *(ComputeShaderBuildHeader *)buffer.storage;
+
+		u16 header_size = sizeof(header);
+
+		Buffer src(buffer.storage + header_size, header.size);
+
+		return Platform::try_load_compute_shader(c, src);
+	}
+
 	void build_editor_optimized_mesh(Buffer *out, const Platform::ImportedMesh &imported)
 	{
 		MeshBuildHeader header{};
@@ -483,11 +527,10 @@ namespace Vultr
 
 	ErrorOr<Platform::Mesh *> load_editor_optimized_mesh(Platform::UploadContext *c, const Buffer &buffer)
 	{
-		auto header     = *(MeshBuildHeader *)buffer.storage;
-		u16 header_size = sizeof(header);
-		u64 vertex_size = header.vertex_count * sizeof(Platform::Vertex);
-		u64 index_size  = header.index_count * sizeof(u16);
-
+		auto header        = *(MeshBuildHeader *)buffer.storage;
+		u16 header_size    = sizeof(header);
+		u64 vertex_size    = header.vertex_count * sizeof(Platform::Vertex);
+		u64 index_size     = header.index_count * sizeof(u16);
 
 		auto vertex_buffer = Buffer(buffer.storage + header_size, vertex_size);
 

@@ -5,6 +5,11 @@
 
 namespace Vultr
 {
+	namespace Platform
+	{
+		struct CmdBuffer;
+	}
+
 	namespace Vulkan
 	{
 		struct CommandPool
@@ -16,8 +21,14 @@ namespace Vultr
 			bool recording = false;
 		};
 
+		enum struct QueueType
+		{
+			GRAPHICS,
+			COMPUTE,
+		};
+
 		struct Device;
-		CommandPool init_cmd_pool(Device *d);
+		CommandPool init_cmd_pool(Device *d, QueueType queue_type);
 		VkCommandBuffer begin_cmd_buffer(Device *d, CommandPool *cmd_pool);
 		void end_cmd_buffer(VkCommandBuffer cmd, CommandPool *cmd_pool);
 		void recycle_cmd_pool(Device *d, CommandPool *cmd_pool);
@@ -29,6 +40,7 @@ namespace Vultr
 	namespace Platform
 	{
 		struct RenderContext;
+		struct Framebuffer;
 		struct CmdBuffer
 		{
 			Vulkan::Frame *frame                      = nullptr;

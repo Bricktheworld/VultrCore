@@ -1,5 +1,6 @@
 #include "framebuffer.h"
 #include "texture.h"
+#include "shader.h"
 
 namespace Vultr
 {
@@ -58,7 +59,7 @@ namespace Vultr
 					depth_attachment.attachment = i;
 				}
 
-				fb->attachments.push_back(init_texture(c, fb->width, fb->height, attachments[i].format));
+				fb->attachments.push_back(init_texture(c, fb->width, fb->height, attachments[i].format, TextureUsage::ATTACHMENT | attachments[i].texture_usage));
 				image_views.push_back(fb->attachments[i]->image_view);
 
 				attachment_descriptions[i] = VkAttachmentDescription{

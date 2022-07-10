@@ -1,4 +1,6 @@
 #include "descriptor_set.h"
+#include "shader.h"
+#include "texture.h"
 
 namespace Vultr
 {
@@ -38,10 +40,11 @@ namespace Vultr
 	} // namespace Vulkan
 	namespace Platform
 	{
-		void update_descriptor_set(DescriptorSet *set, void *data)
+		void update_descriptor_set(DescriptorSet *set, void *data, size_t size)
 		{
+			ASSERT(data != nullptr, "Cannot update descriptor set with nullptr buffer!");
+
 			auto *start = set->uniform_buffer_binding.mapped;
-			auto size   = set->shader->reflection.uniform_size;
 
 			if (memcmp(data, start, size) == 0)
 				return;
@@ -50,14 +53,19 @@ namespace Vultr
 			set->updated.set_all();
 		}
 
-		void update_descriptor_set(DescriptorSet *set, const Option<ResourceId> &texture, u32 binding)
+		void update_descriptor_set(DescriptorSet *set, Texture *texture, u32 binding)
 		{
-			auto &existing_texture = set->sampler_bindings[binding - 1];
-			if (existing_texture.has_value() && texture.has_value() && texture.value().id == existing_texture.value().id)
-				return;
-
-			if (!existing_texture.has_value() && !texture.has_value())
-				return;
+			auto *existing_texture = set->image_bindings[binding - 1];
+			if (texture == nullptr)
+			{
+				if (texture == existing_texture)
+					return;
+			}
+			else
+			{
+				if (texture == existing_texture && *texture == *existing_texture)
+					return;
+			}
 
 			existing_texture = texture;
 			set->updated.set_all();
@@ -79,16 +87,10 @@ namespace Vultr
 			Vulkan::depend_resource(cmd, set);
 			Vulkan::depend_resource(cmd, &set->uniform_buffer_binding.buffer);
 
-			for (auto &sampler_optional : set->sampler_bindings)
+			for (auto *image : set->image_bindings)
 			{
-				if let (ResourceId sampler, sampler_optional)
-				{
-					if (sampler.loaded<Platform::Texture *>())
-						Vulkan::depend_resource(cmd, sampler.value<Platform::Texture *>());
-				}
-				else
-				{
-				}
+				if (image != nullptr)
+					Vulkan::depend_resource(cmd, image);
 			}
 		}
 	} // namespace Platform

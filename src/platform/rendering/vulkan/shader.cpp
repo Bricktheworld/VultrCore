@@ -6,6 +6,8 @@
 #include <spirv_reflect/spirv_reflect.h>
 #include <vultr_resource_allocator.h>
 #include <core/reflection/reflection.h>
+#include "texture.h"
+#include "framebuffer.h"
 
 namespace Vultr
 {
@@ -510,9 +512,8 @@ namespace Vultr
 
 			for (auto &set : shader->descriptor_set_pool)
 			{
-				set.shader                 = shader;
 				set.uniform_buffer_binding = {};
-				set.sampler_bindings       = {};
+				set.image_bindings         = {};
 				for (u32 i = 0; i < Vulkan::MAX_FRAMES_IN_FLIGHT; i++)
 				{
 					VkDescriptorSetAllocateInfo alloc_info{
@@ -713,7 +714,7 @@ namespace Vultr
 
 			mat->source     = shader_resource;
 			mat->descriptor = alloc_descriptor_set(c, shader);
-			update_descriptor_set(mat->descriptor, mat->uniform_data);
+			update_descriptor_set(mat->descriptor, mat->uniform_data, shader->reflection.uniform_size);
 
 			return mat;
 		}
@@ -736,18 +737,12 @@ namespace Vultr
 		{
 			ASSERT(mat->source.loaded(), "Cannot bind material before it has been loaded!");
 
-			update_descriptor_set(mat->descriptor, mat->uniform_data);
+			update_descriptor_set(mat->descriptor, mat->uniform_data, mat->source.value()->reflection.uniform_size);
 			u32 binding = 1;
 			for (auto &sampler : mat->samplers)
 			{
-				if (!sampler.empty())
-				{
-					update_descriptor_set(mat->descriptor, ResourceId(sampler), binding);
-				}
-				else
-				{
-					update_descriptor_set(mat->descriptor, None, binding);
-				}
+
+				update_descriptor_set(mat->descriptor, sampler.value_or(nullptr), binding);
 				binding++;
 			}
 
@@ -771,7 +766,7 @@ namespace Vultr
 						continue;
 					ubo_info_len++;
 					write_sets_len++;
-					for (auto &sampler : set->sampler_bindings)
+					for (auto *images : set->image_bindings)
 					{
 						tex_info_len++;
 						write_sets_len++;
@@ -796,7 +791,7 @@ namespace Vultr
 					ubo_info[ubo_info_index] = {
 						.buffer = set->uniform_buffer_binding.buffer.buffer,
 						.offset = 0,
-						.range  = pad_size(d, set->shader->reflection.uniform_size),
+						.range  = pad_size(d, shader->reflection.uniform_size),
 					};
 					write_sets[write_set_index] = {
 						.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -811,17 +806,13 @@ namespace Vultr
 					ubo_info_index++;
 
 					u32 i = 1;
-					for (auto &sampler : set->sampler_bindings)
+					for (auto *image : set->image_bindings)
 					{
 						auto type                  = shader->reflection.samplers[i - 1].type;
 						Platform::Texture *texture = get_placeholder_texture(c, type);
 
-						if (sampler.has_value())
-						{
-							if (!sampler.value().loaded<Platform::Texture *>())
-								continue;
-							texture = sampler.value().value<Platform::Texture *>();
-						}
+						if (image != nullptr)
+							texture = image;
 
 						tex_info[tex_info_index] = {
 							.sampler     = texture->sampler,
@@ -855,7 +846,9 @@ namespace Vultr
 
 		void destroy_material(RenderContext *c, Material *mat)
 		{
-			free_descriptor_set(c, mat->descriptor);
+			if (mat->source.loaded())
+				free_descriptor_set(c, mat->descriptor, mat->source.value());
+
 			mat->samplers.clear();
 			mat->source = {};
 			v_free(mat);
@@ -876,15 +869,14 @@ namespace Vultr
 			void *mapped     = map_buffer(d, &buffer);
 			descriptor_set->uniform_buffer_binding = {.buffer = buffer, .mapped = mapped};
 			descriptor_set->updated.set_all();
-			descriptor_set->sampler_bindings.resize(shader->reflection.samplers.size());
+			descriptor_set->image_bindings.resize(shader->reflection.samplers.size());
 
 			return descriptor_set;
 		}
 
-		void free_descriptor_set(RenderContext *c, DescriptorSet *set)
+		void free_descriptor_set(RenderContext *c, DescriptorSet *set, Shader *shader)
 		{
-			auto *d      = Vulkan::get_device(c);
-			auto *shader = set->shader;
+			auto *d = Vulkan::get_device(c);
 
 			Platform::Lock lock(shader->mutex);
 			auto index = shader->allocated_descriptor_sets.index_of(set);
@@ -897,7 +889,7 @@ namespace Vultr
 			free_buffer(Vulkan::get_swapchain(c), &set->uniform_buffer_binding.buffer);
 
 			set->uniform_buffer_binding = {};
-			set->sampler_bindings.clear();
+			set->image_bindings.clear();
 		}
 	} // namespace Platform
 } // namespace Vultr

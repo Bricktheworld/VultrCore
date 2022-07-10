@@ -162,8 +162,7 @@ namespace Vultr
 	}
 
 	template <typename... Ts>
-		requires(TypeList<Ts...>::template contains<Transform>())
-	inline Entity world_create_parented_entity(World *w, const StringView &label, Entity parent, const Ts &...components)
+	requires(TypeList<Ts...>::template contains<Transform>()) inline Entity world_create_parented_entity(World *w, const StringView &label, Entity parent, const Ts &...components)
 	{
 		ASSERT(parent != INVALID_ENTITY, "Cannot create entity with invalid parent!");
 		ASSERT(has_component<Transform>(parent), "Cannot create entity to parent entity without a transform!");
@@ -176,8 +175,7 @@ namespace Vultr
 	}
 
 	template <typename... Ts>
-		requires(TypeList<Ts...>::template contains<Transform>())
-	inline Entity create_parented_entity(const StringView &label, Entity parent, const Ts &...components)
+	requires(TypeList<Ts...>::template contains<Transform>()) inline Entity create_parented_entity(const StringView &label, Entity parent, const Ts &...components)
 	{
 		return world_create_parented_entity(world(), label, parent, components...);
 	}

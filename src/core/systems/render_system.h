@@ -17,11 +17,13 @@ namespace Vultr
 
 		struct Component
 		{
+			Platform::Framebuffer *depth_prepass_fbo  = nullptr;
 			Platform::Framebuffer *output_framebuffer = nullptr;
 			Queue<void *, 1024> free_queue_listener{};
 			Option<ResizeRequest> resize_request = None;
 
 			Platform::Mesh *skybox_mesh          = nullptr;
+			Resource<Platform::ComputeShader *> compute_shader{};
 		};
 
 		Component *init();
@@ -30,6 +32,7 @@ namespace Vultr
 		void update(Component *system);
 		void request_resize(Component *system, u32 width, u32 height);
 		void reinitialize(Component *system, Option<u32> width = None, Option<u32> height = None);
+		void free_resources(Component *system);
 		void destroy(Component *component);
 	} // namespace RenderSystem
 } // namespace Vultr

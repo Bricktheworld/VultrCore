@@ -73,28 +73,56 @@ namespace Vultr
 			}
 		}
 
+		static void vert_shader_stage(VkPipelineShaderStageCreateInfo *info, Platform::Shader *shader)
+		{
+			*info = {
+				.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.stage  = VK_SHADER_STAGE_VERTEX_BIT,
+				.module = shader->vert_module,
+				.pName  = "main",
+			};
+		}
+
+		static void frag_shader_stage(VkPipelineShaderStageCreateInfo *info, Platform::Shader *shader)
+		{
+			*info = {
+				.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
+				.module = shader->frag_module,
+				.pName  = "main",
+			};
+		}
+
 		static GraphicsPipeline *init_vk_pipeline(Platform::RenderContext *c, VkRenderPass render_pass, Platform::Shader *shader, const Platform::GraphicsPipelineInfo &info, bool has_depth)
 		{
 			using namespace Vulkan;
 
-			auto *d                                  = Vulkan::get_device(c);
-			auto *sc                                 = Vulkan::get_swapchain(c);
-			auto *pipeline                           = v_alloc<GraphicsPipeline>();
-			pipeline->layout                         = info;
+			auto *d          = Vulkan::get_device(c);
+			auto *sc         = Vulkan::get_swapchain(c);
+			auto *pipeline   = v_alloc<GraphicsPipeline>();
+			pipeline->layout = info;
 
-			VkPipelineShaderStageCreateInfo stages[] = {{
-															.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-															.stage  = VK_SHADER_STAGE_VERTEX_BIT,
-															.module = shader->vert_module,
-															.pName  = "main",
-														},
-														{
-															.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-															.stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
-															.module = shader->frag_module,
-															.pName  = "main",
-														}};
-			auto vert_description                    = Platform::get_vertex_description<Platform::Vertex>();
+			VkPipelineShaderStageCreateInfo stages[2];
+			u8 stage_count = 0;
+
+			switch (info.shader_usage)
+			{
+				case Platform::ShaderUsage::VERT_ONLY:
+					vert_shader_stage(stages, shader);
+					stage_count = 1;
+					break;
+				case Platform::ShaderUsage::FRAG_ONLY:
+					frag_shader_stage(stages, shader);
+					stage_count = 1;
+					break;
+				case Platform::ShaderUsage::VERT_FRAG:
+					vert_shader_stage(stages, shader);
+					frag_shader_stage(stages + 1, shader);
+					stage_count = 2;
+					break;
+			}
+
+			auto vert_description = Platform::get_vertex_description<Platform::Vertex>();
 
 			VkVertexInputBindingDescription binding_description{
 				.binding   = 0,
@@ -215,7 +243,7 @@ namespace Vultr
 
 			VkGraphicsPipelineCreateInfo pipeline_info{
 				.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-				.stageCount          = 2,
+				.stageCount          = stage_count,
 				.pStages             = stages,
 				.pVertexInputState   = &vertex_input_info,
 				.pInputAssemblyState = &input_assembly,

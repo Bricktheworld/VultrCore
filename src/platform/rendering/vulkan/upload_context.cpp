@@ -10,7 +10,7 @@ namespace Vultr
 		{
 			auto *upload_context     = v_alloc<UploadContext>();
 			upload_context->device   = Vulkan::get_device(c);
-			upload_context->cmd_pool = Vulkan::init_cmd_pool(Vulkan::get_device(c));
+			upload_context->cmd_pool = Vulkan::init_cmd_pool(Vulkan::get_device(c), Vulkan::QueueType::GRAPHICS);
 			return upload_context;
 		}
 

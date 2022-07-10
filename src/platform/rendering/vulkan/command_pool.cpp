@@ -20,16 +20,26 @@ namespace Vultr
 			cmd_pool->command_buffers.push_back(new_cmd_buffer);
 		}
 
-		CommandPool init_cmd_pool(Device *d)
+		CommandPool init_cmd_pool(Device *d, QueueType queue_type)
 		{
 			CommandPool cmd_pool{};
 
+			u32 index;
+			switch (queue_type)
+			{
+				case QueueType::GRAPHICS:
+					index = d->queue_family_indices.graphics_family.value();
+					break;
+				case QueueType::COMPUTE:
+					index = d->queue_family_indices.compute_family.value();
+					break;
+			}
+
 			// TODO(Brandon): Maybe don't hard-code the graphics family queue.
-			auto indices = find_queue_families(d);
 			VkCommandPoolCreateInfo pool_info{
 				.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 				.flags            = 0,
-				.queueFamilyIndex = indices.graphics_family.value(),
+				.queueFamilyIndex = index,
 			};
 
 			VK_CHECK(vkCreateCommandPool(d->device, &pool_info, nullptr, &cmd_pool.command_pool));

@@ -1,6 +1,7 @@
 #include "command_pool.cpp"
 #include "pipeline.cpp"
 #include "shader.cpp"
+#include "compute_shader.cpp"
 #include "device.cpp"
 #include "render_context.cpp"
 #include "gpu_buffer.cpp"

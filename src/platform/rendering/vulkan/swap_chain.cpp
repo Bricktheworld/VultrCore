@@ -86,10 +86,9 @@ namespace Vultr
 				.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			};
 
-			auto indices               = find_queue_families(d);
-			u32 queue_family_indices[] = {indices.graphics_family.value(), indices.present_family.value()};
+			u32 queue_family_indices[] = {d->queue_family_indices.graphics_family.value(), d->queue_family_indices.present_family.value()};
 
-			if (indices.graphics_family != indices.present_family)
+			if (d->queue_family_indices.graphics_family != d->queue_family_indices.present_family)
 			{
 				create_info.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
 				create_info.queueFamilyIndexCount = 2;
@@ -289,7 +288,7 @@ namespace Vultr
 				VkDescriptorSet vk_set;
 				VK_CHECK(vkAllocateDescriptorSets(d->device, &info, &vk_set));
 
-				frame.cmd_pool                        = init_cmd_pool(get_device(sc));
+				frame.cmd_pool                        = init_cmd_pool(get_device(sc), QueueType::GRAPHICS);
 				frame.default_uniform_descriptor_pool = pool;
 				frame.default_uniform_descriptor      = vk_set;
 
@@ -450,7 +449,6 @@ namespace Vultr
 				.pSignalSemaphores    = &frame->present_sem,
 			};
 
-
 			graphics_queue_submit(d, 1, &submit_info, frame->completed_fence);
 
 			VkPresentInfoKHR present_info{
@@ -465,7 +463,7 @@ namespace Vultr
 
 			sc->current_frame = (sc->current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 
-			auto res = present_queue_submit(d, &present_info);
+			auto res          = present_queue_submit(d, &present_info);
 			if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR || sc->framebuffer_was_resized)
 			{
 				sc->framebuffer_was_resized = false;

@@ -3,6 +3,7 @@
 #include <vultr_input.h>
 #include "project/project.h"
 #include "editor.h"
+#include "res/resources.h"
 #include <core/systems/render_system.h>
 #include <filesystem/filestream.h>
 #include <vultr_resource_allocator.h>
@@ -185,6 +186,59 @@ static void shader_free_thread()
 	}
 }
 
+static void compute_shader_loader_thread(const Vultr::Project *project)
+{
+	auto *allocator = Vultr::resource_allocator<Vultr::Platform::ComputeShader *>();
+	while (true)
+	{
+
+		auto [uuid, is_kill_request] = allocator->wait_pop_load_queue();
+
+		auto path                    = Vultr::get_editor_optimized_path(project, uuid);
+
+		Vultr::Buffer buf;
+		{
+			auto res = Vultr::try_fread_all(path, &buf);
+			if (res.is_error())
+			{
+				allocator->add_loaded_resource_error(uuid, res.get_error());
+				continue;
+			}
+		}
+
+		printf("Attempting to load compute shader\n");
+		auto res = Vultr::load_editor_optimized_compute_shader(Vultr::engine()->context, buf);
+		if (res.is_error())
+		{
+			allocator->add_loaded_resource_error(uuid, res.get_error());
+			continue;
+		}
+		auto *shader = res.value();
+		printf("Loaded compute shader %s at %p\n", path.c_str(), shader);
+		if (allocator->add_loaded_resource(uuid, shader).is_error())
+		{
+			Vultr::Platform::destroy_compute_shader(Vultr::engine()->context, shader);
+		}
+	}
+}
+
+static void compute_shader_free_thread()
+{
+	auto *allocator = Vultr::resource_allocator<Vultr::Platform::ComputeShader *>();
+	while (true)
+	{
+		auto *shader = allocator->wait_pop_free_queue();
+
+		if (shader == (void *)-1)
+		{
+			return;
+		}
+
+		printf("Freeing compute shader at %p\n", shader);
+		Vultr::Platform::destroy_compute_shader(Vultr::engine()->context, shader);
+	}
+}
+
 static void texture_loader_thread(const Vultr::Project *project)
 {
 	auto *c         = Vultr::Platform::init_upload_context(Vultr::engine()->context);
@@ -272,6 +326,10 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			shader_loading_thread.detach();
 			Platform::Thread shader_freeing_thread(shader_free_thread);
 			shader_freeing_thread.detach();
+			Platform::Thread compute_shader_loading_thread(compute_shader_loader_thread, project);
+			compute_shader_loading_thread.detach();
+			Platform::Thread compute_shader_freeing_thread(compute_shader_free_thread);
+			compute_shader_freeing_thread.detach();
 			Platform::Thread texture_loading_thread(texture_loader_thread, project);
 			texture_loading_thread.detach();
 			Platform::Thread texture_freeing_thread(texture_free_thread);
@@ -338,12 +396,15 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			}
 
 			Platform::wait_idle(engine()->context);
+			RenderSystem::free_resources(render_system);
 			resource_allocator<Platform::Mesh *>()->kill_loading_threads();
 			resource_allocator<Platform::Mesh *>()->kill_freeing_threads();
 			resource_allocator<Platform::Material *>()->kill_loading_threads();
 			resource_allocator<Platform::Material *>()->kill_freeing_threads();
 			resource_allocator<Platform::Shader *>()->kill_loading_threads();
 			resource_allocator<Platform::Shader *>()->kill_freeing_threads();
+			resource_allocator<Platform::ComputeShader *>()->kill_loading_threads();
+			resource_allocator<Platform::ComputeShader *>()->kill_freeing_threads();
 			resource_allocator<Platform::Texture *>()->kill_loading_threads();
 			resource_allocator<Platform::Texture *>()->kill_freeing_threads();
 

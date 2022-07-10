@@ -1,6 +1,7 @@
 #include "../../platform_impl.h"
 #include "render_context.h"
 #include "command_pool.h"
+#include "texture.h"
 #include <types/array.h>
 #include <vulkan/vulkan.h>
 #include <imgui/imgui.h>
@@ -20,16 +21,16 @@ namespace Vultr
 		{
 			auto *imgui_c                        = v_alloc<ImGuiContext>();
 			auto pool_sizes                      = Array<VkDescriptorPoolSize, 11>({{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-                                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-                                                               {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-                                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-                                                               {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-                                                               {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-                                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-                                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-                                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-                                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-                                                               {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}});
+																					{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+																					{VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+																					{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+																					{VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+																					{VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+																					{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+																					{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+																					{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+																					{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+																					{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}});
 
 			VkDescriptorPoolCreateInfo pool_info = {
 				.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,

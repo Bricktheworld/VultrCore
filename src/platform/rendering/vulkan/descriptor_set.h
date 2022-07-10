@@ -1,4 +1,5 @@
 #pragma once
+#include <core/resource_allocator/resource_allocator.h>
 #include "gpu_buffer.h"
 
 namespace Vultr
@@ -17,11 +18,11 @@ namespace Vultr
 
 	namespace Platform
 	{
+		struct Texture;
 		struct DescriptorSet
 		{
-			Shader *shader = nullptr;
 			Vulkan::UniformBufferBinding uniform_buffer_binding{};
-			Vector<Option<ResourceId>> sampler_bindings{};
+			Vector<Texture *> image_bindings{};
 
 			Vector<VkDescriptorSet> vk_frame_descriptor_sets{};
 			Bitfield<64> updated = MAX_BITFIELD<64>;

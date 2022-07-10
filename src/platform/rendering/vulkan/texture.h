@@ -18,6 +18,7 @@ namespace Vultr
 			VmaAllocation allocation = nullptr;
 			VmaAllocationInfo alloc_info{};
 			TextureFormat format = TextureFormat::RGBA8;
+			u16 texture_usage    = TextureUsage::TEXTURE;
 			VkImageLayout layout{};
 
 			ImTextureID cached_texture_id = nullptr;
@@ -25,7 +26,7 @@ namespace Vultr
 			bool operator==(const Texture &other) const
 			{
 				return width == other.width && height == other.height && image == other.image && sampler == other.sampler && image_view == other.image_view && allocation == other.allocation &&
-					   format == other.format;
+					   format == other.format && texture_usage == other.texture_usage;
 			}
 		};
 	} // namespace Platform

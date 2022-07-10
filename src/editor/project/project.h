@@ -5,15 +5,16 @@
 
 namespace Vultr
 {
-	enum struct ResourceType : u8
+	enum struct ResourceType : u16
 	{
-		TEXTURE  = 0x0,
-		SHADER   = 0x1,
-		MATERIAL = 0x2,
-		MESH     = 0x4,
-		CPP_SRC  = 0x8,
-		SCENE    = 0x10,
-		OTHER    = 0x20,
+		TEXTURE        = 0x0,
+		SHADER         = 0x1,
+		COMPUTE_SHADER = 0x2,
+		MATERIAL       = 0x4,
+		MESH           = 0x8,
+		CPP_SRC        = 0x10,
+		SCENE          = 0x20,
+		OTHER          = 0x40,
 	};
 
 	inline constexpr const char *resource_type_to_string(ResourceType type)
@@ -24,6 +25,8 @@ namespace Vultr
 				return "TEXTURE";
 			case ResourceType::SHADER:
 				return "SHADER";
+			case ResourceType::COMPUTE_SHADER:
+				return "COMPUTE_SHADER";
 			case ResourceType::MATERIAL:
 				return "MATERIAL";
 			case ResourceType::MESH:
@@ -43,6 +46,8 @@ namespace Vultr
 			return ResourceType::TEXTURE;
 		else if (string == "SHADER")
 			return ResourceType::SHADER;
+		else if (string == "COMPUTE_SHADER")
+			return ResourceType::COMPUTE_SHADER;
 		else if (string == "MATERIAL")
 			return ResourceType::MATERIAL;
 		else if (string == "MESH")
@@ -138,6 +143,15 @@ namespace Vultr
 
 	void build_editor_optimized_shader(Buffer *out, const Platform::CompiledShaderSrc &compiled);
 	ErrorOr<Platform::Shader *> load_editor_optimized_shader(Platform::RenderContext *c, const Buffer &buffer);
+
+	struct __attribute__((packed)) ComputeShaderBuildHeader
+	{
+		u8 version = 1;
+		u64 size   = 0;
+	};
+
+	void build_editor_optimized_compute_shader(Buffer *out, const Buffer &compiled);
+	ErrorOr<Platform::ComputeShader *> load_editor_optimized_compute_shader(Platform::RenderContext *c, const Buffer &buffer);
 
 	struct __attribute__((packed)) MeshBuildHeader
 	{
