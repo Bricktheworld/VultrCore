@@ -92,6 +92,7 @@ namespace Vultr
 
 	struct TextureMetadata
 	{
+		Platform::TextureFormat texture_format = Platform::TextureFormat::SRGBA8;
 	};
 
 	struct MeshMetadata
@@ -107,7 +108,7 @@ namespace Vultr
 	ErrorOr<MetadataHeader> get_resource_metadata(const Path &path);
 	ErrorOr<MetadataHeader> get_or_create_resource_metadata(const Path &path);
 
-	ErrorOr<TextureMetadata> get_texture_metadata(const Path &path);
+	ErrorOr<TextureMetadata> get_texture_metadata(const Project *project, const UUID &uuid);
 	ErrorOr<MeshMetadata> get_mesh_metadata(const Path &path);
 	ErrorOr<SceneMetadata> get_scene_metadata(const Path &path);
 
@@ -117,6 +118,7 @@ namespace Vultr
 	ErrorOr<void> save_mesh_metadata(const Path &path, const MetadataHeader &header, const TextureMetadata &metadata);
 	ErrorOr<void> save_scene_metadata(const Path &path, const MetadataHeader &header, const TextureMetadata &metadata);
 
+	Path get_editor_resource_path(const Project *project, const UUID &uuid);
 	Path get_editor_optimized_path(const Project *project, const UUID &uuid);
 
 	bool is_asset_imported(const Project *project, const Path &path);

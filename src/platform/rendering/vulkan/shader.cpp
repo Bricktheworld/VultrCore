@@ -305,8 +305,8 @@ namespace Vultr
 			if (result != SPV_REFLECT_RESULT_SUCCESS)
 				return Error("Something went wrong getting the number of descriptor sets for shader!");
 
-			if (descriptor_count < 1)
-				return Error("Shader must contain at least one descriptor!");
+			if (descriptor_count != 2)
+				return Error("Only 2 descriptors are supported in shaders (default and one additional for material data)!");
 
 			SpvReflectDescriptorSet *descriptor_set;
 
@@ -316,9 +316,6 @@ namespace Vultr
 
 				if (result != SPV_REFLECT_RESULT_SUCCESS)
 					return Error("Something went wrong enumerating descriptor sets!");
-
-				if (descriptor_count != 2)
-					return Error("Only 2 descriptors are supported in shaders (default and one additional for material data)!");
 
 				descriptor_set = descriptor_sets[1];
 				ASSERT(descriptor_set->binding_count >= 1, "Descriptor must have at least one binding!");
@@ -343,14 +340,14 @@ namespace Vultr
 					auto member            = type_description->members[i];
 					StringView member_name = member.struct_member_name;
 					TRY_UNWRAP(auto member_type, get_uniform_type(member));
-					reflection.uniform_members.push_back({
+					reflection.uniform.members.push_back({
 						.name   = String(member_name),
 						.type   = member_type,
 						.offset = get_uniform_member_offset(member_type, buffer_offset),
 					});
 					buffer_offset += get_uniform_type_size(member_type);
 				}
-				reflection.uniform_size = buffer_offset;
+				reflection.uniform.size = buffer_offset;
 			}
 
 			for (u32 i = 1; i < descriptor_set->binding_count; i++)
@@ -512,8 +509,8 @@ namespace Vultr
 
 			for (auto &set : shader->descriptor_set_pool)
 			{
-				set.uniform_buffer_binding = {};
-				set.image_bindings         = {};
+				set.uniform_buffer_bindings = {};
+				set.image_bindings          = {};
 				for (u32 i = 0; i < Vulkan::MAX_FRAMES_IN_FLIGHT; i++)
 				{
 					VkDescriptorSetAllocateInfo alloc_info{
@@ -625,21 +622,21 @@ namespace Vultr
 			auto lines       = split(src, "\n");
 			if (lines.size() <= 1)
 				return Error("Material does not have enough lines to be valid!");
-			if (lines.size() - 1 != reflection->uniform_members.size() + reflection->samplers.size())
+			if (lines.size() - 1 != reflection->uniform.members.size() + reflection->samplers.size())
 				return Error("Material does not match the same number of lines!");
 
 			auto *mat = v_alloc<Material>();
-			for (u32 i = 0; i < reflection->uniform_members.size(); i++)
+			for (u32 i = 0; i < reflection->uniform.members.size(); i++)
 			{
 				auto &line       = lines[i + 1];
 				auto spl         = split(line, ":");
 				auto member_name = spl[0];
 
-				if (member_name != reflection->uniform_members[i].name)
+				if (member_name != reflection->uniform.members[i].name)
 					return Error("Invalid uniform member " + member_name + "found!");
 
 				auto values      = split(spl[1], ",");
-				auto member_info = reflection->uniform_members[i];
+				auto member_info = reflection->uniform.members[i];
 				auto offset      = member_info.offset;
 				switch (member_info.type.primitive_type)
 				{
@@ -696,7 +693,7 @@ namespace Vultr
 
 			for (u32 i = 0; i < reflection->samplers.size(); i++)
 			{
-				auto &line = lines[i + reflection->uniform_members.size() + 1];
+				auto &line = lines[i + reflection->uniform.members.size() + 1];
 				auto spl   = split(line, ":");
 
 				if (spl[0] != reflection->samplers[i].name)
@@ -714,7 +711,7 @@ namespace Vultr
 
 			mat->source     = shader_resource;
 			mat->descriptor = alloc_descriptor_set(c, shader);
-			update_descriptor_set(mat->descriptor, mat->uniform_data, shader->reflection.uniform_size);
+			update_descriptor_set(mat->descriptor, mat->uniform_data, shader->reflection.uniform.size);
 
 			return mat;
 		}
@@ -729,6 +726,7 @@ namespace Vultr
 				case SamplerType::METALLIC:
 				case SamplerType::ROUGHNESS:
 				case SamplerType::AMBIENT_OCCLUSION:
+				case SamplerType::CUBEMAP:
 					return c->white_texture;
 			}
 		}
@@ -737,7 +735,7 @@ namespace Vultr
 		{
 			ASSERT(mat->source.loaded(), "Cannot bind material before it has been loaded!");
 
-			update_descriptor_set(mat->descriptor, mat->uniform_data, mat->source.value()->reflection.uniform_size);
+			update_descriptor_set(mat->descriptor, mat->uniform_data, mat->source.value()->reflection.uniform.size);
 			u32 binding = 1;
 			for (auto &sampler : mat->samplers)
 			{
@@ -789,9 +787,9 @@ namespace Vultr
 					auto *vk_set             = set->vk_frame_descriptor_sets[cmd->frame_index];
 
 					ubo_info[ubo_info_index] = {
-						.buffer = set->uniform_buffer_binding.buffer.buffer,
+						.buffer = set->uniform_buffer_bindings[0].buffer.buffer,
 						.offset = 0,
-						.range  = pad_size(d, shader->reflection.uniform_size),
+						.range  = pad_size(d, shader->reflection.uniform.size),
 					};
 					write_sets[write_set_index] = {
 						.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -864,10 +862,10 @@ namespace Vultr
 			descriptor_set = shader->free_descriptor_sets.pop();
 			shader->allocated_descriptor_sets.push_back(descriptor_set);
 
-			auto padded_size = pad_size(d, shader->reflection.uniform_size);
+			auto padded_size = pad_size(d, shader->reflection.uniform.size);
 			auto buffer      = alloc_buffer(d, padded_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 			void *mapped     = map_buffer(d, &buffer);
-			descriptor_set->uniform_buffer_binding = {.buffer = buffer, .mapped = mapped};
+			descriptor_set->uniform_buffer_bindings.push_back({.buffer = buffer, .mapped = mapped});
 			descriptor_set->updated.set_all();
 			descriptor_set->image_bindings.resize(shader->reflection.samplers.size());
 
@@ -885,10 +883,10 @@ namespace Vultr
 
 			set->updated.clear();
 
-			unmap_buffer(d, &set->uniform_buffer_binding.buffer);
-			free_buffer(Vulkan::get_swapchain(c), &set->uniform_buffer_binding.buffer);
+			unmap_buffer(d, &set->uniform_buffer_bindings[0].buffer);
+			free_buffer(Vulkan::get_swapchain(c), &set->uniform_buffer_bindings[0].buffer);
 
-			set->uniform_buffer_binding = {};
+			set->uniform_buffer_bindings.clear();
 			set->image_bindings.clear();
 		}
 	} // namespace Platform

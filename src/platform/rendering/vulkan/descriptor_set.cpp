@@ -44,7 +44,7 @@ namespace Vultr
 		{
 			ASSERT(data != nullptr, "Cannot update descriptor set with nullptr buffer!");
 
-			auto *start = set->uniform_buffer_binding.mapped;
+			auto *start = set->uniform_buffer_bindings[0].mapped;
 
 			if (memcmp(data, start, size) == 0)
 				return;
@@ -85,7 +85,7 @@ namespace Vultr
 
 			Vulkan::depend_resource(cmd, shader);
 			Vulkan::depend_resource(cmd, set);
-			Vulkan::depend_resource(cmd, &set->uniform_buffer_binding.buffer);
+			Vulkan::depend_resource(cmd, &set->uniform_buffer_bindings[0].buffer);
 
 			for (auto *image : set->image_bindings)
 			{

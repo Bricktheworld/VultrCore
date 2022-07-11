@@ -82,7 +82,7 @@ namespace Vultr
 		out_buf += shader_uuid;
 
 		auto *reflection = Platform::get_reflection_data(shader);
-		for (auto &uniform_member : reflection->uniform_members)
+		for (auto &uniform_member : reflection->uniform.members)
 		{
 			out_buf += "\n" + uniform_member.name + ":" + serialize_member(mat->uniform_data, uniform_member);
 		}
@@ -104,7 +104,7 @@ namespace Vultr
 			i++;
 		}
 
-		auto editor_path = project->asset_map.get(material.id.value());
+		auto editor_path = get_editor_resource_path(project, material.id.value());
 		TRY(try_fwrite_all(editor_path, out_buf, StreamWriteMode::OVERWRITE));
 
 		return Success;

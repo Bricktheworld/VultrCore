@@ -4,6 +4,7 @@
 
 namespace Vultr
 {
+#define MAX_DESCRIPTOR_SETS 128
 	namespace Vulkan
 	{
 		VkDescriptorPool init_descriptor_pool(Device *d);
@@ -21,7 +22,7 @@ namespace Vultr
 		struct Texture;
 		struct DescriptorSet
 		{
-			Vulkan::UniformBufferBinding uniform_buffer_binding{};
+			Vector<Vulkan::UniformBufferBinding> uniform_buffer_bindings{};
 			Vector<Texture *> image_bindings{};
 
 			Vector<VkDescriptorSet> vk_frame_descriptor_sets{};

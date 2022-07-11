@@ -9,16 +9,22 @@ namespace Vultr
 			switch (format)
 			{
 				case Platform::TextureFormat::RGB8:
+				case Platform::TextureFormat::RGB8_CUBEMAP:
 					return VK_FORMAT_R8G8B8_UNORM;
 				case Platform::TextureFormat::RGB16:
+				case Platform::TextureFormat::RGB16_CUBEMAP:
 					return VK_FORMAT_R16G16B16_UNORM;
 				case Platform::TextureFormat::RGBA8:
+				case Platform::TextureFormat::RGBA8_CUBEMAP:
 					return VK_FORMAT_R8G8B8A8_UNORM;
 				case Platform::TextureFormat::RGBA16:
+				case Platform::TextureFormat::RGBA16_CUBEMAP:
 					return VK_FORMAT_R16G16B16A16_UNORM;
 				case Platform::TextureFormat::SRGB8:
+				case Platform::TextureFormat::SRGB8_CUBEMAP:
 					return VK_FORMAT_R8G8B8_SRGB;
 				case Platform::TextureFormat::SRGBA8:
+				case Platform::TextureFormat::SRGBA8_CUBEMAP:
 					return VK_FORMAT_R8G8B8A8_SRGB;
 				case Platform::TextureFormat::DEPTH:
 					return Vulkan::get_supported_depth_format(d);
@@ -29,6 +35,22 @@ namespace Vultr
 	} // namespace Vulkan
 	namespace Platform
 	{
+		static bool is_cubemap(TextureFormat format)
+		{
+			switch (format)
+			{
+				case Platform::TextureFormat::RGB8_CUBEMAP:
+				case Platform::TextureFormat::RGB16_CUBEMAP:
+				case Platform::TextureFormat::RGBA8_CUBEMAP:
+				case Platform::TextureFormat::RGBA16_CUBEMAP:
+				case Platform::TextureFormat::SRGB8_CUBEMAP:
+				case Platform::TextureFormat::SRGBA8_CUBEMAP:
+					return true;
+				default:
+					return false;
+			}
+		}
+		static VkImageCreateFlags vk_get_cubemap_flag(Platform::TextureFormat format) { return is_cubemap(format) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0; }
 		static Texture *init_texture(Vulkan::Device *d, u32 width, u32 height, TextureFormat format, u16 texture_usage)
 		{
 			auto *texture          = v_alloc<Texture>();
@@ -66,18 +88,21 @@ namespace Vultr
 			{
 				usage_flags |= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 			}
+			bool is_skybox      = is_cubemap(format);
+
 			texture->image_info = {
 				.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 				.imageType     = VK_IMAGE_TYPE_2D,
 				.format        = Vulkan::get_vk_texture_format(d, format),
 				.extent        = extent,
 				.mipLevels     = 1,
-				.arrayLayers   = 1,
+				.arrayLayers   = is_skybox ? 6U : 1U,
 				.samples       = VK_SAMPLE_COUNT_1_BIT,
 				.tiling        = VK_IMAGE_TILING_OPTIMAL,
 				.usage         = usage_flags,
 				.sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
 				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.flags         = vk_get_cubemap_flag(format),
 			};
 
 			VmaAllocationCreateInfo alloc_info{
@@ -107,7 +132,7 @@ namespace Vultr
 			texture->image_view_info = {
 				.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 				.image    = texture->image,
-				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.viewType = is_skybox ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D,
 				.format   = texture->image_info.format,
 				.subresourceRange =
 					{
@@ -115,7 +140,7 @@ namespace Vultr
 						.baseMipLevel   = 0,
 						.levelCount     = 1,
 						.baseArrayLayer = 0,
-						.layerCount     = 1,
+						.layerCount     = is_skybox ? 6U : 1U,
 					},
 			};
 			VK_CHECK(vkCreateImageView(d->device, &texture->image_view_info, nullptr, &texture->image_view));
@@ -161,12 +186,13 @@ namespace Vultr
 
 			fill_buffer(d, &staging_buffer, data, size);
 
+			bool is_skybox = is_cubemap(texture->format);
 			VkImageSubresourceRange range{
 				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
 				.baseMipLevel   = 0,
 				.levelCount     = 1,
 				.baseArrayLayer = 0,
-				.layerCount     = 1,
+				.layerCount     = is_skybox ? 6U : 1U,
 			};
 
 			VkImageMemoryBarrier barrier_to_transfer = {
@@ -191,7 +217,7 @@ namespace Vultr
 						.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
 						.mipLevel       = 0,
 						.baseArrayLayer = 0,
-						.layerCount     = 1,
+						.layerCount     = is_skybox ? 6U : 1U,
 					},
 				.imageExtent = texture->image_info.extent,
 			};

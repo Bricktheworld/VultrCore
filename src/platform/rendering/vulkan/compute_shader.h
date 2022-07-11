@@ -14,16 +14,13 @@ namespace Vultr
 			VkDescriptorSetLayout descriptor_layout = nullptr;
 
 			Vector<VkDescriptorPool, Vulkan::MAX_FRAMES_IN_FLIGHT> descriptor_pools{};
+			DescriptorSet descriptor_set{};
+			Bitfield<64> updated             = MAX_BITFIELD<64>;
 
 			VkPipelineLayout pipeline_layout = nullptr;
 			VkPipeline pipeline              = nullptr;
 
 			Platform::Mutex mutex{};
-
-			Texture *input  = nullptr;
-			Texture *output = nullptr;
-			Vector<VkDescriptorSet> frame_descriptor_sets{};
-			Bitfield<64> updated = MAX_BITFIELD<64>;
 		};
 	} // namespace Platform
 } // namespace Vultr

@@ -8,7 +8,6 @@
 
 namespace Vultr
 {
-#define MAX_DESCRIPTOR_SETS 128
 	namespace Platform
 	{
 		struct Shader

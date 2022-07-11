@@ -137,7 +137,7 @@ namespace Vultr
 
 		const auto *reflection   = Platform::get_reflection_data(shader);
 
-		for (auto &uniform_member : reflection->uniform_members)
+		for (auto &uniform_member : reflection->uniform.members)
 		{
 			auto field = Field(uniform_member.name, uniform_member.type, nullptr, [](void *data) {});
 			type.fields.push_back({field, &mat->uniform_data[uniform_member.offset]});

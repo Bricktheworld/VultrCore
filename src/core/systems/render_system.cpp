@@ -150,10 +150,10 @@ namespace Vultr
 			Platform::update_compute_shader(cs, input, output);
 			Platform::dispatch_compute(cmd, cs);
 
-			Platform::begin_framebuffer(cmd, system->output_framebuffer);
-			Platform::end_framebuffer(cmd);
+			// Platform::begin_framebuffer(cmd, system->output_framebuffer);
+			// Platform::end_framebuffer(cmd);
 
-			// render(system, cmd);
+			render(system, cmd);
 
 			// Platform::begin_framebuffer(cmd, system->output_framebuffer);
 

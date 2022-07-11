@@ -99,7 +99,7 @@ namespace Vultr
 			{
 				return ResourceType::COMPUTE_SHADER;
 			}
-			else if (extension == ".png" || extension == ".jpg" || extension == ".bmp")
+			else if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp")
 			{
 				return ResourceType::TEXTURE;
 			}
@@ -216,7 +216,30 @@ namespace Vultr
 		}
 	}
 
-	ErrorOr<TextureMetadata> get_texture_metadata(const Path &path) { return TextureMetadata{}; }
+	ErrorOr<TextureMetadata> get_texture_metadata(const Project *project, const UUID &uuid)
+	{
+		auto meta_path = get_metadata_file(get_editor_resource_path(project, uuid));
+
+		if (!exists(meta_path))
+			return Error("Metadata file does not exist for texture!");
+
+		String meta_file{};
+
+		TRY(try_fread_all(meta_path, &meta_file));
+
+		TextureMetadata metadata{};
+
+		auto root = YAML::Load(meta_file);
+		if (!root.IsMap())
+			return Error("Invalid meta format!");
+
+		if (root["TextureFormat"])
+			metadata.texture_format = static_cast<Platform::TextureFormat>(root["TextureFormat"].as<int>());
+		else
+			metadata.texture_format = Platform::TextureFormat::SRGBA8;
+
+		return metadata;
+	}
 
 	ErrorOr<MeshMetadata> get_mesh_metadata(const Path &path) { return MeshMetadata{}; }
 
@@ -239,10 +262,21 @@ namespace Vultr
 		return out;
 	}
 
-	ErrorOr<void> save_metadata(const Path &path, const MetadataHeader &metadata)
+	YAML::Emitter &operator<<(YAML::Emitter &out, const TextureMetadata &m)
+	{
+		out << YAML::BeginMap;
+
+		out << YAML::Key << "TextureFormat";
+		out << YAML::Value << static_cast<int>(m.texture_format);
+
+		out << YAML::EndMap;
+		return out;
+	}
+
+	ErrorOr<void> save_metadata(const Path &path, const MetadataHeader &header)
 	{
 		YAML::Emitter o{};
-		o << metadata;
+		o << header;
 		auto output_stream = FileOutputStream(get_metadata_file(path), StreamFormat::UTF8, StreamWriteMode::OVERWRITE);
 		TRY(output_stream.write(o.c_str(), o.size()));
 		TRY(output_stream.write(String("\n")));
@@ -253,6 +287,8 @@ namespace Vultr
 	{
 		YAML::Emitter o{};
 		o << header;
+		o << metadata;
+		printf("Save texture metadata!\n");
 		auto output_stream = FileOutputStream(get_metadata_file(path), StreamFormat::UTF8, StreamWriteMode::OVERWRITE);
 		TRY(output_stream.write(o.c_str(), o.size()));
 		TRY(output_stream.write(String("\n")));
@@ -279,6 +315,7 @@ namespace Vultr
 		return Success;
 	}
 
+	Path get_editor_resource_path(const Project *project, const UUID &uuid) { return project->asset_map.get(uuid); }
 	Path get_editor_optimized_path(const Project *project, const UUID &uuid)
 	{
 		Platform::UUID_String uuid_string;
@@ -505,7 +542,8 @@ namespace Vultr
 
 		Buffer src(buffer.storage + header_size, header.size);
 
-		return Platform::try_load_compute_shader(c, src);
+		TRY_UNWRAP(auto reflection, Platform::try_reflect_compute_shader(src));
+		return Platform::try_load_compute_shader(c, src, reflection);
 	}
 
 	void build_editor_optimized_mesh(Buffer *out, const Platform::ImportedMesh &imported)

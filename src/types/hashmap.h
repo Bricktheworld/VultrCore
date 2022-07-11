@@ -5,8 +5,7 @@
 namespace Vultr
 {
 	template <typename K, typename V, typename TraitsForK = Traits<K>>
-		requires(!is_l_value<V> && !is_r_value<V> && !is_l_value<K> && !is_r_value<K> && requires(const K &a, const K &b) { a == b; })
-	struct Hashmap
+	requires(!is_l_value<V> && !is_r_value<V> && !is_l_value<K> && !is_r_value<K> && requires(const K &a, const K &b) { a == b; }) struct Hashmap
 	{
 		struct Entry
 		{
@@ -15,8 +14,7 @@ namespace Vultr
 		};
 
 		template <typename U, typename TraitsForU>
-			requires(requires(const U &key) { TraitsForU::hash(key); })
-		struct EntryTraits
+		requires(requires(const U &key) { TraitsForU::hash(key); }) struct EntryTraits
 		{
 			static u32 hash(const Entry &entry) { return TraitsForK::hash(entry.key); }
 			static u32 hash(const U &key) { return TraitsForU::hash(key); }
@@ -30,11 +28,14 @@ namespace Vultr
 		using Traits         = EntryTraits<K, TraitsForK>;
 		using HashTableType  = HashTable<Entry, Traits>;
 		using HIterator      = typename HashTableType::HashTableIterator;
+		using ConstHIterator = typename HashTableType::ConstHashTableIterator;
 
 		Hashmap()            = default;
 
 		HIterator begin() { return m_table.begin(); }
 		HIterator end() { return m_table.end(); }
+		ConstHIterator begin() const { return m_table.begin(); }
+		ConstHIterator end() const { return m_table.end(); }
 
 		template <typename Predicate>
 		HIterator find(u32 hash, Predicate predicate)
@@ -42,8 +43,20 @@ namespace Vultr
 			return m_table.find(hash, predicate);
 		}
 
+		template <typename Predicate>
+		ConstHIterator find(u32 hash, Predicate predicate) const
+		{
+			return m_table.find(hash, predicate);
+		}
+
 		template <typename U = K, typename TraitsForU = default_traits<U>>
 		HIterator find(const U &value)
+		{
+			return m_table.template find<U, EntryTraits<U, TraitsForU>>(value);
+		}
+
+		template <typename U = K, typename TraitsForU = default_traits<U>>
+		ConstHIterator find(const U &value) const
 		{
 			return m_table.template find<U, EntryTraits<U, TraitsForU>>(value);
 		}
@@ -134,9 +147,29 @@ namespace Vultr
 		}
 
 		template <typename U = K, typename TraitsForU = default_traits<U>>
+		const V &get(const U &key) const
+		{
+			if let (auto &value, try_get(key))
+				return value;
+			else
+				THROW("Not found!");
+		}
+
+		template <typename U = K, typename TraitsForU = default_traits<U>>
 		Option<V &> try_get(const U &value)
 		{
 			HIterator it = find<U, TraitsForU>(value);
+
+			if (it == end())
+				return None;
+
+			return it->value;
+		}
+
+		template <typename U = K, typename TraitsForU = default_traits<U>>
+		Option<const V &> try_get(const U &value) const
+		{
+			ConstHIterator it = find<U, TraitsForU>(value);
 
 			if (it == end())
 				return None;

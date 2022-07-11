@@ -107,6 +107,12 @@ namespace Vultr
 			RGBA16,
 			SRGB8,
 			SRGBA8,
+			RGB8_CUBEMAP,
+			RGB16_CUBEMAP,
+			RGBA8_CUBEMAP,
+			RGBA16_CUBEMAP,
+			SRGB8_CUBEMAP,
+			SRGBA8_CUBEMAP,
 			DEPTH,
 		};
 
@@ -122,16 +128,22 @@ namespace Vultr
 			switch (format)
 			{
 				case TextureFormat::RGB8:
+				case TextureFormat::RGB8_CUBEMAP:
 					return 3 * 2;
 				case TextureFormat::RGB16:
+				case TextureFormat::RGB16_CUBEMAP:
 					return 3;
 				case TextureFormat::RGBA8:
+				case TextureFormat::RGBA8_CUBEMAP:
 					return 4;
 				case TextureFormat::RGBA16:
+				case TextureFormat::RGBA16_CUBEMAP:
 					return 4 * 2;
 				case TextureFormat::SRGB8:
+				case TextureFormat::SRGB8_CUBEMAP:
 					return 3;
 				case TextureFormat::SRGBA8:
+				case TextureFormat::SRGBA8_CUBEMAP:
 					return 4;
 				case TextureFormat::DEPTH:
 					return 1;
@@ -194,7 +206,6 @@ namespace Vultr
 		void destroy_framebuffer(RenderContext *c, Framebuffer *framebuffer);
 
 		struct Shader;
-		struct ComputeShader;
 
 		struct UniformMember
 		{
@@ -202,6 +213,13 @@ namespace Vultr
 			Type type  = get_type<Vec3>;
 			u32 offset = 0;
 		};
+
+		struct Uniform
+		{
+			Vector<UniformMember> members{};
+			u32 size = 0;
+		};
+
 		enum struct SamplerType
 		{
 			ALBEDO,
@@ -209,18 +227,22 @@ namespace Vultr
 			METALLIC,
 			ROUGHNESS,
 			AMBIENT_OCCLUSION,
+			CUBEMAP,
 		};
+
 		struct SamplerBinding
 		{
 			String name{};
 			SamplerType type = SamplerType::ALBEDO;
 		};
+
 		struct ShaderReflection
 		{
-			Vector<UniformMember> uniform_members{};
-			u32 uniform_size = 0;
+			// Non-compute shaders will only support one uniform buffer (that is required) for simplicity.
+			Uniform uniform;
 			Vector<SamplerBinding> samplers{};
 		};
+
 		struct CompiledShaderSrc
 		{
 			Buffer vert_src{};
@@ -248,8 +270,23 @@ namespace Vultr
 		const ShaderReflection *get_reflection_data(const Shader *shader);
 		void destroy_shader(RenderContext *c, Shader *shader);
 
+		struct ComputeShader;
+
+		enum struct DescriptorType
+		{
+			UNIFORM_BUFFER,
+			SAMPLER,
+			STORAGE_TEXTURE,
+		};
+
+		struct ComputeShaderReflection
+		{
+			Vector<DescriptorType> bindings{};
+		};
+
 		ErrorOr<Buffer> try_compile_compute_shader(StringView src);
-		ErrorOr<ComputeShader *> try_load_compute_shader(RenderContext *c, const Buffer &compiled_shader);
+		ErrorOr<ComputeShaderReflection> try_reflect_compute_shader(const Buffer &compiled_shader);
+		ErrorOr<ComputeShader *> try_load_compute_shader(RenderContext *c, const Buffer &compiled_shader, const ComputeShaderReflection &reflection);
 		void destroy_compute_shader(RenderContext *c, ComputeShader *shader);
 
 		static constexpr StringView VULTR_NULL_FILE_HANDLE = "VULTR_NULL_FILE";

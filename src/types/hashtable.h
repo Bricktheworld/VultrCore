@@ -82,7 +82,7 @@ namespace Vultr
 
 		struct ConstHashTableIterator
 		{
-			explicit ConstHashTableIterator(Bucket *bucket) : m_bucket(bucket) {}
+			explicit ConstHashTableIterator(const Bucket *bucket) : m_bucket(bucket) {}
 			const T &operator*() { return *m_bucket->storage(); }
 			const T *operator->() { return m_bucket->storage(); }
 			bool operator==(const ConstHashTableIterator &other) const { return m_bucket == other.m_bucket; }
@@ -116,7 +116,7 @@ namespace Vultr
 					m_bucket = nullptr;
 			}
 
-			Bucket *m_bucket = nullptr;
+			const Bucket *m_bucket = nullptr;
 		};
 
 		template <typename U>
@@ -215,6 +215,12 @@ namespace Vultr
 			return HashTableIterator(lookup_with_hash(hash, predicate));
 		}
 
+		template <typename Predicate>
+		ConstHashTableIterator find(u32 hash, Predicate predicate) const
+		{
+			return ConstHashTableIterator(lookup_with_hash(hash, predicate));
+		}
+
 		template <typename U, typename TraitsForU>
 		static bool equals(const T &a, const U &b)
 		{
@@ -231,6 +237,12 @@ namespace Vultr
 
 		template <typename U = T, typename TraitsForU = default_traits<U>>
 		HashTableIterator find(const U &value)
+		{
+			return find(TraitsForU::hash(value), [&](T &other) { return equals<U, TraitsForU>(other, value); });
+		}
+
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		ConstHashTableIterator find(const U &value) const
 		{
 			return find(TraitsForU::hash(value), [&](T &other) { return equals<U, TraitsForU>(other, value); });
 		}
@@ -410,6 +422,26 @@ namespace Vultr
 
 		template <typename Predicate>
 		Bucket *lookup_with_hash(u32 hash, Predicate predicate)
+		{
+			if (empty())
+				return nullptr;
+
+			while (true)
+			{
+				auto *bucket = &m_buckets[hash % m_capacity];
+
+				if (bucket->used && predicate(*bucket->storage()))
+					return bucket;
+
+				if (!bucket->used && !bucket->deleted)
+					return nullptr;
+
+				hash = double_hash(hash);
+			}
+		}
+
+		template <typename Predicate>
+		const Bucket *lookup_with_hash(u32 hash, Predicate predicate) const
 		{
 			if (empty())
 				return nullptr;
