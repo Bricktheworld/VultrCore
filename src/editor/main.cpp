@@ -265,15 +265,15 @@ static void texture_loader_thread(const Vultr::Project *project)
 			}
 		}
 
-		if check (Vultr::get_texture_metadata(project, uuid), auto metadata, auto err)
-		{
-			printf("Texture format is %d\n", static_cast<int>(metadata.texture_format));
-		}
-		else
-		{
-			allocator->add_loaded_resource_error(uuid, err);
-			continue;
-		}
+		// if check (Vultr::get_texture_metadata(project, uuid), auto metadata, auto err)
+		// {
+		// 	printf("Texture format is %d\n", static_cast<int>(metadata.texture_format));
+		// }
+		// else
+		// {
+		// 	allocator->add_loaded_resource_error(uuid, err);
+		// 	continue;
+		// }
 
 		auto res = Vultr::load_editor_optimized_texture(c, buf);
 		if (res.is_error())
@@ -407,6 +407,8 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 
 			Platform::wait_idle(engine()->context);
 			RenderSystem::free_resources(render_system);
+			destroy_windows(&editor);
+
 			resource_allocator<Platform::Mesh *>()->kill_loading_threads();
 			resource_allocator<Platform::Mesh *>()->kill_freeing_threads();
 			resource_allocator<Platform::Material *>()->kill_loading_threads();
@@ -418,7 +420,6 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 			resource_allocator<Platform::Texture *>()->kill_loading_threads();
 			resource_allocator<Platform::Texture *>()->kill_freeing_threads();
 
-			destroy_windows(&editor);
 			RenderSystem::destroy(render_system);
 			Platform::destroy_imgui(engine()->context, editor.imgui_c);
 			Platform::destroy_upload_context(editor.resource_manager.upload_context);

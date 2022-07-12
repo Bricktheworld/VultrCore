@@ -218,27 +218,28 @@ namespace Vultr
 
 	ErrorOr<TextureMetadata> get_texture_metadata(const Project *project, const UUID &uuid)
 	{
-		auto meta_path = get_metadata_file(get_editor_resource_path(project, uuid));
+		// auto meta_path = get_metadata_file(get_editor_resource_path(project, uuid));
 
-		if (!exists(meta_path))
-			return Error("Metadata file does not exist for texture!");
+		// if (!exists(meta_path))
+		// 	return Error("Metadata file does not exist for texture!");
 
-		String meta_file{};
+		// String meta_file{};
 
-		TRY(try_fread_all(meta_path, &meta_file));
+		// TRY(try_fread_all(meta_path, &meta_file));
 
-		TextureMetadata metadata{};
+		// TextureMetadata metadata{};
 
-		auto root = YAML::Load(meta_file);
-		if (!root.IsMap())
-			return Error("Invalid meta format!");
+		// auto root = YAML::Load(meta_file);
+		// if (!root.IsMap())
+		// 	return Error("Invalid meta format!");
 
-		if (root["TextureFormat"])
-			metadata.texture_format = static_cast<Platform::TextureFormat>(root["TextureFormat"].as<int>());
-		else
-			metadata.texture_format = Platform::TextureFormat::SRGBA8;
+		// if (root["TextureFormat"])
+		// 	metadata.texture_format = static_cast<Platform::TextureFormat>(root["TextureFormat"].as<int>());
+		// else
+		// 	metadata.texture_format = Platform::TextureFormat::SRGBA8;
 
-		return metadata;
+		// return metadata;
+		return TextureMetadata{};
 	}
 
 	ErrorOr<MeshMetadata> get_mesh_metadata(const Path &path) { return MeshMetadata{}; }
@@ -287,8 +288,7 @@ namespace Vultr
 	{
 		YAML::Emitter o{};
 		o << header;
-		o << metadata;
-		printf("Save texture metadata!\n");
+		// o << metadata;
 		auto output_stream = FileOutputStream(get_metadata_file(path), StreamFormat::UTF8, StreamWriteMode::OVERWRITE);
 		TRY(output_stream.write(o.c_str(), o.size()));
 		TRY(output_stream.write(String("\n")));

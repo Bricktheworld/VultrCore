@@ -55,19 +55,19 @@ namespace Vultr
 
 		void update_descriptor_set(DescriptorSet *set, Texture *texture, u32 binding)
 		{
-			auto *existing_texture = set->image_bindings[binding - 1];
+			Texture **existing_texture = &set->image_bindings[binding - 1];
 			if (texture == nullptr)
 			{
-				if (texture == existing_texture)
+				if (texture == *existing_texture)
 					return;
 			}
 			else
 			{
-				if (texture == existing_texture && *texture == *existing_texture)
+				if (texture == *existing_texture && *texture == **existing_texture)
 					return;
 			}
 
-			existing_texture = texture;
+			*existing_texture = texture;
 			set->updated.set_all();
 		}
 
