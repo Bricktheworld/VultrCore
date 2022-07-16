@@ -6,6 +6,7 @@
 #include "entity_hierarchy.cpp"
 #include "component_inspector.cpp"
 #include "resource_browser.cpp"
+#include "resource_inspector.cpp"
 
 namespace ImGui
 {
@@ -170,7 +171,7 @@ namespace Vultr
 	void init_windows(Editor *e)
 	{
 		e->key_listener = Input::register_key_callback(e, on_key_press);
-		resource_window_init(e);
+		resource_browser_window_init(e);
 		load_resources(e);
 	}
 
@@ -286,6 +287,9 @@ namespace Vultr
 
 		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
 		resource_browser_window_draw(e, cmd);
+
+		ImGui::SetNextWindowDockID(dockspace, ImGuiCond_FirstUseEver);
+		resource_inspector_window_draw(e, cmd);
 
 		ImGui::End();
 

@@ -56,7 +56,7 @@ namespace Vultr
 		ComponentInspector component_inspector{};
 
 		Option<Entity> selected_entity = None;
-		Option<Path> scene_path = None;
+		Option<Path> scene_path        = None;
 		Input::CallbackHandle key_listener{};
 
 		ResourceManager resource_manager{};
@@ -89,10 +89,10 @@ namespace Vultr
 	void scene_window_draw(Editor *e, RenderSystem::Component *render_system);
 	void entity_hierarchy_window_draw(Editor *e);
 	void component_inspector_window_draw(Editor *e);
-	void resource_window_init(Editor *e);
+	void resource_browser_window_init(Editor *e);
 	void resource_browser_window_draw(Editor *e, Platform::CmdBuffer *cmd);
 	void resource_browser_destroy(Editor *e);
-	void asset_inpsector_draw(Editor *e);
+	void resource_inspector_window_draw(Editor *e, Platform::CmdBuffer *cmd);
 
 	void init_windows(Editor *e);
 	void update_windows(Editor *e, f64 dt);

@@ -33,8 +33,25 @@ namespace Vultr
 			ASSERT(!m_is_error, "Cannot return value because error %s was returned in ErrorOr instead! Use boolean operator on ErrorOr to make sure that it actually has a value first.", m_error.message.c_str());
 			return *reinterpret_cast<T *>(&storage);
 		}
+		const T &value() const
+		{
+			ASSERT(!m_is_error, "Cannot return value because error %s was returned in ErrorOr instead! Use boolean operator on ErrorOr to make sure that it actually has a value first.", m_error.message.c_str());
+			return *reinterpret_cast<const T *>(&storage);
+		}
 
-		T &value_or(const T &replacement)
+		T &value_or(T &replacement)
+		{
+			if (!m_is_error)
+			{
+				return value();
+			}
+			else
+			{
+				return replacement;
+			}
+		}
+
+		const T &value_or(const T &replacement) const
 		{
 			if (!m_is_error)
 			{
@@ -125,9 +142,7 @@ namespace Vultr
 
 // NOTE(Brandon): This is really, really stupid but I kinda like it and I'm stubborn.
 #define check(err_or, var, err)                                                                                                                                                                                       \
-	(auto __res = (err_or); err = !__res.has_value() ? __res.get_error() : Vultr::Error()) if (var = (__res).value(); false)                                                                                          \
-	{                                                                                                                                                                                                                 \
-	}                                                                                                                                                                                                                 \
+	(auto __res = (err_or); err = !__res.has_value() ? __res.get_error() : Vultr::Error()) if (var = (__res).value(); false) {}                                                                                       \
 	else
 
 } // namespace Vultr

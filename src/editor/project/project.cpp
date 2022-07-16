@@ -216,31 +216,54 @@ namespace Vultr
 		}
 	}
 
-	ErrorOr<TextureMetadata> get_texture_metadata(const Project *project, const UUID &uuid)
+	static bool texture_metadata_is_fully_formed(const Path &path)
 	{
-		// auto meta_path = get_metadata_file(get_editor_resource_path(project, uuid));
+		auto meta_path = get_metadata_file(path);
 
-		// if (!exists(meta_path))
-		// 	return Error("Metadata file does not exist for texture!");
+		if (!exists(meta_path))
+			return false;
 
-		// String meta_file{};
+		String meta_file{};
 
-		// TRY(try_fread_all(meta_path, &meta_file));
+		auto res = try_fread_all(meta_path, &meta_file);
+		if (!res)
+			return false;
 
-		// TextureMetadata metadata{};
+		TextureMetadata metadata{};
 
-		// auto root = YAML::Load(meta_file);
-		// if (!root.IsMap())
-		// 	return Error("Invalid meta format!");
+		auto root = YAML::Load(meta_file);
+		if (!root["TextureFormat"])
+			return false;
 
-		// if (root["TextureFormat"])
-		// 	metadata.texture_format = static_cast<Platform::TextureFormat>(root["TextureFormat"].as<int>());
-		// else
-		// 	metadata.texture_format = Platform::TextureFormat::SRGBA8;
-
-		// return metadata;
-		return TextureMetadata{};
+		return true;
 	}
+
+	ErrorOr<TextureMetadata> get_texture_metadata(const Path &path)
+	{
+		auto meta_path = get_metadata_file(path);
+
+		if (!exists(meta_path))
+			return Error("Metadata file does not exist for texture!");
+
+		String meta_file{};
+
+		TRY(try_fread_all(meta_path, &meta_file));
+
+		TextureMetadata metadata{};
+
+		auto root = YAML::Load(meta_file);
+		if (!root.IsMap())
+			return Error("Invalid meta format!");
+
+		if (root["TextureFormat"])
+			metadata.texture_format = Platform::texture_format_from_string(root["TextureFormat"].as<String>());
+		else
+			metadata.texture_format = Platform::TextureFormat::SRGBA8;
+
+		return metadata;
+	}
+
+	ErrorOr<TextureMetadata> get_texture_metadata(const Project *project, const UUID &uuid) { return get_texture_metadata(get_editor_resource_path(project, uuid)); }
 
 	ErrorOr<MeshMetadata> get_mesh_metadata(const Path &path) { return MeshMetadata{}; }
 
@@ -248,8 +271,6 @@ namespace Vultr
 
 	YAML::Emitter &operator<<(YAML::Emitter &out, const MetadataHeader &m)
 	{
-		out << YAML::BeginMap;
-
 		out << YAML::Key << "Version";
 		out << YAML::Value << (int)m.version;
 
@@ -258,26 +279,24 @@ namespace Vultr
 
 		out << YAML::Key << "UUID";
 		out << YAML::Value << m.uuid;
-
-		out << YAML::EndMap;
 		return out;
 	}
 
 	YAML::Emitter &operator<<(YAML::Emitter &out, const TextureMetadata &m)
 	{
-		out << YAML::BeginMap;
-
 		out << YAML::Key << "TextureFormat";
-		out << YAML::Value << static_cast<int>(m.texture_format);
-
-		out << YAML::EndMap;
+		out << YAML::Value << Platform::texture_format_to_string(m.texture_format);
 		return out;
 	}
 
 	ErrorOr<void> save_metadata(const Path &path, const MetadataHeader &header)
 	{
 		YAML::Emitter o{};
+
+		o << YAML::BeginMap;
 		o << header;
+		o << YAML::EndMap;
+
 		auto output_stream = FileOutputStream(get_metadata_file(path), StreamFormat::UTF8, StreamWriteMode::OVERWRITE);
 		TRY(output_stream.write(o.c_str(), o.size()));
 		TRY(output_stream.write(String("\n")));
@@ -287,8 +306,10 @@ namespace Vultr
 	ErrorOr<void> save_texture_metadata(const Path &path, const MetadataHeader &header, const TextureMetadata &metadata)
 	{
 		YAML::Emitter o{};
+		o << YAML::BeginMap;
 		o << header;
-		// o << metadata;
+		o << metadata;
+		o << YAML::EndMap;
 		auto output_stream = FileOutputStream(get_metadata_file(path), StreamFormat::UTF8, StreamWriteMode::OVERWRITE);
 		TRY(output_stream.write(o.c_str(), o.size()));
 		TRY(output_stream.write(String("\n")));
@@ -298,7 +319,9 @@ namespace Vultr
 	ErrorOr<void> save_mesh_metadata(const Path &path, const MetadataHeader &header, const TextureMetadata &metadata)
 	{
 		YAML::Emitter o{};
+		o << YAML::BeginMap;
 		o << header;
+		o << YAML::EndMap;
 		auto output_stream = FileOutputStream(get_metadata_file(path), StreamFormat::UTF8, StreamWriteMode::OVERWRITE);
 		TRY(output_stream.write(o.c_str(), o.size()));
 		TRY(output_stream.write(String("\n")));
@@ -308,7 +331,9 @@ namespace Vultr
 	ErrorOr<void> save_scene_metadata(const Path &path, const MetadataHeader &header, const TextureMetadata &metadata)
 	{
 		YAML::Emitter o{};
+		o << YAML::BeginMap;
 		o << header;
+		o << YAML::EndMap;
 		auto output_stream = FileOutputStream(get_metadata_file(path), StreamFormat::UTF8, StreamWriteMode::OVERWRITE);
 		TRY(output_stream.write(o.c_str(), o.size()));
 		TRY(output_stream.write(String("\n")));
@@ -349,10 +374,15 @@ namespace Vultr
 			if (get_resource_type(src_file) != metadata.resource_type)
 				return true;
 
+			if (metadata.resource_type == ResourceType::TEXTURE && !texture_metadata_is_fully_formed(src_file))
+				return true;
+
 			auto out_file = get_editor_optimized_path(project, metadata.uuid);
+
 			if (!exists(out_file))
 				return true;
-			return fget_date_modified_ms(src_file).value() > fget_date_modified_ms(out_file).value();
+
+			return fget_date_modified_ms(src_file).value_or(U64Max) > fget_date_modified_ms(out_file).value_or(0);
 		}
 		else
 		{
@@ -384,12 +414,14 @@ namespace Vultr
 					case ResourceType::TEXTURE:
 					{
 						Platform::ImportedTexture texture{};
+						TRY_UNWRAP(auto texture_metadata, get_texture_metadata(entry));
 						TRY(Platform::import_texture_file(entry, &texture));
 
 						Buffer imported{};
 						build_editor_optimized_texture(&imported, texture);
 
 						TRY(try_fwrite_all(out_path, imported, StreamWriteMode::OVERWRITE));
+						TRY(save_texture_metadata(entry, metadata, texture_metadata));
 
 						if (ResourceId(metadata.uuid).loaded<Platform::Texture *>())
 							project->asset_reload_queue.push({metadata.uuid, ResourceType::TEXTURE});
@@ -459,6 +491,7 @@ namespace Vultr
 				}
 				(*progress)++;
 				ftouch(entry);
+				ftouch(get_editor_optimized_path(project, metadata.uuid));
 			}
 		}
 		return Success;

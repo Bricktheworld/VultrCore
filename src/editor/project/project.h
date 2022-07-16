@@ -109,6 +109,7 @@ namespace Vultr
 	ErrorOr<MetadataHeader> get_or_create_resource_metadata(const Path &path);
 
 	ErrorOr<TextureMetadata> get_texture_metadata(const Project *project, const UUID &uuid);
+	ErrorOr<TextureMetadata> get_texture_metadata(const Path &path);
 	ErrorOr<MeshMetadata> get_mesh_metadata(const Path &path);
 	ErrorOr<SceneMetadata> get_scene_metadata(const Path &path);
 

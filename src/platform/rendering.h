@@ -116,6 +116,71 @@ namespace Vultr
 			DEPTH,
 		};
 
+		inline TextureFormat texture_format_from_string(StringView string)
+		{
+			if (string == "RGB8")
+				return TextureFormat::RGB8;
+			else if (string == "RGB16")
+				return TextureFormat::RGB16;
+			else if (string == "RGBA8")
+				return TextureFormat::RGBA8;
+			else if (string == "RGBA16")
+				return TextureFormat::RGBA16;
+			else if (string == "SRGB8")
+				return TextureFormat::SRGB8;
+			else if (string == "SRGBA8")
+				return TextureFormat::SRGBA8;
+			else if (string == "RGB8_CUBEMAP")
+				return TextureFormat::RGB8_CUBEMAP;
+			else if (string == "RGB16_CUBEMAP")
+				return TextureFormat::RGB16_CUBEMAP;
+			else if (string == "RGBA8_CUBEMAP")
+				return TextureFormat::RGBA8_CUBEMAP;
+			else if (string == "RGBA16_CUBEMAP")
+				return TextureFormat::RGBA16_CUBEMAP;
+			else if (string == "SRGB8_CUBEMAP")
+				return TextureFormat::SRGB8_CUBEMAP;
+			else if (string == "SRGBA8_CUBEMAP")
+				return TextureFormat::SRGBA8_CUBEMAP;
+			else if (string == "DEPTH")
+				return TextureFormat::DEPTH;
+			else
+				return TextureFormat::RGBA8;
+		}
+
+		inline constexpr const char *texture_format_to_string(TextureFormat format)
+		{
+			switch (format)
+			{
+				case TextureFormat::RGB8:
+					return "RGB8";
+				case TextureFormat::RGB16:
+					return "RGB16";
+				case TextureFormat::RGBA8:
+					return "RGBA8";
+				case TextureFormat::RGBA16:
+					return "RGBA16";
+				case TextureFormat::SRGB8:
+					return "SRGB8";
+				case TextureFormat::SRGBA8:
+					return "SRGBA8";
+				case TextureFormat::RGB8_CUBEMAP:
+					return "RGB8_CUBEMAP";
+				case TextureFormat::RGB16_CUBEMAP:
+					return "RGB16_CUBEMAP";
+				case TextureFormat::RGBA8_CUBEMAP:
+					return "RGBA8_CUBEMAP";
+				case TextureFormat::RGBA16_CUBEMAP:
+					return "RGBA16_CUBEMAP";
+				case TextureFormat::SRGB8_CUBEMAP:
+					return "SRGB8_CUBEMAP";
+				case TextureFormat::SRGBA8_CUBEMAP:
+					return "SRGBA8_CUBEMAP";
+				case TextureFormat::DEPTH:
+					return "DEPTH";
+			}
+		}
+
 		namespace TextureUsage
 		{
 			constexpr u16 ATTACHMENT = 0x1;

@@ -21,19 +21,26 @@ namespace Vultr
 			{
 				if (is_asset_imported(&e->project, path))
 				{
-					auto metadata = get_resource_metadata(path).value();
-					state->files.push_back(ResourceFile{
+					auto metadata     = get_resource_metadata(path).value();
+					ResourceFile file = {
 						.path                 = path,
 						.uuid                 = metadata.uuid,
 						.metadata             = metadata,
 						.rendered_framebuffer = None,
-					});
+					};
+
+					if (metadata.resource_type == ResourceType::TEXTURE)
+					{
+						file.texture_metadata = get_texture_metadata(path).value_or(TextureMetadata{});
+					}
+
+					state->files.push_back(file);
 				}
 			}
 		}
 	}
 
-	void resource_window_init(Editor *e)
+	void resource_browser_window_init(Editor *e)
 	{
 		change_dir(e, e->project.resource_dir);
 		auto *state            = &e->resource_browser;
