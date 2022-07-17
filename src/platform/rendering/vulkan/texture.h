@@ -29,9 +29,25 @@ namespace Vultr
 					   format == other.format && texture_usage == other.texture_usage;
 			}
 		};
+
 	} // namespace Platform
 	namespace Vulkan
 	{
 		VkFormat get_vk_texture_format(Vulkan::Device *d, Platform::TextureFormat format);
 	} // namespace Vulkan
+
+	template <>
+	struct Traits<Platform::Texture> : GenericTraits<Platform::Texture>
+	{
+		static u64 hash(const Platform::Texture &texture)
+		{
+			byte data[sizeof(texture.image) + sizeof(texture.sampler) + sizeof(texture.image_view)]{};
+
+			memcpy(data, &texture.image, sizeof(texture.image));
+			memcpy(data + sizeof(texture.image), &texture.sampler, sizeof(texture.sampler));
+			memcpy(data + sizeof(texture.image) + sizeof(texture.sampler), &texture.image_view, sizeof(texture.image_view));
+
+			return string_hash((const char *)(data), sizeof(data));
+		}
+	};
 } // namespace Vultr

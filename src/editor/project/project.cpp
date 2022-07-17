@@ -382,7 +382,10 @@ namespace Vultr
 			if (!exists(out_file))
 				return true;
 
-			return fget_date_modified_ms(src_file).value_or(U64Max) > fget_date_modified_ms(out_file).value_or(0);
+			u64 src_date_modified  = fget_date_modified_ms(src_file).value_or(U64Max);
+			u64 out_date_modified  = fget_date_modified_ms(out_file).value_or(0);
+			u64 meta_date_modified = fget_date_modified_ms(get_metadata_file(src_file)).value_or(U64Max);
+			return src_date_modified > out_date_modified || meta_date_modified > out_date_modified;
 		}
 		else
 		{
@@ -491,6 +494,7 @@ namespace Vultr
 				}
 				(*progress)++;
 				ftouch(entry);
+				ftouch(get_metadata_file(entry));
 				ftouch(get_editor_optimized_path(project, metadata.uuid));
 			}
 		}
@@ -512,14 +516,14 @@ namespace Vultr
 		out->fill(imported.src.storage, texture_size, header_size);
 	}
 
-	ErrorOr<Platform::Texture *> load_editor_optimized_texture(Platform::UploadContext *c, const Buffer &buffer)
+	ErrorOr<Platform::Texture *> load_editor_optimized_texture(Platform::UploadContext *c, const Buffer &buffer, const TextureMetadata &metadata)
 	{
 		auto header     = *(TextureBuildHeader *)buffer.storage;
 
 		u16 header_size = sizeof(header);
 		byte *src       = buffer.storage + header_size;
 
-		auto *texture   = Platform::init_texture(c, header.width, header.height, Platform::TextureFormat::RGBA8, Platform::TextureUsage::TEXTURE);
+		auto *texture   = Platform::init_texture(c, header.width, header.height, metadata.texture_format, Platform::TextureUsage::TEXTURE);
 		Platform::fill_texture(c, texture, src, buffer.size() - header_size);
 		return texture;
 	}

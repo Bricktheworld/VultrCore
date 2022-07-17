@@ -55,19 +55,20 @@ namespace Vultr
 
 		void update_descriptor_set(DescriptorSet *set, Texture *texture, u32 binding)
 		{
-			Texture **existing_texture = &set->image_bindings[binding - 1];
+			u64 hash = 0;
 			if (texture == nullptr)
 			{
-				if (texture == *existing_texture)
+				if (set->image_bindings[binding - 1].get<1>() == nullptr)
 					return;
 			}
 			else
 			{
-				if (texture == *existing_texture && *texture == **existing_texture)
+				hash = Traits<Texture>::hash(*texture);
+				if (set->image_bindings[binding - 1].get<0>() == hash)
 					return;
 			}
 
-			*existing_texture = texture;
+			set->image_bindings[binding - 1] = {hash, texture};
 			set->updated.set_all();
 		}
 
@@ -87,7 +88,7 @@ namespace Vultr
 			Vulkan::depend_resource(cmd, set);
 			Vulkan::depend_resource(cmd, &set->uniform_buffer_bindings[0].buffer);
 
-			for (auto *image : set->image_bindings)
+			for (auto [_, image] : set->image_bindings)
 			{
 				if (image != nullptr)
 					Vulkan::depend_resource(cmd, image);

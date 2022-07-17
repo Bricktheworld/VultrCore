@@ -265,26 +265,27 @@ static void texture_loader_thread(const Vultr::Project *project)
 			}
 		}
 
-		// if check (Vultr::get_texture_metadata(project, uuid), auto metadata, auto err)
-		// {
-		// 	printf("Texture format is %d\n", static_cast<int>(metadata.texture_format));
-		// }
-		// else
-		// {
-		// 	allocator->add_loaded_resource_error(uuid, err);
-		// 	continue;
-		// }
+		Vultr::TextureMetadata metadata;
+		{
+			auto res = Vultr::get_texture_metadata(project, uuid);
+			if (res.is_error())
+			{
+				allocator->add_loaded_resource_error(uuid, res.get_error());
+				continue;
+			}
+			metadata = res.value();
+		}
 
-		auto res = Vultr::load_editor_optimized_texture(c, buf);
+		auto res = Vultr::load_editor_optimized_texture(c, buf, metadata);
 		if (res.is_error())
 		{
 			allocator->add_loaded_resource_error(uuid, res.get_error());
 			continue;
 		}
-		auto *shader = res.value();
-		if (allocator->add_loaded_resource(uuid, shader).is_error())
+		auto *texture = res.value();
+		if (allocator->add_loaded_resource(uuid, texture).is_error())
 		{
-			Vultr::Platform::destroy_texture(Vultr::engine()->context, shader);
+			Vultr::Platform::destroy_texture(Vultr::engine()->context, texture);
 		}
 	}
 }

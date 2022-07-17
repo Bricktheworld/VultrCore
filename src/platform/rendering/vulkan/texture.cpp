@@ -266,8 +266,9 @@ namespace Vultr
 			vkDestroyImageView(d->device, texture->image_view, nullptr);
 			vkDestroySampler(d->device, texture->sampler, nullptr);
 			vmaDestroyImage(d->allocator, texture->image, texture->allocation);
-			texture->sampler = nullptr;
-			texture->image   = nullptr;
+			texture->image_view = nullptr;
+			texture->sampler    = nullptr;
+			texture->image      = nullptr;
 
 			if (texture->cached_texture_id != nullptr)
 				imgui_free_texture_id(texture);

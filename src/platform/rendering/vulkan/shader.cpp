@@ -739,7 +739,6 @@ namespace Vultr
 			u32 binding = 1;
 			for (auto &sampler : mat->samplers)
 			{
-
 				update_descriptor_set(mat->descriptor, sampler.value_or(nullptr), binding);
 				binding++;
 			}
@@ -764,7 +763,7 @@ namespace Vultr
 						continue;
 					ubo_info_len++;
 					write_sets_len++;
-					for (auto *images : set->image_bindings)
+					for (auto [_, images] : set->image_bindings)
 					{
 						tex_info_len++;
 						write_sets_len++;
@@ -804,7 +803,7 @@ namespace Vultr
 					ubo_info_index++;
 
 					u32 i = 1;
-					for (auto *image : set->image_bindings)
+					for (auto [_, image] : set->image_bindings)
 					{
 						auto type                  = shader->reflection.samplers[i - 1].type;
 						Platform::Texture *texture = get_placeholder_texture(c, type);

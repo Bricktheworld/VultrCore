@@ -21,7 +21,6 @@ namespace Vultr
 
 			reinitialize(c);
 
-			//
 			resource_allocator<Platform::Shader *>()->free_queue_listener = &c->free_queue_listener;
 
 			return c;
@@ -142,13 +141,13 @@ namespace Vultr
 				return;
 			}
 
-			depth_prepass(system, cmd);
-			auto *input  = Platform::get_attachment_texture(system->depth_prepass_fbo, 0);
-			auto *output = Platform::get_attachment_texture(system->output_framebuffer, 0);
+			// depth_prepass(system, cmd);
+			// auto *input  = Platform::get_attachment_texture(system->depth_prepass_fbo, 0);
+			// auto *output = Platform::get_attachment_texture(system->output_framebuffer, 0);
 
-			auto *cs     = system->compute_shader.value();
-			Platform::update_compute_shader(cs, input, output);
-			Platform::dispatch_compute(cmd, cs);
+			// auto *cs     = system->compute_shader.value();
+			// Platform::update_compute_shader(cs, input, output);
+			// Platform::dispatch_compute(cmd, cs);
 
 			// Platform::begin_framebuffer(cmd, system->output_framebuffer);
 			// Platform::end_framebuffer(cmd);

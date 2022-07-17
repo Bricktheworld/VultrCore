@@ -698,7 +698,7 @@ namespace Vultr
 
 			memcpy(data + sizeof(info.write_depth) + sizeof(depth_test_has_value) + sizeof(info.depth_test.value()), &info.shader_usage, sizeof(info.shader_usage));
 
-			return string_hash((const char *)(data), sizeof(info));
+			return string_hash((const char *)(data), sizeof(data));
 		}
 	};
 } // namespace Vultr

@@ -135,7 +135,7 @@ namespace Vultr
 	};
 
 	void build_editor_optimized_texture(Buffer *out, const Platform::ImportedTexture &imported);
-	ErrorOr<Platform::Texture *> load_editor_optimized_texture(Platform::UploadContext *c, const Buffer &buffer);
+	ErrorOr<Platform::Texture *> load_editor_optimized_texture(Platform::UploadContext *c, const Buffer &buffer, const TextureMetadata &metadata);
 
 	struct __attribute__((packed)) ShaderBuildHeader
 	{

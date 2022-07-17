@@ -22,11 +22,17 @@ namespace Vultr
 		if (!id.has_value() || !resource_allocator<Platform::Material *>()->is_loaded(id.value()))
 			return false;
 
-		for (auto &sampler : value()->samplers)
+		Platform::Material *val = value();
+
+		if (!val->source.loaded())
+			return false;
+
+		for (auto &sampler : val->samplers)
 		{
 			if (!sampler.empty() && !sampler.loaded())
 				return false;
 		}
+
 		return true;
 	}
 

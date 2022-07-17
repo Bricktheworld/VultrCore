@@ -18,8 +18,7 @@ namespace Vultr
 	};
 
 	template <typename T>
-		requires(is_pointer<T>)
-	struct ResourceInfo
+	requires(is_pointer<T>) struct ResourceInfo
 	{
 		u32 count                    = 1;
 		ResourceLoadState load_state = ResourceLoadState::NEED_TO_LOAD;
@@ -34,8 +33,7 @@ namespace Vultr
 	};
 
 	template <typename T>
-		requires(is_pointer<T>)
-	struct ResourceAllocator
+	requires(is_pointer<T>) struct ResourceAllocator
 	{
 		explicit ResourceAllocator() = default;
 
@@ -189,9 +187,10 @@ namespace Vultr
 				return;
 
 			auto *info = &resources.get(id);
+			T data     = info->data;
 			if (info->load_state == ResourceLoadState::LOADED)
 			{
-				free_queue.push(info->data);
+				free_queue.push(data);
 				if (free_queue_listener != nullptr)
 				{
 					free_queue_listener->push(info->data);
@@ -215,8 +214,7 @@ namespace Vultr
 	ResourceAllocator<T> *resource_allocator();
 
 	template <typename T>
-		requires(is_pointer<T>)
-	struct Resource;
+	requires(is_pointer<T>) struct Resource;
 
 	struct ResourceId
 	{
@@ -282,8 +280,7 @@ namespace Vultr
 	};
 
 	template <typename T>
-		requires(is_pointer<T>)
-	struct Resource
+	requires(is_pointer<T>) struct Resource
 	{
 		Resource() = default;
 		explicit Resource(const UUID &id) : id(id) { resource_allocator<T>()->incr(id); }

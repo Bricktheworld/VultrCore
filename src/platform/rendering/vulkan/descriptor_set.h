@@ -23,7 +23,7 @@ namespace Vultr
 		struct DescriptorSet
 		{
 			Vector<Vulkan::UniformBufferBinding> uniform_buffer_bindings{};
-			Vector<Texture *> image_bindings{};
+			Vector<Tuple<u64, Texture *>> image_bindings{};
 
 			Vector<VkDescriptorSet> vk_frame_descriptor_sets{};
 			Bitfield<64> updated = MAX_BITFIELD<64>;
