@@ -373,6 +373,10 @@ namespace Vultr
 				{
 					type = SamplerType::AMBIENT_OCCLUSION;
 				}
+				else if (name == "u_Skybox_map")
+				{
+					type = SamplerType::CUBEMAP;
+				}
 
 				reflection.samplers.push_back({
 					.name = String(name),
@@ -726,8 +730,9 @@ namespace Vultr
 				case SamplerType::METALLIC:
 				case SamplerType::ROUGHNESS:
 				case SamplerType::AMBIENT_OCCLUSION:
-				case SamplerType::CUBEMAP:
 					return c->white_texture;
+				case SamplerType::CUBEMAP:
+					return c->black_cubemap;
 			}
 		}
 

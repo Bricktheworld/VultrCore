@@ -40,6 +40,7 @@ namespace Vultr
 			c->white_texture     = Platform::init_white_texture(upload_context);
 			c->black_texture     = Platform::init_black_texture(upload_context);
 			c->normal_texture    = Platform::init_normal_texture(upload_context);
+			c->black_cubemap     = Platform::init_black_cubemap(upload_context);
 			destroy_upload_context(upload_context);
 			return c;
 		}
@@ -160,6 +161,7 @@ namespace Vultr
 			destroy_texture(c, c->normal_texture);
 			destroy_texture(c, c->black_texture);
 			destroy_texture(c, c->white_texture);
+			destroy_texture(c, c->black_cubemap);
 			destroy_swapchain(Vulkan::get_swapchain(c));
 		}
 	} // namespace Platform

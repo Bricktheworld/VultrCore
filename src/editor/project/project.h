@@ -83,6 +83,8 @@ namespace Vultr
 	ErrorOr<void> reload_game(Project *project);
 	void reload_necessary_assets(Project *project);
 
+	String serialize_member(const byte *uniform_data, const Platform::UniformMember &member);
+
 	struct MetadataHeader
 	{
 		u8 version                 = 1;
@@ -93,6 +95,7 @@ namespace Vultr
 	struct TextureMetadata
 	{
 		Platform::TextureFormat texture_format = Platform::TextureFormat::SRGBA8;
+		bool flip                              = false;
 	};
 
 	struct MeshMetadata

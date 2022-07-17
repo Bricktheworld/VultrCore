@@ -68,7 +68,12 @@ namespace Vultr
 					file->resource_texture = Resource<Platform::Texture *>(file->uuid);
 				}
 
-				return file->resource_texture.value_or(rm->texture);
+				auto *texture = file->resource_texture.value_or(rm->texture);
+
+				if (Platform::is_cubemap(Platform::get_texture_format(texture)))
+					return rm->texture;
+
+				return texture;
 			}
 			case ResourceType::SHADER:
 			case ResourceType::COMPUTE_SHADER:
@@ -247,6 +252,59 @@ namespace Vultr
 				state->selected_index = full_index;
 			}
 
+			if (ImGui::BeginPopupContextItem())
+			{
+				if (state->files[i].metadata.resource_type == ResourceType::SHADER)
+				{
+					if (ImGui::Selectable("New Material"))
+					{
+						Platform::Shader *shader;
+						{
+							Buffer src;
+							fread_all(get_editor_optimized_path(&e->project, state->files[i].metadata.uuid), &src);
+							CHECK_UNWRAP(shader, load_editor_optimized_shader(engine()->context, src));
+						}
+
+						u32 count    = 1;
+						auto new_mat = state->current_dir / "new_material.mat";
+						while (exists(new_mat))
+						{
+							new_mat = state->current_dir / (String("new_material_") + serialize_u64(count) + String(".mat"));
+							count++;
+						}
+
+						Platform::UUID_String shader_uuid;
+						Platform::stringify_uuid(state->files[i].metadata.uuid, shader_uuid);
+
+						String out_buf{};
+						out_buf += shader_uuid;
+
+						auto *reflection = Platform::get_reflection_data(shader);
+
+						byte buf[Platform::MAX_MATERIAL_SIZE];
+						for (auto &uniform_member : reflection->uniform.members)
+						{
+							out_buf += "\n" + uniform_member.name + ":" + serialize_member(buf, uniform_member);
+						}
+
+						for (auto &sampler_refl : reflection->samplers)
+						{
+							out_buf += "\n" + sampler_refl.name + ":" + Platform::VULTR_NULL_FILE_HANDLE;
+						}
+
+						Platform::destroy_shader(engine()->context, shader);
+
+						fwrite_all(new_mat, out_buf, StreamWriteMode::OVERWRITE);
+
+						ImGui::CloseCurrentPopup();
+
+						begin_resource_import(e);
+					}
+				}
+
+				ImGui::EndPopup();
+			}
+
 			asset_drag_drop_src(state->files[i].metadata);
 
 			ImGui::TextWrapped("%s", state->files[i].path.basename().c_str());
@@ -257,136 +315,6 @@ namespace Vultr
 		}
 
 		ImGui::Columns(1);
-		//		if (ImGui::BeginTable("Asset Table", static_cast<s32>(num_cols)))
-		//		{
-		//			ImGui::TableNextRow();
-		//			u32 col = 0;
-		//			for (u32 i = 0; i < state->files.size(); i++)
-		//			{
-		//				if (col >= num_cols)
-		//				{
-		//					ImGui::TableNextRow();
-		//					col = 0;
-		//				}
-		//				ImGui::TableSetColumnIndex(static_cast<s32>(col));
-		//				auto &file = state->files[i];
-		//
-		//				ImGui::PushID(i);
-		//
-		//				if (ImGui::BeginPopupContextItem())
-		//				{
-		//					if (get_resource_type(file) == ResourceType::SHADER)
-		//					{
-		//						if (ImGui::Selectable("New Material"))
-		//						{
-		//							if check (get_resource_metadata(file), auto metadata, auto _)
-		//							{
-		//								Platform::Shader *shader;
-		//								{
-		//									Buffer src;
-		//									fread_all(get_editor_optimized_path(project, metadata.uuid), &src);
-		//									CHECK_UNWRAP(shader, load_editor_optimized_shader(engine()->context, src));
-		//								}
-		//
-		//								u32 count    = 1;
-		//								auto new_mat = state->current_dir / "new_material.mat";
-		//								while (exists(new_mat))
-		//								{
-		//									new_mat = state->current_dir / (String("new_material_") + serialize_u64(count) + String(".mat"));
-		//									count++;
-		//								}
-		//
-		//								Platform::UUID_String shader_uuid;
-		//								Platform::stringify_uuid(metadata.uuid, shader_uuid);
-		//
-		//								String out_buf{};
-		//								out_buf += shader_uuid;
-		//
-		//								auto *reflection = Platform::get_reflection_data(shader);
-		//
-		//								byte buf[Platform::MAX_MATERIAL_SIZE];
-		//								for (auto &uniform_member : reflection->uniform_members)
-		//								{
-		//									out_buf += "\n" + uniform_member.name + ":" + serialize_member(buf, uniform_member);
-		//								}
-		//
-		//								for (auto &sampler_refl : reflection->samplers)
-		//								{
-		//									out_buf += "\n" + sampler_refl.name + ":" + Platform::VULTR_NULL_FILE_HANDLE;
-		//								}
-		//
-		//								Platform::destroy_shader(engine()->context, shader);
-		//
-		//								fwrite_all(new_mat, out_buf, StreamWriteMode::OVERWRITE);
-		//
-		//								ImGui::CloseCurrentPopup();
-		//
-		//								begin_resource_import(project, editor_state);
-		//							}
-		//							else
-		//							{
-		//								display_error(editor_state, "Shader has not been import", String("Cannot create material from shader which has not been imported, please import first."));
-		//							}
-		//						}
-		//					}
-		//
-		//					ImGui::EndPopup();
-		//				}
-		//
-		//				asset_drag_drop_src(file);
-		//
-		//				draw_resource(file, get_texture_for_resource(file, editor_state));
-		//
-		//				ImGui::PopID();
-		//
-		//				col++;
-		//			}
-		//
-		//			for (u32 i = 0; i < state->dirs.size(); i++)
-		//			{
-		//				if (col >= num_cols)
-		//				{
-		//					ImGui::TableNextRow();
-		//					col = 0;
-		//				}
-		//				ImGui::TableSetColumnIndex(static_cast<s32>(col));
-		//				u32 full_index = i + state->files.size();
-		//				auto &dir      = state->dirs[i];
-		//
-		//				ImGui::PushID(full_index);
-		//
-		//				if (ImGui::Selectable("##", state->selected_index.has_value() && state->selected_index.value() == full_index, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(WIDGET_SIZE, WIDGET_SIZE)))
-		//				{
-		//					state->selected_index = full_index;
-		//				}
-		//
-		//				if (ImGui::BeginDragDropTarget())
-		//				{
-		//					const auto *payload = ImGui::AcceptDragDropPayload("File");
-		//
-		//					if (payload != nullptr)
-		//					{
-		//						auto *path = static_cast<char *>(payload->Data);
-		//
-		//						change_dir(project, state->current_dir, editor_state);
-		//
-		//						ImGui::PopID();
-		//						ImGui::EndTable();
-		//						ImGui::End();
-		//						return;
-		//					}
-		//					ImGui::EndDragDropTarget();
-		//				}
-		//
-		//
-		//				draw_resource(dir, editor_state->folder);
-		//
-		//				ImGui::PopID();
-		//				col++;
-		//			}
-		//
-		//			ImGui::EndTable();
-		//		}
 
 		ImGui::End();
 	}

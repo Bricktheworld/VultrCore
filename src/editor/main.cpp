@@ -88,6 +88,7 @@ static void material_loader_thread(Vultr::Project *project)
 			auto res = Vultr::try_fread_all(path, &material_src);
 			if (res.is_error())
 			{
+				printf("Failed to read material source!\n");
 				allocator->add_loaded_resource_error(uuid, res.get_error());
 				continue;
 			}
@@ -151,6 +152,7 @@ static void shader_loader_thread(const Vultr::Project *project)
 			auto res = Vultr::try_fread_all(path, &buf);
 			if (res.is_error())
 			{
+				printf("Failed to read shader source %s!\n", path.c_str());
 				allocator->add_loaded_resource_error(uuid, res.get_error());
 				continue;
 			}
@@ -159,6 +161,7 @@ static void shader_loader_thread(const Vultr::Project *project)
 		auto res = Vultr::load_editor_optimized_shader(Vultr::engine()->context, buf);
 		if (res.is_error())
 		{
+			printf("Failed to load editor optimized shader!!\n");
 			allocator->add_loaded_resource_error(uuid, res.get_error());
 			continue;
 		}

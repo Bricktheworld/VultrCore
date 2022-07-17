@@ -29,6 +29,74 @@ namespace Vultr
 
 	static Path get_metadata_file(const Path &path) { return Path(path.string() + ".meta"); }
 
+	template <typename T>
+	static String serialize_bytes(const byte *src, u32 width)
+	{
+		String res{};
+		for (u32 i = 0; i < width; i++)
+		{
+			T val = *reinterpret_cast<const T *>(src + sizeof(T) * i);
+			if constexpr (is_same<T, f32> || is_same<T, f64>)
+			{
+				res += serialize_f64(val);
+			}
+			else if (is_same<T, u8> || is_same<T, u16> || is_same<T, u32> || is_same<T, u64>)
+			{
+				res += serialize_u64(val);
+			}
+			else if (is_same<T, s8> || is_same<T, s16> || is_same<T, s32> || is_same<T, s64>)
+			{
+				res += serialize_s64(val);
+			}
+			if (i != width - 1)
+				res += ",";
+		}
+		return res;
+	}
+
+	String serialize_member(const byte *uniform_data, const Platform::UniformMember &member)
+	{
+		auto offset     = member.offset;
+		const byte *src = uniform_data + offset;
+		switch (member.type.primitive_type)
+		{
+			case PrimitiveType::VEC2:
+				return serialize_bytes<f32>(src, 2);
+			case PrimitiveType::VEC3:
+				return serialize_bytes<f32>(src, 3);
+			case PrimitiveType::VEC4:
+			case PrimitiveType::COLOR:
+				return serialize_bytes<f32>(src, 4);
+			case PrimitiveType::MAT3:
+				return serialize_bytes<f32>(src, 3 * 3);
+			case PrimitiveType::MAT4:
+				return serialize_bytes<f32>(src, 4 * 4);
+			case PrimitiveType::F32:
+				return serialize_bytes<f32>(src, 1);
+			case PrimitiveType::F64:
+				return serialize_bytes<f64>(src, 1);
+			case PrimitiveType::S8:
+				return serialize_bytes<s8>(src, 1);
+			case PrimitiveType::S16:
+				return serialize_bytes<s16>(src, 1);
+			case PrimitiveType::S32:
+				return serialize_bytes<s32>(src, 1);
+			case PrimitiveType::S64:
+				return serialize_bytes<s64>(src, 1);
+			case PrimitiveType::U8:
+				return serialize_bytes<u8>(src, 1);
+			case PrimitiveType::U16:
+				return serialize_bytes<u16>(src, 1);
+			case PrimitiveType::U32:
+				return serialize_bytes<u32>(src, 1);
+			case PrimitiveType::U64:
+				return serialize_bytes<u64>(src, 1);
+			default:
+				THROW("Invalid uniform member type!");
+		}
+		return {};
+	}
+
 	ErrorOr<void> load_game(const Path &build_dir, const Path &resource_dir, Project *out)
 	{
 		out->build_dir          = build_dir;
@@ -235,6 +303,9 @@ namespace Vultr
 		if (!root["TextureFormat"])
 			return false;
 
+		if (!root["Flip"])
+			return false;
+
 		return true;
 	}
 
@@ -259,6 +330,11 @@ namespace Vultr
 			metadata.texture_format = Platform::texture_format_from_string(root["TextureFormat"].as<String>());
 		else
 			metadata.texture_format = Platform::TextureFormat::SRGBA8;
+
+		if (root["Flip"])
+			metadata.flip = root["Flip"].as<bool>();
+		else
+			metadata.flip = true;
 
 		return metadata;
 	}
@@ -286,6 +362,9 @@ namespace Vultr
 	{
 		out << YAML::Key << "TextureFormat";
 		out << YAML::Value << Platform::texture_format_to_string(m.texture_format);
+
+		out << YAML::Key << "Flip";
+		out << YAML::Value << m.flip;
 		return out;
 	}
 
@@ -418,7 +497,7 @@ namespace Vultr
 					{
 						Platform::ImportedTexture texture{};
 						TRY_UNWRAP(auto texture_metadata, get_texture_metadata(entry));
-						TRY(Platform::import_texture_file(entry, &texture));
+						TRY(Platform::import_texture_file(entry, &texture, Platform::TextureFormat::SRGBA8, texture_metadata.flip));
 
 						Buffer imported{};
 						build_editor_optimized_texture(&imported, texture);
@@ -516,6 +595,35 @@ namespace Vultr
 		out->fill(imported.src.storage, texture_size, header_size);
 	}
 
+	static byte *get_pixel_offset(byte *src, u32 x, u32 y, u32 total_width) { return src + (y * total_width + x) * 4; }
+
+	static void cpyface(byte *dst, byte *src, u32 total_width, u32 face_width, u32 x_offset, u32 y_offset, bool flip)
+	{
+		for (u32 y = 0; y < face_width; y++)
+		{
+			if (flip)
+			{
+				for (u32 x = 0; x < face_width; x++)
+				{
+					u32 flipped_y = face_width - y - 1;
+					u32 flipped_x = face_width - x - 1;
+					Utils::copy(dst + (flipped_y * face_width + flipped_x) * 4, get_pixel_offset(src, x + x_offset, y + y_offset, total_width), 4);
+				}
+			}
+			else
+			{
+				Utils::copy(dst + y * face_width * 4, get_pixel_offset(src, x_offset, y + y_offset, total_width), 4 * face_width);
+			}
+		}
+	}
+
+	static void cpyfront(byte *dst, byte *src, u32 total_width, u32 face_width) { cpyface(dst, src, total_width, face_width, face_width, face_width, true); }
+	static void cpyback(byte *dst, byte *src, u32 total_width, u32 face_width) { cpyface(dst, src, total_width, face_width, face_width * 3, face_width, true); }
+	static void cpyup(byte *dst, byte *src, u32 total_width, u32 face_width) { cpyface(dst, src, total_width, face_width, face_width, 0, false); }
+	static void cpydown(byte *dst, byte *src, u32 total_width, u32 face_width) { cpyface(dst, src, total_width, face_width, face_width, face_width * 2, false); }
+	static void cpyleft(byte *dst, byte *src, u32 total_width, u32 face_width) { cpyface(dst, src, total_width, face_width, 0, face_width, true); }
+	static void cpyright(byte *dst, byte *src, u32 total_width, u32 face_width) { cpyface(dst, src, total_width, face_width, face_width * 2, face_width, true); }
+
 	ErrorOr<Platform::Texture *> load_editor_optimized_texture(Platform::UploadContext *c, const Buffer &buffer, const TextureMetadata &metadata)
 	{
 		auto header     = *(TextureBuildHeader *)buffer.storage;
@@ -523,8 +631,34 @@ namespace Vultr
 		u16 header_size = sizeof(header);
 		byte *src       = buffer.storage + header_size;
 
-		auto *texture   = Platform::init_texture(c, header.width, header.height, metadata.texture_format, Platform::TextureUsage::TEXTURE);
-		Platform::fill_texture(c, texture, src, buffer.size() - header_size);
+		Platform::Texture *texture;
+
+		if (Platform::is_cubemap(metadata.texture_format))
+		{
+			u32 face_width  = header.height / 3;
+			u32 face_height = face_width;
+
+			texture         = Platform::init_texture(c, face_width, face_height, metadata.texture_format, Platform::TextureUsage::TEXTURE);
+
+			Buffer faces[6];
+			for (u8 i = 0; i < 6; i++)
+			{
+				faces[i] = Buffer(face_width * face_height * 4);
+			}
+			cpyfront(faces[0].storage, src, header.width, face_width);
+			cpyback(faces[1].storage, src, header.width, face_width);
+			cpyup(faces[2].storage, src, header.width, face_width);
+			cpydown(faces[3].storage, src, header.width, face_width);
+			cpyleft(faces[4].storage, src, header.width, face_width);
+			cpyright(faces[5].storage, src, header.width, face_width);
+
+			Platform::fill_texture_cubemap(c, texture, faces[0].storage, faces[1].storage, faces[2].storage, faces[3].storage, faces[4].storage, faces[5].storage, face_width * face_height * 4);
+		}
+		else
+		{
+			texture = Platform::init_texture(c, header.width, header.height, metadata.texture_format, Platform::TextureUsage::TEXTURE);
+			Platform::fill_texture(c, texture, src, buffer.size() - header_size);
+		}
 		return texture;
 	}
 

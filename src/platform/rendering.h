@@ -218,7 +218,26 @@ namespace Vultr
 		Texture *init_texture(RenderContext *c, u32 width, u32 height, TextureFormat format, u16 texture_usage);
 		Texture *init_texture(UploadContext *c, u32 width, u32 height, TextureFormat format, u16 texture_usage);
 
+		TextureFormat get_texture_format(Texture *texture);
+
+		inline constexpr bool is_cubemap(TextureFormat format)
+		{
+			switch (format)
+			{
+				case Platform::TextureFormat::RGB8_CUBEMAP:
+				case Platform::TextureFormat::RGB16_CUBEMAP:
+				case Platform::TextureFormat::RGBA8_CUBEMAP:
+				case Platform::TextureFormat::RGBA16_CUBEMAP:
+				case Platform::TextureFormat::SRGB8_CUBEMAP:
+				case Platform::TextureFormat::SRGBA8_CUBEMAP:
+					return true;
+				default:
+					return false;
+			}
+		}
+
 		void fill_texture(UploadContext *c, Texture *texture, byte *data, u32 size);
+		void fill_texture_cubemap(UploadContext *c, Texture *texture, byte *front, byte *back, byte *up, byte *down, byte *left, byte *right, u32 individual_size);
 
 		struct ImportedTexture
 		{
@@ -232,6 +251,7 @@ namespace Vultr
 		Texture *init_white_texture(UploadContext *c);
 		Texture *init_black_texture(UploadContext *c);
 		Texture *init_normal_texture(UploadContext *c);
+		Texture *init_black_cubemap(UploadContext *c);
 
 		u32 get_width(Texture *texture);
 		u32 get_height(Texture *texture);

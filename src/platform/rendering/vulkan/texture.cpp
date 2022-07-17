@@ -35,21 +35,6 @@ namespace Vultr
 	} // namespace Vulkan
 	namespace Platform
 	{
-		static bool is_cubemap(TextureFormat format)
-		{
-			switch (format)
-			{
-				case Platform::TextureFormat::RGB8_CUBEMAP:
-				case Platform::TextureFormat::RGB16_CUBEMAP:
-				case Platform::TextureFormat::RGBA8_CUBEMAP:
-				case Platform::TextureFormat::RGBA16_CUBEMAP:
-				case Platform::TextureFormat::SRGB8_CUBEMAP:
-				case Platform::TextureFormat::SRGBA8_CUBEMAP:
-					return true;
-				default:
-					return false;
-			}
-		}
 		static VkImageCreateFlags vk_get_cubemap_flag(Platform::TextureFormat format) { return is_cubemap(format) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0; }
 		static Texture *init_texture(Vulkan::Device *d, u32 width, u32 height, TextureFormat format, u16 texture_usage)
 		{
@@ -178,6 +163,16 @@ namespace Vultr
 			return texture;
 		}
 
+		Texture *init_black_cubemap(UploadContext *c)
+		{
+			auto *texture = init_texture(c, 1, 1, TextureFormat::RGBA8_CUBEMAP, TextureUsage::TEXTURE);
+			byte data[4]  = {0};
+			fill_texture_cubemap(c, texture, data, data, data, data, data, data, get_pixel_size(texture->format));
+			return texture;
+		}
+
+		TextureFormat get_texture_format(Texture *texture) { return texture->format; }
+
 		void fill_texture(UploadContext *c, Texture *texture, byte *data, u32 size)
 		{
 			auto *d             = Vulkan::get_device(c);
@@ -186,13 +181,13 @@ namespace Vultr
 
 			fill_buffer(d, &staging_buffer, data, size);
 
-			bool is_skybox = is_cubemap(texture->format);
+			ASSERT(!is_cubemap(texture->format), "Cannot fill cubemap using this function (or at least not properly). Please use fill_texture_cubemap!");
 			VkImageSubresourceRange range{
 				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
 				.baseMipLevel   = 0,
 				.levelCount     = 1,
 				.baseArrayLayer = 0,
-				.layerCount     = is_skybox ? 6U : 1U,
+				.layerCount     = 1U,
 			};
 
 			VkImageMemoryBarrier barrier_to_transfer = {
@@ -217,7 +212,89 @@ namespace Vultr
 						.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
 						.mipLevel       = 0,
 						.baseArrayLayer = 0,
-						.layerCount     = is_skybox ? 6U : 1U,
+						.layerCount     = 1U,
+					},
+				.imageExtent = texture->image_info.extent,
+			};
+
+			vkCmdCopyBufferToImage(cmd, staging_buffer.buffer, texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+
+			VkImageMemoryBarrier barrier_to_readable{
+				.sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask    = VK_ACCESS_TRANSFER_WRITE_BIT,
+				.dstAccessMask    = VK_ACCESS_SHADER_READ_BIT,
+				.oldLayout        = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				.newLayout        = texture->layout,
+				.image            = texture->image,
+				.subresourceRange = range,
+			};
+
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_to_readable);
+
+			end_cmd_buffer(cmd, &c->cmd_pool);
+
+			VkSubmitInfo submit_info{
+				.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				.commandBufferCount = 1,
+				.pCommandBuffers    = &cmd,
+			};
+
+			auto fence = c->cmd_pool.fence;
+			graphics_queue_submit(d, 1, &submit_info, fence);
+
+			VK_CHECK(vkWaitForFences(d->device, 1, &fence, VK_TRUE, U64Max));
+			recycle_cmd_pool(d, &c->cmd_pool);
+
+			Vulkan::unsafe_free_buffer(d, &staging_buffer);
+		}
+
+		void fill_texture_cubemap(UploadContext *c, Texture *texture, byte *front, byte *back, byte *up, byte *down, byte *left, byte *right, u32 individual_size)
+		{
+			ASSERT(is_cubemap(texture->format), "Cannot fill texture that is not a cubemap as a cubemap! Please use fill_texture.");
+			auto *d             = Vulkan::get_device(c);
+
+			auto staging_buffer = alloc_buffer(d, individual_size * 6, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+			byte *mapped        = static_cast<byte *>(map_buffer(d, &staging_buffer));
+			Utils::copy(mapped + individual_size * 0, right, individual_size);
+			Utils::copy(mapped + individual_size * 1, left, individual_size);
+			Utils::copy(mapped + individual_size * 2, down, individual_size);
+			Utils::copy(mapped + individual_size * 3, up, individual_size);
+			Utils::copy(mapped + individual_size * 4, back, individual_size);
+			Utils::copy(mapped + individual_size * 5, front, individual_size);
+			unmap_buffer(d, &staging_buffer);
+
+			VkImageSubresourceRange range{
+				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel   = 0,
+				.levelCount     = 1,
+				.baseArrayLayer = 0,
+				.layerCount     = 6,
+			};
+
+			VkImageMemoryBarrier barrier_to_transfer = {
+				.sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask    = 0,
+				.dstAccessMask    = VK_ACCESS_TRANSFER_WRITE_BIT,
+				.oldLayout        = VK_IMAGE_LAYOUT_UNDEFINED,
+				.newLayout        = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				.image            = texture->image,
+				.subresourceRange = range,
+			};
+
+			auto cmd = begin_cmd_buffer(d, &c->cmd_pool);
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_to_transfer);
+
+			VkBufferImageCopy copy = {
+				.bufferOffset      = 0,
+				.bufferRowLength   = 0,
+				.bufferImageHeight = 0,
+				.imageSubresource =
+					{
+						.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+						.mipLevel       = 0,
+						.baseArrayLayer = 0,
+						.layerCount     = 6,
 					},
 				.imageExtent = texture->image_info.extent,
 			};
