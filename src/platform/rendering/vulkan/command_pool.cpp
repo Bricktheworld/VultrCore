@@ -35,7 +35,6 @@ namespace Vultr
 					break;
 			}
 
-			// TODO(Brandon): Maybe don't hard-code the graphics family queue.
 			VkCommandPoolCreateInfo pool_info{
 				.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 				.flags            = 0,

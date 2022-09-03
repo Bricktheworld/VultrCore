@@ -17,8 +17,9 @@ namespace Vultr
 
 		struct Component
 		{
-			Platform::Framebuffer *depth_prepass_fbo  = nullptr;
-			Platform::Framebuffer *output_framebuffer = nullptr;
+			Platform::Framebuffer *depth_pre_pass    = nullptr;
+			Platform::Framebuffer *color_pass        = nullptr;
+			Platform::Framebuffer *post_process_pass = nullptr;
 			Queue<void *, 1024> free_queue_listener{};
 			Option<ResizeRequest> resize_request = None;
 
@@ -27,7 +28,7 @@ namespace Vultr
 		};
 
 		Component *init();
-		void update(const Camera &camera, const Transform &transform, Platform::CmdBuffer *cmd_buffer, Component *system);
+		void update(const Camera *camera, const Transform &transform, Platform::CmdBuffer *cmd_buffer, Component *system);
 		void update(Platform::CmdBuffer *cmd_buffer, Component *system);
 		void update(Component *system);
 		void request_resize(Component *system, u32 width, u32 height);

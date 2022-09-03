@@ -61,10 +61,10 @@ namespace Vultr
 		{
 			if (e->selected_entity.has_value() && has_component<Material>(e->selected_entity.value()))
 			{
-				auto &mat_component = get_component<Material>(e->selected_entity.value());
-				if (mat_component.source.loaded())
+				auto *mat_component = get_component<Material>(e->selected_entity.value());
+				if (mat_component->source.loaded())
 				{
-					auto res = serialize_material(&e->project, mat_component.source);
+					auto res = serialize_material(&e->project, mat_component->source);
 					if (res.is_error())
 						fprintf(stderr, "Something went wrong saving material %s", res.get_error().message.c_str());
 

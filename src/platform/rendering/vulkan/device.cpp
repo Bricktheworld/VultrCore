@@ -359,6 +359,21 @@ namespace Vultr
 			THROW("No supported depth formats found!");
 		}
 
+		VkSampleCountFlagBits get_samples(Device *d)
+		{
+			VkSampleCountFlags counts = d->properties.limits.framebufferColorSampleCounts & d->properties.limits.framebufferDepthSampleCounts;
+
+			if (counts & VK_SAMPLE_COUNT_16_BIT)
+				return VK_SAMPLE_COUNT_16_BIT;
+			if (counts & VK_SAMPLE_COUNT_8_BIT)
+				return VK_SAMPLE_COUNT_8_BIT;
+			if (counts & VK_SAMPLE_COUNT_4_BIT)
+				return VK_SAMPLE_COUNT_4_BIT;
+			if (counts & VK_SAMPLE_COUNT_2_BIT)
+				return VK_SAMPLE_COUNT_2_BIT;
+			return VK_SAMPLE_COUNT_1_BIT;
+		}
+
 		void destroy_device(Device *d)
 		{
 			vmaDestroyAllocator(d->allocator);

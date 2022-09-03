@@ -385,7 +385,7 @@ int Vultr::vultr_main(Platform::EntryArgs *args)
 						}
 						else
 						{
-							RenderSystem::update(editor.scene_window.editor_camera, editor.scene_window.editor_camera_transform, cmd, render_system);
+							RenderSystem::update(&editor.scene_window.editor_camera, editor.scene_window.editor_camera_transform, cmd, render_system);
 						}
 						editor.hot_reload_fence.release();
 					}

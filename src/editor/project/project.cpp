@@ -303,9 +303,6 @@ namespace Vultr
 		if (!root["TextureFormat"])
 			return false;
 
-		if (!root["Flip"])
-			return false;
-
 		return true;
 	}
 
@@ -330,11 +327,6 @@ namespace Vultr
 			metadata.texture_format = Platform::texture_format_from_string(root["TextureFormat"].as<String>());
 		else
 			metadata.texture_format = Platform::TextureFormat::SRGBA8;
-
-		if (root["Flip"])
-			metadata.flip = root["Flip"].as<bool>();
-		else
-			metadata.flip = true;
 
 		return metadata;
 	}
@@ -363,8 +355,6 @@ namespace Vultr
 		out << YAML::Key << "TextureFormat";
 		out << YAML::Value << Platform::texture_format_to_string(m.texture_format);
 
-		out << YAML::Key << "Flip";
-		out << YAML::Value << m.flip;
 		return out;
 	}
 
@@ -497,7 +487,7 @@ namespace Vultr
 					{
 						Platform::ImportedTexture texture{};
 						TRY_UNWRAP(auto texture_metadata, get_texture_metadata(entry));
-						TRY(Platform::import_texture_file(entry, &texture, Platform::TextureFormat::SRGBA8, texture_metadata.flip));
+						TRY(Platform::import_texture_file(entry, &texture));
 
 						Buffer imported{};
 						build_editor_optimized_texture(&imported, texture);

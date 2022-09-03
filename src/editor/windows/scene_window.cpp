@@ -178,10 +178,10 @@ namespace Vultr
 			}
 
 			ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
-			auto output_texture        = Platform::imgui_get_texture_id(Platform::get_attachment_texture(render_system->output_framebuffer, 0));
+			auto output_texture        = Platform::imgui_get_texture_id(Platform::get_attachment_texture(render_system->post_process_pass, 0));
 			ImGui::Image(output_texture, viewport_panel_size);
 
-			if (Platform::get_width(render_system->output_framebuffer) != viewport_panel_size.x || Platform::get_height(render_system->output_framebuffer) != viewport_panel_size.y)
+			if (Platform::get_width(render_system->post_process_pass) != viewport_panel_size.x || Platform::get_height(render_system->post_process_pass) != viewport_panel_size.y)
 			{
 				RenderSystem::request_resize(render_system, max(viewport_panel_size.x, 1.0f), max(viewport_panel_size.y, 1.0f));
 			}
@@ -239,8 +239,8 @@ namespace Vultr
 
 						if (ImGuizmo::IsUsing())
 						{
-							auto &transform = get_component<Transform>(ent);
-							Math::decompose_transform(get_local_transform(transform_mat, ent), &transform.position, &transform.rotation, &transform.scale);
+							auto *transform = get_component<Transform>(ent);
+							Math::decompose_transform(get_local_transform(transform_mat, ent), &transform->position, &transform->rotation, &transform->scale);
 						}
 					}
 				}

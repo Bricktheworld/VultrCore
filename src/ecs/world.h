@@ -157,10 +157,10 @@ namespace Vultr
 			return None;
 		}
 
-		Option<T &> get_component(Entity entity)
+		Option<T *> get_component(Entity entity)
 		{
 			if let (auto index, m_entity_to_index.try_get(entity))
-				return storage()[index];
+				return &storage()[index];
 			else
 				return None;
 		}
@@ -210,7 +210,7 @@ namespace Vultr
 			if (!arr->has_component(entity))
 				return;
 
-			rtti->push_back(Tuple<Type, void *>(get_type<T>, &arr->get_component(entity).value()));
+			rtti->push_back(Tuple<Type, void *>(get_type<T>, arr->get_component(entity).value()));
 		}
 
 		static void get_editor_rtti_impl(IComponentArray *p_arr, Entity entity, Vector<EditorType> *editor_rtti)
@@ -219,7 +219,7 @@ namespace Vultr
 			if (!arr->has_component(entity))
 				return;
 
-			auto *component = &arr->get_component(entity).value();
+			auto *component = arr->get_component(entity).value();
 			editor_rtti->push_back(get_editor_type(component));
 		}
 
@@ -316,13 +316,13 @@ namespace Vultr
 		}
 
 		template <typename T>
-		Option<T &> try_get_component(Entity entity)
+		Option<T *> try_get_component(Entity entity)
 		{
 			return get_component_array<T>()->get_component(entity);
 		}
 
 		template <typename T>
-		T &get_component(Entity entity)
+		T *get_component(Entity entity)
 		{
 			auto res = try_get_component<T>(entity);
 			ASSERT(res, "Component does not exist!");
@@ -330,9 +330,9 @@ namespace Vultr
 		}
 
 		template <typename... Ts>
-		Tuple<Ts &...> get_components(Entity entity)
+		Tuple<Ts *...> get_components(Entity entity)
 		{
-			return Tuple<Ts &...>(get_component<Ts>(entity)...);
+			return Tuple<Ts *...>(get_component<Ts>(entity)...);
 		}
 
 		template <typename T>
@@ -422,7 +422,7 @@ namespace Vultr
 						skip_to_next();
 				}
 
-				Tuple<Entity, Ts *...> operator*() { return Tuple<Entity, Ts *...>(m_iterator->key, &m_world->component_manager.template get_component<Ts>(m_iterator->key)...); }
+				Tuple<Entity, Ts *...> operator*() { return Tuple<Entity, Ts *...>(m_iterator->key, m_world->component_manager.template get_component<Ts>(m_iterator->key)...); }
 				bool operator==(const EntityIterator &other) const { return m_iterator == other.m_iterator; }
 
 				EntityIterator &operator++()

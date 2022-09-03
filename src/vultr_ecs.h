@@ -53,37 +53,37 @@ namespace Vultr
 	}
 
 	template <typename... Ts>
-	inline Tuple<Ts &...> world_get_components(World *w, Entity entity)
+	inline Tuple<Ts *...> world_get_components(World *w, Entity entity)
 	{
 		return w->component_manager.get_components<Ts...>(entity);
 	}
 
 	template <typename... Ts>
-	inline Tuple<Ts &...> get_components(Entity entity)
+	inline Tuple<Ts *...> get_components(Entity entity)
 	{
-		return world_get_components<Ts...>(entity);
+		return world_get_components<Ts...>(world(), entity);
 	}
 
 	template <typename T>
-	inline Option<T &> world_try_get_component(World *w, Entity entity)
+	inline Option<T *> world_try_get_component(World *w, Entity entity)
 	{
 		return w->component_manager.try_get_component<T>(entity);
 	}
 
 	template <typename T>
-	inline Option<T &> try_get_component(Entity entity)
+	inline Option<T *> try_get_component(Entity entity)
 	{
 		return world_try_get_component<T>(world(), entity);
 	}
 
 	template <typename T>
-	inline T &world_get_component(World *w, Entity entity)
+	inline T *world_get_component(World *w, Entity entity)
 	{
 		return w->component_manager.get_component<T>(entity);
 	}
 
 	template <typename T>
-	inline T &get_component(Entity entity)
+	inline T *get_component(Entity entity)
 	{
 		return world_get_component<T>(world(), entity);
 	}
@@ -212,13 +212,13 @@ namespace Vultr
 
 	inline Mat4 world_get_world_transform(World *w, Entity entity)
 	{
-		Mat4 accumulator = model_matrix(world_get_component<Transform>(w, entity));
+		Mat4 accumulator = model_matrix(*world_get_component<Transform>(w, entity));
 		Entity current   = entity;
 		while (true)
 		{
 			if let (auto parent, world_get_parent(w, current))
 			{
-				accumulator = model_matrix(world_get_component<Transform>(w, parent)) * accumulator;
+				accumulator = model_matrix(*world_get_component<Transform>(w, parent)) * accumulator;
 				current     = parent;
 			}
 			else
@@ -251,8 +251,8 @@ namespace Vultr
 		w->entity_manager.reparent(entity, parent);
 		Mat4 local_transform = world_get_local_transform(w, world_transform, entity);
 
-		auto &transform      = world_get_component<Transform>(w, entity);
-		Math::decompose_transform(local_transform, &transform.position, &transform.rotation, &transform.scale);
+		auto *transform      = world_get_component<Transform>(w, entity);
+		Math::decompose_transform(local_transform, &transform->position, &transform->rotation, &transform->scale);
 	}
 
 	inline void reparent_entity(Entity entity, Entity parent) { world_reparent_entity(world(), entity, parent); }
@@ -262,9 +262,9 @@ namespace Vultr
 		if (world_has_component<Transform>(w, entity))
 		{
 			Mat4 world_transform = world_get_world_transform(w, entity);
-			auto &transform      = world_get_component<Transform>(w, entity);
+			auto *transform      = world_get_component<Transform>(w, entity);
 
-			Math::decompose_transform(world_transform, &transform.position, &transform.rotation, &transform.scale);
+			Math::decompose_transform(world_transform, &transform->position, &transform->rotation, &transform->scale);
 		}
 		w->entity_manager.unparent(entity);
 	}

@@ -473,7 +473,7 @@ namespace Vultr
 			{
 				THROW("Failed to present swap chain images!");
 			}
-			return None;
+			return Success;
 		}
 
 		void wait_resource_not_in_use(SwapChain *sc, void *resource)

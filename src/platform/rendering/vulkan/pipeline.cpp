@@ -188,23 +188,20 @@ namespace Vultr
 			};
 
 			VkPipelineColorBlendAttachmentState color_blend_attachments{
-				.blendEnable         = VK_FALSE,
-				.srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-				.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+				.blendEnable         = info.alpha_blend ? VK_TRUE : VK_FALSE,
+				.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+				.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 				.colorBlendOp        = VK_BLEND_OP_ADD,
-				.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-				.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+				.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+				.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 				.alphaBlendOp        = VK_BLEND_OP_ADD,
 				.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 			};
 
 			VkPipelineColorBlendStateCreateInfo color_blending{
 				.sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-				.logicOpEnable   = VK_FALSE,
-				.logicOp         = VK_LOGIC_OP_COPY,
 				.attachmentCount = 1,
 				.pAttachments    = &color_blend_attachments,
-				.blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f},
 			};
 
 			VkDynamicState dynamic_states[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};

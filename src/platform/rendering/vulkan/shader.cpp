@@ -880,7 +880,8 @@ namespace Vultr
 		{
 			auto *d = Vulkan::get_device(c);
 
-			Platform::Lock lock(shader->mutex);
+			Platform::Lock l1(Vulkan::get_swapchain(c)->cmd_buffer_resource_mutex);
+			Platform::Lock l2(shader->mutex);
 			auto index = shader->allocated_descriptor_sets.index_of(set);
 			shader->allocated_descriptor_sets.remove(index);
 			shader->free_descriptor_sets.push(set);

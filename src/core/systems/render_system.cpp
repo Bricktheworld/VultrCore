@@ -9,15 +9,16 @@ namespace Vultr
 		static Component *component(void *component) { return static_cast<Component *>(component); }
 		Component *init()
 		{
-			auto *c               = v_alloc<Component>();
+			auto *c              = v_alloc<Component>();
 
-			auto signature        = signature_from_components<Transform, Mesh, Material>();
-			c->skybox_mesh        = Platform::init_skybox(engine()->upload_context);
+			auto signature       = signature_from_components<Transform, Mesh, Material>();
+			c->skybox_mesh       = Platform::init_skybox(engine()->upload_context);
 
-			c->output_framebuffer = nullptr;
-			c->depth_prepass_fbo  = nullptr;
+			c->depth_pre_pass    = nullptr;
+			c->color_pass        = nullptr;
+			c->post_process_pass = nullptr;
 
-			c->compute_shader     = Resource<Platform::ComputeShader *>(Platform::parse_uuid("b741af72-5471-4d04-855b-7dc2d9de9f27"));
+			c->compute_shader    = Resource<Platform::ComputeShader *>(Platform::parse_uuid("b741af72-5471-4d04-855b-7dc2d9de9f27"));
 
 			reinitialize(c);
 
@@ -28,11 +29,44 @@ namespace Vultr
 
 		static void render(Component *system, Platform::CmdBuffer *cmd)
 		{
-			Platform::begin_framebuffer(cmd, system->output_framebuffer);
+			Platform::begin_framebuffer(cmd, system->post_process_pass);
 
 			Platform::GraphicsPipelineInfo pipeline_info{};
+			for (auto [entity, _, material_component] : get_entities<Camera, Material>())
+			{
+				if (!material_component->source.loaded())
+					continue;
+
+				auto *skybox_mat          = material_component->source.value();
+				auto *shader              = skybox_mat->source.value();
+
+				pipeline_info.depth_test  = None;
+				pipeline_info.write_depth = false;
+
+				Platform::bind_material(cmd, skybox_mat, pipeline_info);
+				Platform::draw_mesh(cmd, system->skybox_mesh);
+			}
+
+			Vector<Entity> opaque_entities{};
+			Vector<Entity> transparent_entities{};
 			for (auto [entity, transform, mesh, material] : get_entities<Transform, Mesh, Material>())
 			{
+				if (material->has_transparency)
+				{
+					transparent_entities.push_back(entity);
+				}
+				else
+				{
+					opaque_entities.push_back(entity);
+				}
+			}
+
+			pipeline_info.depth_test  = Platform::DepthTest::LESS;
+			pipeline_info.write_depth = true;
+			pipeline_info.alpha_blend = false;
+			for (auto entity : opaque_entities)
+			{
+				auto [transform, mesh, material] = get_components<Transform, Mesh, Material>(entity);
 				if (!mesh->source.loaded() || !material->source.loaded())
 					continue;
 
@@ -48,33 +82,37 @@ namespace Vultr
 				Platform::draw_mesh(cmd, loaded_mesh);
 			}
 
-			for (auto [entity, _, material_component] : get_entities<Camera, Material>())
+			pipeline_info.alpha_blend = true;
+			for (auto entity : transparent_entities)
 			{
-				if (!material_component->source.loaded())
+				auto [transform, mesh, material] = get_components<Transform, Mesh, Material>(entity);
+				if (!mesh->source.loaded() || !material->source.loaded())
 					continue;
 
-				auto *skybox_mat          = material_component->source.value();
-				auto *shader              = skybox_mat->source.value();
+				auto model        = get_world_transform(entity);
+				auto *loaded_mesh = mesh->source.value();
+				auto *loaded_mat  = material->source.value();
 
-				pipeline_info.depth_test  = Platform::DepthTest::LEQUAL;
-				pipeline_info.write_depth = false;
+				Platform::PushConstant push_constant{
+					.model = model,
+				};
 
-				Platform::bind_material(cmd, skybox_mat, pipeline_info);
-				Platform::draw_mesh(cmd, system->skybox_mesh);
+				Platform::bind_material(cmd, loaded_mat, pipeline_info, push_constant);
+				Platform::draw_mesh(cmd, loaded_mesh);
 			}
 
 			Platform::end_framebuffer(cmd);
 		}
 
-		static bool update_default_descriptors(const Camera &camera, const Transform &transform, Platform::CmdBuffer *cmd, Component *system)
+		static bool update_default_descriptors(const Camera *camera, const Transform &transform, Platform::CmdBuffer *cmd, Component *system)
 		{
-			auto width  = get_width(system->output_framebuffer);
-			auto height = get_height(system->output_framebuffer);
+			auto width  = get_width(system->post_process_pass);
+			auto height = get_height(system->post_process_pass);
 
 			Platform::CameraUBO camera_ubo{
 				.position  = Vec4(transform.position, 0),
 				.view      = view_matrix(transform),
-				.proj      = projection_matrix(camera, static_cast<f32>(width), static_cast<f32>(height)),
+				.proj      = projection_matrix(*camera, static_cast<f32>(width), static_cast<f32>(height)),
 				.view_proj = camera_ubo.proj * camera_ubo.view,
 			};
 
@@ -103,7 +141,7 @@ namespace Vultr
 
 		static void depth_prepass(Component *system, Platform::CmdBuffer *cmd)
 		{
-			Platform::begin_framebuffer(cmd, system->depth_prepass_fbo);
+			Platform::begin_framebuffer(cmd, system->post_process_pass);
 			Platform::GraphicsPipelineInfo info{
 				.shader_usage = Platform::ShaderUsage::VERT_ONLY,
 				.depth_test   = Platform::DepthTest::LEQUAL,
@@ -126,7 +164,7 @@ namespace Vultr
 			Platform::end_framebuffer(cmd);
 		}
 
-		void update(const Camera &camera, const Transform &transform, Platform::CmdBuffer *cmd, Component *system)
+		void update(const Camera *camera, const Transform &transform, Platform::CmdBuffer *cmd, Component *system)
 		{
 			if (system->resize_request)
 			{
@@ -136,7 +174,7 @@ namespace Vultr
 
 			if (!system->compute_shader.loaded() || !update_default_descriptors(camera, transform, cmd, system))
 			{
-				Platform::begin_framebuffer(cmd, system->output_framebuffer);
+				Platform::begin_framebuffer(cmd, system->post_process_pass);
 				Platform::end_framebuffer(cmd);
 				return;
 			}
@@ -199,30 +237,40 @@ namespace Vultr
 
 		void reinitialize(Component *c, Option<u32> width, Option<u32> height)
 		{
-			if (c->output_framebuffer != nullptr)
+			if (c->post_process_pass != nullptr)
 			{
 				if (!width)
-					width = Platform::get_width(c->output_framebuffer);
+					width = Platform::get_width(c->post_process_pass);
 
 				if (!height)
-					height = Platform::get_height(c->output_framebuffer);
+					height = Platform::get_height(c->post_process_pass);
 
-				Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
+				Platform::destroy_framebuffer(engine()->context, c->post_process_pass);
 			}
 
-			if (c->depth_prepass_fbo != nullptr)
-				Platform::destroy_framebuffer(engine()->context, c->depth_prepass_fbo);
+			if (c->depth_pre_pass != nullptr)
+				Platform::destroy_framebuffer(engine()->context, c->depth_pre_pass);
 
-			Vector<Platform::AttachmentDescription> output_attachment_descriptions({
-				{.format = Platform::TextureFormat::SRGBA8},
-				{.format = Platform::TextureFormat::DEPTH},
-			});
-			c->output_framebuffer = Platform::init_framebuffer(engine()->context, output_attachment_descriptions, width, height);
+			if (c->color_pass != nullptr)
+				Platform::destroy_framebuffer(engine()->context, c->color_pass);
 
 			Vector<Platform::AttachmentDescription> depth_prepass_attachments({
 				{.format = Platform::TextureFormat::DEPTH},
 			});
-			c->depth_prepass_fbo = Platform::init_framebuffer(engine()->context, depth_prepass_attachments, width, height);
+			c->depth_pre_pass = Platform::init_framebuffer(engine()->context, depth_prepass_attachments, width, height);
+
+			Vector<Platform::AttachmentDescription> color_pass_attachments({
+				{.format = Platform::TextureFormat::RGBA16},
+				{.format = Platform::TextureFormat::RGBA8},
+				{.format = Platform::TextureFormat::DEPTH},
+			});
+			c->color_pass = Platform::init_framebuffer(engine()->context, color_pass_attachments, width, height);
+
+			Vector<Platform::AttachmentDescription> post_process_attachment({
+				{.format = Platform::TextureFormat::RGBA8},
+				{.format = Platform::TextureFormat::DEPTH},
+			});
+			c->post_process_pass = Platform::init_framebuffer(engine()->context, post_process_attachment, width, height);
 		}
 
 		void free_resources(Component *c) { c->compute_shader = {}; }
@@ -232,11 +280,14 @@ namespace Vultr
 			if (c == nullptr)
 				return;
 
-			if (c->depth_prepass_fbo != nullptr)
-				Platform::destroy_framebuffer(engine()->context, c->depth_prepass_fbo);
+			if (c->depth_pre_pass != nullptr)
+				Platform::destroy_framebuffer(engine()->context, c->depth_pre_pass);
 
-			if (c->output_framebuffer != nullptr)
-				Platform::destroy_framebuffer(engine()->context, c->output_framebuffer);
+			if (c->color_pass != nullptr)
+				Platform::destroy_framebuffer(engine()->context, c->color_pass);
+
+			if (c->post_process_pass != nullptr)
+				Platform::destroy_framebuffer(engine()->context, c->post_process_pass);
 
 			if (c->skybox_mesh != nullptr)
 				Platform::destroy_mesh(engine()->context, c->skybox_mesh);

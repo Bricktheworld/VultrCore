@@ -619,8 +619,12 @@ namespace Vultr
 			Option<DepthTest> depth_test = DepthTest::LESS;
 			bool write_depth             = true;
 			ShaderUsage shader_usage     = ShaderUsage::VERT_FRAG;
+			bool alpha_blend             = false;
 
-			bool operator==(const GraphicsPipelineInfo &other) const { return depth_test == other.depth_test && write_depth == other.write_depth; }
+			bool operator==(const GraphicsPipelineInfo &other) const
+			{
+				return depth_test == other.depth_test && write_depth == other.write_depth && shader_usage == other.shader_usage && alpha_blend == other.alpha_blend;
+			}
 		};
 
 		struct CmdBuffer;
@@ -706,17 +710,27 @@ namespace Vultr
 		static u64 hash(const Platform::GraphicsPipelineInfo &info)
 		{
 			// TODO(Brandon): This is rather hacky, and if we add more fields to the pipeline info maintaining this will be a pain in the ass.
-			byte data[sizeof(bool) * 2 + sizeof(Platform::DepthTest) + sizeof(Platform::ShaderUsage)]{};
-			memcpy(data, &info.write_depth, sizeof(info.write_depth));
+			byte data[sizeof(bool) * 3 + sizeof(Platform::DepthTest) + sizeof(Platform::ShaderUsage)]{};
+			byte *cur = data;
+			memcpy(cur, &info.write_depth, sizeof(info.write_depth));
+			cur += sizeof(info.write_depth);
 
 			bool depth_test_has_value = info.depth_test.has_value();
 
-			memcpy(data + sizeof(info.write_depth), &depth_test_has_value, sizeof(depth_test_has_value));
+			memcpy(cur, &depth_test_has_value, sizeof(depth_test_has_value));
+			cur += sizeof(depth_test_has_value);
 
 			if (depth_test_has_value)
-				memcpy(data + sizeof(info.write_depth) + sizeof(depth_test_has_value), &info.depth_test.value(), sizeof(info.depth_test.value()));
+			{
+				memcpy(cur, &info.depth_test.value(), sizeof(info.depth_test.value()));
+				cur += sizeof(info.depth_test.value());
+			}
 
-			memcpy(data + sizeof(info.write_depth) + sizeof(depth_test_has_value) + sizeof(info.depth_test.value()), &info.shader_usage, sizeof(info.shader_usage));
+			memcpy(cur, &info.shader_usage, sizeof(info.shader_usage));
+			cur += sizeof(info.shader_usage);
+
+			memcpy(cur, &info.alpha_blend, sizeof(info.alpha_blend));
+			cur += sizeof(info.alpha_blend);
 
 			return string_hash((const char *)(data), sizeof(data));
 		}

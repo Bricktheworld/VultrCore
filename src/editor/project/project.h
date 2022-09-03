@@ -95,7 +95,6 @@ namespace Vultr
 	struct TextureMetadata
 	{
 		Platform::TextureFormat texture_format = Platform::TextureFormat::SRGBA8;
-		bool flip                              = false;
 	};
 
 	struct MeshMetadata

@@ -65,6 +65,7 @@ namespace Vultr
 
 		Device init_device(const Platform::Window *window, bool debug, PFN_vkDebugUtilsMessengerCallbackEXT debug_cb);
 		VkFormat get_supported_depth_format(Device *d);
+		VkSampleCountFlagBits get_samples(Device *d);
 		void destroy_device(Device *d);
 
 		void compute_queue_submit(Device *d, u32 submit_count, const VkSubmitInfo *p_submits, VkFence fence);
