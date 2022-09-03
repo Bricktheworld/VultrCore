@@ -1,0 +1,51 @@
+#pragma once
+#include <platform/rendering.h>
+
+namespace Vultr
+{
+#ifdef DEBUG
+	static constexpr bool IS_DEBUG = true;
+#else
+	static constexpr bool IS_DEBUG = false;
+#endif
+
+	struct Engine
+	{
+		Platform::RenderContext *context        = nullptr;
+		Platform::UploadContext *upload_context = nullptr;
+		Platform::Window *window                = nullptr;
+	};
+
+	inline Engine *engine()
+	{
+		ASSERT(g_game_memory != nullptr && g_game_memory->engine != nullptr, "Game memory not properly initialized!");
+		return static_cast<Engine *>(g_game_memory->engine);
+	}
+
+	inline void open_windowed(str name, Option<u32> width = None, Option<u32> height = None)
+	{
+		auto *e           = engine();
+
+		e->window         = Platform::open_window(Platform::DisplayMode::WINDOWED, nullptr, name, IS_DEBUG, width.value_or(0), height.value_or(0));
+		e->context        = Platform::get_render_context(e->window);
+		e->upload_context = Platform::init_upload_context(e->context);
+	}
+
+	inline void open_fullscreen(str name)
+	{
+		auto *e           = engine();
+
+		e->window         = Platform::open_window(Platform::DisplayMode::FULLSCREEN, nullptr, name, IS_DEBUG);
+		e->context        = Platform::get_render_context(e->window);
+		e->upload_context = Platform::init_upload_context(e->context);
+	}
+
+	inline void open_borderless_windowed(str name)
+	{
+		auto *e           = engine();
+
+		e->window         = Platform::open_window(Platform::DisplayMode::BORDERLESS_WINDOWED, nullptr, name, IS_DEBUG);
+		e->context        = Platform::get_render_context(e->window);
+		e->upload_context = Platform::init_upload_context(e->context);
+	}
+} // namespace Vultr

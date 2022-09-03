@@ -1,233 +1,471 @@
 #pragma once
+#include "types.h"
+#include <utils/traits.h>
+#include "error_or.h"
+#include "math/min_max.h"
+#include <vultr_memory.h>
 
-namespace vtl
+namespace Vultr
 {
-}
 
-// #pragma once
-// #include <types/types.h>
-// #include <equals.h>
-// #include <stdio.h>
-// #include <string.h>
-// #include <assert.h>
-// #include <iterator>
-// #include <cstddef>
+	template <typename T, typename TraitsForT = Traits<T>>
+	struct HashTable
+	{
+		struct Bucket
+		{
+			T *storage() { return reinterpret_cast<T *>(m_storage); }
+			const T *storage() const { return reinterpret_cast<const T *>(m_storage); }
 
-// namespace vtl
-// {
-// #define TABLE_SIZE 10
+			Bucket() = default;
+			Bucket(const Bucket &other)
+			{
+				used    = other.used;
+				deleted = other.deleted;
+				end     = other.end;
+				if (used && !deleted && !end)
+					new (m_storage) T(*other.storage());
+			}
 
-//     template <typename k, typename v>
-//     struct HashNode
-//     {
-//         k key;
-//         v value;
-//     };
+			Bucket(Bucket &&other)
+			{
+				used    = other.used;
+				deleted = other.deleted;
+				end     = other.end;
+				if (used && !deleted && !end)
+					new (m_storage) T(move(*other.storage()));
+			}
 
-//     namespace internal
-//     {
+			bool used    = false;
+			bool deleted = false;
+			bool end     = false;
+			alignas(T) byte m_storage[sizeof(T)]{};
+		};
 
-//         template <typename k, typename v>
-//         HashNode<k, v> *init_node(const HashNode<k, v> &other)
-//         {
-//             auto *n = (HashNode<k, v> *)malloc(sizeof(HashNode<k, v>));
-//             n->key = other.key;
-//             n->value = other.value;
-//             return n;
-//         }
-//     } // namespace internal
+		struct HashTableIterator
+		{
+			explicit HashTableIterator(Bucket *bucket) : m_bucket(bucket) {}
+			T &operator*() { return *m_bucket->storage(); }
+			T *operator->() { return m_bucket->storage(); }
+			bool operator==(const HashTableIterator &other) const { return m_bucket == other.m_bucket; }
 
-//     // For providing custom hash functions
-//     typedef uint (*hash_function)(void *);
+			HashTableIterator &operator++()
+			{
+				skip_to_next();
+				return *this;
+			}
 
-//     // Default hash functions with explicit instantiation
-//     template <typename k>
-//     uint hash(k key);
+			HashTableIterator operator++(int)
+			{
+				HashTableIterator cpy = *this;
+				skip_to_next();
+				return cpy;
+			}
 
-//     template <typename k, typename v>
-//     struct HashTable
-//     {
-//         HashTable()
-//         {
-//             for (int i = 0; i < TABLE_SIZE; i++)
-//             {
-//                 internal_array[i] = nullptr;
-//             }
-//         }
-//         ~HashTable()
-//         {
-//             assert(hashtable_exists(t, key) && "Cannot delete nonexistent key-value pair inhashtable!");
-//             int index = hash(key);
-//             auto *node = t.internal_array[index];
-//             free(node);
-//             t.internal_array[index] = nullptr;
-//         }
+			void skip_to_next()
+			{
+				if (m_bucket == nullptr)
+					return;
 
-//         v &operator[](k key)
-//         {
-//             int index = hash(key);
-//             auto *node = internal_array[index];
-//             if (node != nullptr)
-//             {
-//                 if (!generic_equals(node->key, key))
-//                 {
-//                     assert(true && "Collision!");
-//                 }
-//             }
-//             else
-//             {
-//                 internal_array[index] = (HashNode<k, v> *)malloc(sizeof(HashNode<k, v>));
-//                 internal_array[index]->key = key;
-//             }
-//             return internal_array[index]->value;
-//         }
+				do
+				{
+					m_bucket++;
+					if (m_bucket->used && !m_bucket->deleted)
+						return;
+				} while (!m_bucket->end);
 
-//         struct Iterator
-//         {
-//             typedef std::random_access_iterator_tag IteratorCategory;
-//             typedef HashNode<k, v> ValueType;
-//             typedef ValueType **Pointer;
-//             typedef ValueType &Reference;
-//             Iterator(Pointer p_ptr) : ptr(p_ptr)
-//             {
-//             }
+				if (m_bucket->end)
+					m_bucket = nullptr;
+			}
 
-//             Iterator &operator++()
-//             {
-//                 // OMG THE FIRST TIME I'VE LITERALLY EVER USED DO WHILE
-//                 do
-//                 {
-//                     ptr++;
-//                 } while (*ptr == nullptr);
-//                 return *this;
-//             }
+			Bucket *m_bucket = nullptr;
+		};
 
-//             Iterator operator++(int)
-//             {
-//                 Iterator iterator = *this;
-//                 ++(*this);
-//                 return iterator;
-//             }
+		struct ConstHashTableIterator
+		{
+			explicit ConstHashTableIterator(const Bucket *bucket) : m_bucket(bucket) {}
+			const T &operator*() { return *m_bucket->storage(); }
+			const T *operator->() { return m_bucket->storage(); }
+			bool operator==(const ConstHashTableIterator &other) const { return m_bucket == other.m_bucket; }
 
-//             Iterator &operator--()
-//             {
-//                 do
-//                 {
-//                     ptr--;
-//                 } while (*ptr == nullptr);
-//                 return *this;
-//             }
+			ConstHashTableIterator &operator++()
+			{
+				skip_to_next();
+				return *this;
+			}
 
-//             Iterator operator--(int)
-//             {
-//                 Iterator iterator = *this;
-//                 --(*this);
-//                 return iterator;
-//             }
+			ConstHashTableIterator operator++(int)
+			{
+				ConstHashTableIterator cpy = *this;
+				skip_to_next();
+				return cpy;
+			}
 
-//             Pointer *operator->()
-//             {
-//                 while (*ptr == nullptr)
-//                 {
-//                     (*this)++;
-//                 }
-//                 return *ptr;
-//             }
+			void skip_to_next()
+			{
+				if (m_bucket == nullptr)
+					return;
 
-//             Reference operator*()
-//             {
-//                 while (*ptr == nullptr)
-//                 {
-//                     (*this)++;
-//                 }
-//                 return **ptr;
-//             }
+				do
+				{
+					m_bucket++;
+					if (m_bucket->used && !m_bucket->deleted)
+						return;
+				} while (!m_bucket->end);
 
-//             bool operator==(const Iterator &other) const
-//             {
-//                 return ptr == other.ptr;
-//             }
+				if (m_bucket->end)
+					m_bucket = nullptr;
+			}
 
-//             bool operator!=(const Iterator &other) const
-//             {
-//                 return !(*this == other);
-//             }
+			const Bucket *m_bucket = nullptr;
+		};
 
-//           private:
-//             Pointer ptr;
-//         };
+		template <typename U>
+		using default_traits = conditional<is_same<U, T>, TraitsForT, Traits<U>>;
 
-//         Iterator begin()
-//         {
-//             HashNode<k, v> **ptr = internal_array;
-//             while (ptr < internal_array + TABLE_SIZE && *ptr == nullptr)
-//             {
-//                 ptr++;
-//             }
-//             return Iterator(ptr);
-//         }
-//         Iterator end()
-//         {
-//             return Iterator(internal_array + TABLE_SIZE);
-//         }
+		HashTable()          = default;
+		explicit HashTable(size_t capacity) : m_capacity(capacity) {}
+		HashTable(const HashTable &other)
+			: m_size(other.m_size), m_capacity(other.m_capacity), m_deleted_count(other.m_deleted_count), m_buckets(other.m_capacity == 0 ? nullptr : v_alloc<Bucket>(other.m_capacity + 1))
+		{
+			if (m_buckets != nullptr)
+				Utils::copy(m_buckets, other.m_buckets, m_capacity + 1);
+		}
+		HashTable &operator=(const HashTable &other)
+		{
+			m_size          = other.m_size;
+			m_capacity      = other.m_capacity;
+			m_deleted_count = other.m_deleted_count;
+			m_buckets       = other.m_capacity == 0 ? nullptr : v_alloc<Bucket>(other.m_capacity + 1);
+			if (m_buckets != nullptr)
+				Utils::copy(m_buckets, other.m_buckets, m_capacity + 1);
+			return *this;
+		}
+		HashTable(HashTable &&other) : m_size(other.m_size), m_capacity(other.m_capacity), m_deleted_count(other.m_deleted_count), m_buckets(other.m_capacity == 0 ? nullptr : v_alloc<Bucket>(other.m_capacity + 1))
+		{
+			if (m_buckets != nullptr)
+			{
+				Utils::move(m_buckets, other.m_buckets, m_capacity + 1);
+				v_free(other.m_buckets);
+			}
+			other.m_buckets       = nullptr;
+			other.m_size          = 0;
+			other.m_capacity      = 0;
+			other.m_deleted_count = 0;
+		}
 
-//       private:
-//         HashNode<k, v> *internal_array[TABLE_SIZE];
-//     };
+		HashTable &operator=(HashTable &&other)
+		{
+			m_size          = other.m_size;
+			m_capacity      = other.m_capacity;
+			m_deleted_count = other.m_deleted_count;
+			m_buckets       = other.m_capacity == 0 ? nullptr : v_alloc<Bucket>(other.m_capacity + 1);
+			if (m_buckets != nullptr)
+			{
+				Utils::move(m_buckets, other.m_buckets, m_capacity + 1);
+				v_free(other.m_buckets);
+			}
+			other.m_buckets       = nullptr;
+			other.m_size          = 0;
+			other.m_capacity      = 0;
+			other.m_deleted_count = 0;
+			return *this;
+		}
 
-//     template <typename k, typename v>
-//     HashTable<k, v> new_hashtable()
-//     {
-//         HashTable<k, v> t = {};
-//         return t;
-//     }
+		~HashTable() { clear(); }
 
-//     template <typename k, typename v>
-//     bool hashtable_insert(HashTable<k, v> &t, HashNode<k, v> node)
-//     {
-//         int index = hash(node.key);
-//         if (t.internal_array[index] != nullptr)
-//         {
-//             return false;
-//         }
-//         auto *new_node = internal::init_node(node);
+		HashTableIterator begin()
+		{
+			for (size_t i = 0; i < m_capacity; i++)
+			{
+				if (m_buckets[i].used)
+				{
+					return HashTableIterator(&m_buckets[i]);
+				}
+			}
+			return end();
+		}
 
-//         t.internal_array[index] = new_node;
-//         return true;
-//     }
+		ConstHashTableIterator begin() const
+		{
+			for (size_t i = 0; i < m_capacity; i++)
+			{
+				if (m_buckets[i].used)
+				{
+					return ConstHashTableIterator(&m_buckets[i]);
+				}
+			}
+			return end();
+		}
 
-//     template <typename k, typename v>
-//     bool hashtable_exists(const HashTable<k, v> &t, k key)
-//     {
-//         int index = hash(key);
-//         if (t.internal_array[index] != nullptr)
-//         {
-//             return generic_equals(t.internal_array[index], key);
-//         }
-//         else
-//         {
-//             return false;
-//         }
-//     }
+		HashTableIterator end() { return HashTableIterator(nullptr); }
+		ConstHashTableIterator end() const { return ConstHashTableIterator(nullptr); }
 
-//     //
-//     //
-//     //
-//     // Default hash functions
-//     //
-//     //
-//     //
-//     template <>
-//     inline u32 hash<const char *>(const char *key)
-//     {
-//         int length = strlen(key);
-//         u32 hash_value = 0;
-//         for (int i = 0; i < length; i++)
-//         {
-//             hash_value += key[i];
-//             hash_value = (key[i] * hash_value) % TABLE_SIZE;
-//         }
-//         return hash_value;
-//     }
+		bool empty() const { return m_size == 0; }
+		size_t size() const { return m_size; }
+		size_t capacity() const { return m_capacity; }
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		bool contains(const U &value)
+		{
+			return find<U, TraitsForU>(value) != end();
+		}
 
-// } // namespace vtl
+		template <typename Predicate>
+		HashTableIterator find(u32 hash, Predicate predicate)
+		{
+			return HashTableIterator(lookup_with_hash(hash, predicate));
+		}
+
+		template <typename Predicate>
+		ConstHashTableIterator find(u32 hash, Predicate predicate) const
+		{
+			return ConstHashTableIterator(lookup_with_hash(hash, predicate));
+		}
+
+		template <typename U, typename TraitsForU>
+		static bool equals(const T &a, const U &b)
+		{
+			if constexpr (Equalable<TraitsForU, U, T>)
+				return TraitsForU::equals(b, a);
+			else if constexpr (Equalable<TraitsForU, T, U>)
+				return TraitsForU::equals(a, b);
+			else if constexpr (Equalable<TraitsForT, T, U>)
+				return TraitsForT::equals(a, b);
+			else if constexpr (Equalable<TraitsForT, U, T>)
+				return TraitsForT::equals(b, a);
+			return false;
+		}
+
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		HashTableIterator find(const U &value)
+		{
+			return find(TraitsForU::hash(value), [&](T &other) { return equals<U, TraitsForU>(other, value); });
+		}
+
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		ConstHashTableIterator find(const U &value) const
+		{
+			return find(TraitsForU::hash(value), [&](T &other) { return equals<U, TraitsForU>(other, value); });
+		}
+
+		void clear()
+		{
+			if (m_buckets == nullptr)
+				return;
+
+			for (size_t i = 0; i < m_capacity; ++i)
+			{
+				if (m_buckets[i].used && !m_buckets[i].deleted)
+					m_buckets[i].storage()->~T();
+			}
+
+			v_free(m_buckets);
+			m_buckets       = nullptr;
+			m_capacity      = 0;
+			m_size          = 0;
+			m_deleted_count = 0;
+		}
+
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		void set(U &&value)
+		{
+			auto *bucket = lookup_for_writing<U, TraitsForU>(value);
+			if constexpr (is_same<U, T>)
+			{
+				new (bucket->storage()) T(move(static_cast<T>(value)));
+			}
+			else
+			{
+				new (bucket->storage()) T(value);
+			}
+			bucket->used = true;
+			if (bucket->deleted)
+			{
+				bucket->deleted = false;
+				m_deleted_count--;
+			}
+			m_size++;
+		}
+
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		void set(const U &value)
+		{
+			auto *bucket = lookup_for_writing<U, TraitsForU>(value);
+			if constexpr (is_same<U, T>)
+			{
+				new (bucket->storage()) T(move(static_cast<T>(value)));
+			}
+			else
+			{
+				new (bucket->storage()) T(value);
+			}
+			bucket->used = true;
+			if (bucket->deleted)
+			{
+				bucket->deleted = false;
+				m_deleted_count--;
+			}
+			m_size++;
+		}
+
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		bool remove(const U &value)
+		{
+			auto it = find<U, TraitsForU>(value);
+			if (it != end())
+			{
+				remove(it);
+				return true;
+			}
+			return false;
+		}
+
+		template <typename Predicate>
+		size_t remove_all_matching(Predicate predicate)
+		{
+			size_t removed_count = 0;
+			for (auto it = begin(); it != end();)
+			{
+				if (predicate(*it))
+				{
+					it = remove(it);
+					removed_count++;
+				}
+				else
+				{
+					it++;
+				}
+			}
+			return removed_count;
+		}
+
+		HashTableIterator remove(const HashTableIterator &iterator)
+		{
+			auto *bucket = iterator.m_bucket;
+			ASSERT(bucket->used && !bucket->deleted, "Cannot remove bucket that is not used or deleted!");
+
+			auto next_iterator = iterator;
+			next_iterator++;
+
+			bucket->storage()->~T();
+			bucket->used    = false;
+			bucket->deleted = true;
+			m_size--;
+			m_deleted_count++;
+			return next_iterator;
+		}
+
+		void rehash(size_t new_capacity)
+		{
+			new_capacity      = max<size_t>(new_capacity, 4);
+
+			auto *old_buckets = m_buckets;
+			auto old_capacity = m_capacity;
+
+			m_buckets         = v_alloc<Bucket>(new_capacity + 1);
+			m_capacity        = new_capacity;
+			for (size_t i = 0; i < new_capacity + 1; i++)
+			{
+				new (&m_buckets[i]) Bucket();
+			}
+
+			m_buckets[m_capacity].end = true;
+
+			if (old_buckets == nullptr)
+				return;
+
+			for (size_t i = 0; i < old_capacity; i++)
+			{
+				if (old_buckets[i].used)
+				{
+					auto *storage = old_buckets[i].storage();
+					auto *bucket  = lookup_for_writing(*storage);
+					new (bucket->storage()) T(move(*storage));
+					bucket->used = true;
+
+					old_buckets[i].storage()->~T();
+				}
+			}
+
+			v_free(old_buckets);
+		}
+
+		template <typename U = T, typename TraitsForU = default_traits<U>>
+		Bucket *lookup_for_writing(const U &value)
+		{
+			if ((used_bucket_count() + 1) >= m_capacity)
+			{
+				rehash((size() + 1) * 2);
+			}
+
+			auto hash                  = TraitsForU::hash(value);
+			Bucket *first_empty_bucket = nullptr;
+
+			while (true)
+			{
+				auto *bucket = &m_buckets[hash % m_capacity];
+
+				if (bucket->used && equals<U, TraitsForU>(*bucket->storage(), value))
+					return bucket;
+
+				if (!bucket->used)
+				{
+					if (first_empty_bucket == nullptr)
+						first_empty_bucket = bucket;
+
+					if (!bucket->deleted)
+						return first_empty_bucket;
+				}
+
+				hash = double_hash(hash);
+			}
+		}
+
+		template <typename Predicate>
+		Bucket *lookup_with_hash(u32 hash, Predicate predicate)
+		{
+			if (empty())
+				return nullptr;
+
+			while (true)
+			{
+				auto *bucket = &m_buckets[hash % m_capacity];
+
+				if (bucket->used && predicate(*bucket->storage()))
+					return bucket;
+
+				if (!bucket->used && !bucket->deleted)
+					return nullptr;
+
+				hash = double_hash(hash);
+			}
+		}
+
+		template <typename Predicate>
+		const Bucket *lookup_with_hash(u32 hash, Predicate predicate) const
+		{
+			if (empty())
+				return nullptr;
+
+			while (true)
+			{
+				auto *bucket = &m_buckets[hash % m_capacity];
+
+				if (bucket->used && predicate(*bucket->storage()))
+					return bucket;
+
+				if (!bucket->used && !bucket->deleted)
+					return nullptr;
+
+				hash = double_hash(hash);
+			}
+		}
+
+		size_t used_bucket_count() const { return m_size + m_deleted_count; }
+
+		Bucket *m_buckets      = nullptr;
+		size_t m_size          = 0;
+		size_t m_capacity      = 0;
+		size_t m_deleted_count = 0;
+	};
+
+} // namespace Vultr

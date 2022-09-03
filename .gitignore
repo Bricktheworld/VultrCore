@@ -13,3 +13,7 @@ cmake-build-debug/
 .vs/
 out/
 .vimspector.json
+.dep/*
+.dep/
+libs/*
+libs/

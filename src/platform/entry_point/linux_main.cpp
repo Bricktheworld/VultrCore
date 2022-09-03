@@ -1,6 +1,4 @@
-#include <types/types.h>
-
-#include <platform/platform.h>
+#include "../platform_impl.h"
 
 namespace Vultr
 {

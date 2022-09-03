@@ -1,6 +1,6 @@
 #pragma once
 #include <types/types.h>
-#include "vultr_memory_internal.h"
+#include "memory_impl.h"
 
 namespace Vultr
 {
@@ -9,16 +9,7 @@ namespace Vultr
 	/**
 	 * Memory allocator that can allocate any size with the least fragmentation possible.
 	 */
-	struct FreeListAllocator : public Allocator
-	{
-		// TODO(Brandon): Add support for 32 bit alignment (8 bytes)
-		u8 alignment                    = 16;
-		FreeListMemoryBlock *free_root  = nullptr;
-		FreeListMemoryBlock *block_head = nullptr;
-		size_t used                     = 0;
-
-		FreeListAllocator() : Allocator(AllocatorType::FreeList) {}
-	};
+	struct FreeListAllocator;
 
 	/**
 	 * Initialize a new free list allocator. This allocator is best used for infrequent but large allocations.
@@ -51,21 +42,6 @@ namespace Vultr
 	void *free_list_alloc(FreeListAllocator *allocator, size_t size);
 
 	/**
-	 * Resize a chunk of memory from a `FreeListAllocator`.
-	 *
-	 * @param FreeListAllocator *allocator: The allocator to use.
-	 * @param void *: The old allocated block of memory.
-	 * @param size_t size: The new size of memory to allocate.
-	 *
-	 * @return void *: The memory that can now be used.
-	 *
-	 * @error The method will return nullptr if there is no memory chunk available to allocate.
-	 *
-	 * @no_thread_safety
-	 */
-	void *free_list_realloc(FreeListAllocator *allocator, void *data, size_t size);
-
-	/**
 	 * Free a chunk of memory from a `FreeListAllocator`.
 	 * @param FreeListAllocator *allocator: The allocator to use.
 	 * @param void *data: The data to free.
@@ -74,4 +50,5 @@ namespace Vultr
 	 */
 	void free_list_free(FreeListAllocator *allocator, void *data);
 
+	void free_list_print(FreeListAllocator *allocator);
 } // namespace Vultr

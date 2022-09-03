@@ -1,6 +1,6 @@
 #pragma once
 #include <types/types.h>
-#include "vultr_memory_internal.h"
+#include "memory_impl.h"
 
 namespace Vultr
 {
@@ -72,21 +72,6 @@ namespace Vultr
 	 * @no_thread_safety
 	 */
 	void *pool_alloc(PoolAllocator *allocator, size_t size);
-
-	/**
-	 * Resize a chunk of memory from a `FreeListAllocator`.
-	 *
-	 * @param PoolAllocator *allocator: The allocator to use.
-	 * @param void *: The old allocated block of memory.
-	 * @param size_t size: The new size of memory to allocate.
-	 *
-	 * @return void *: The memory that can now be used.
-	 *
-	 * @error The method will return nullptr if there is no memory chunk available to allocate and will leave the original data untouched.
-	 *
-	 * @no_thread_safety
-	 */
-	void *pool_realloc(PoolAllocator *allocator, void *data, size_t size);
 
 	/**
 	 * Free a chunk of memory from a `PoolAllocator`.

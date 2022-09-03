@@ -6,6 +6,15 @@ NamespaceIndentation: All
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterCaseLabel: true
+  AfterUnion: true
+  AfterFunction: true
+  AfterClass: true
+  AfterExternBlock: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
 IndentCaseLabels: true
 AllowShortFunctionsOnASingleLine: All
 AlignConsecutiveAssignments: AcrossEmptyLines

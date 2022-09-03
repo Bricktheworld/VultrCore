@@ -1,8 +1,8 @@
+#if 0
 // TODO(Brandon): Replace with custom allocator.
 #pragma once
 #include <assert.h>
 #include <memory>
-#include "thread.h"
 #include "types/types.h"
 
 namespace vtl
@@ -197,3 +197,5 @@ namespace vtl
 		vtl::condition_variable stack_cond;
 	};
 } // namespace vtl
+
+#endif

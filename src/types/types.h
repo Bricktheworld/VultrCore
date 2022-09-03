@@ -1,11 +1,14 @@
 #pragma once
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <cstddef>
-#include <stdlib.h>
-#include <assert.h>
 #include <type_traits>
 #include <atomic>
+#include <string.h>
+#include <execinfo.h>
+#include <sys/wait.h>
+#include <sys/prctl.h>
 
 typedef unsigned int uint;
 typedef uint64_t u64;
@@ -19,6 +22,7 @@ typedef int8_t s8;
 typedef float f32;
 typedef double f64;
 typedef unsigned char byte;
+typedef const char *str;
 
 // Atomic types.
 typedef std::atomic<unsigned int> atomic_uint;
@@ -31,6 +35,8 @@ typedef std::atomic<int64_t> atomic_s64;
 typedef std::atomic<int32_t> atomic_s32;
 typedef std::atomic<int16_t> atomic_s16;
 typedef std::atomic<int8_t> atomic_s8;
+typedef std::atomic<f32> atomic_f32;
+typedef std::atomic<f64> atomic_f64;
 
 typedef std::atomic<bool> atomic_bool;
 typedef std::atomic<char> atomic_char;
@@ -43,6 +49,9 @@ typedef std::atomic<intptr_t> atomic_intptr_t;
 typedef std::atomic<uintptr_t> atomic_uintptr_t;
 typedef std::atomic<size_t> atomic_size_t;
 
+using std::forward;
+using std::move;
+
 #define U8Max 255
 #define U16Max 65535
 #define S32Min ((s32)0x80000000)
@@ -51,7 +60,7 @@ typedef std::atomic<size_t> atomic_size_t;
 #define U32Max ((u32)-1)
 #define U64Max ((u64)-1)
 #define F32Max FLT_MAX
-#define F32Min -FLT_MAX
+#define F32Min (-FLT_MAX)
 
 #ifdef _WIN32
 #define VULTR_API extern "C" __declspec(dllexport)
@@ -65,10 +74,11 @@ typedef std::atomic<size_t> atomic_size_t;
 #define DEBUG_BREAK() DebugBreak()
 #elif __linux__
 #include <signal.h>
+#include <execinfo.h>
 #define DEBUG_BREAK() raise(SIGTRAP)
 #else
 #define DEBUG_BREAK()
-#endif // Platform
+#endif
 
 #else
 #define DEBUG_BREAK()
@@ -76,33 +86,38 @@ typedef std::atomic<size_t> atomic_size_t;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#if 0
+#define PRINT_STACKTRACE()                                                                                                                                                                                            \
+	{                                                                                                                                                                                                                 \
+		char pid_buf[30];                                                                                                                                                                                             \
+		sprintf(pid_buf, "%d", getpid());                                                                                                                                                                             \
+		char name_buf[512];                                                                                                                                                                                           \
+		name_buf[readlink("/proc/self/exe", name_buf, 511)] = 0;                                                                                                                                                      \
+		prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0);                                                                                                                                                           \
+		int child_pid = fork();                                                                                                                                                                                       \
+		if (!child_pid)                                                                                                                                                                                               \
+		{                                                                                                                                                                                                             \
+			dup2(2, 1);                                                                                                                                                                                               \
+			execl("/usr/bin/gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, nullptr);                                                                                                  \
+			abort();                                                                                                                                                                                                  \
+		}                                                                                                                                                                                                             \
+		else                                                                                                                                                                                                          \
+		{                                                                                                                                                                                                             \
+			waitpid(child_pid, nullptr, 0);                                                                                                                                                                           \
+		}                                                                                                                                                                                                             \
+	}
+#endif
+
 #ifdef DEBUG
-// clang-format off
 #define ASSERT(condition, message, ...)                                                                                                                                                                               \
-    if (!(condition))                                                                                                                                                                                                 \
-    {                                                                                                                                                                                                                 \
-        fprintf(stderr, "Assertion '");                                                                                                                                                                                \
-        fprintf(stderr, message __VA_OPT__(,) __VA_ARGS__);                                                                                                                                                                     \
-        fprintf(stderr, "' failed.\n");                                                                                                                                                                                \
-        fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
-        fprintf(stderr, "Press (I)gnore / (D)ebug / (A)bort:\n");                                                                                                                                                     \
-        char input = getchar();                                                                                                                                                                                       \
-        switch (input)                                                                                                                                                                                                \
-        {                                                                                                                                                                                                             \
-            case 'I':                                                                                                                                                                                                 \
-                printf("Ignoring assertion...\n");                                                                                                                                                                    \
-                break;                                                                                                                                                                                                \
-            case 'D':                                                                                                                                                                                                 \
-                printf("Debugging...\n");                                                                                                                                                                             \
-                DEBUG_BREAK();                                                                                                                                                                                        \
-                break;                                                                                                                                                                                                \
-            case 'A':                                                                                                                                                                                                 \
-            default:                                                                                                                                                                                                  \
-                printf("Aborting.\n");                                                                                                                                                                                \
-                abort();                                                                                                                                                                                              \
-                break;                                                                                                                                                                                                \
-        }                                                                                                                                                                                                             \
-    }
+	if (!(condition))                                                                                                                                                                                                 \
+	{                                                                                                                                                                                                                 \
+		fprintf(stderr, "Assertion '");                                                                                                                                                                               \
+		fprintf(stderr, message __VA_OPT__(, ) __VA_ARGS__);                                                                                                                                                          \
+		fprintf(stderr, "' failed.\n");                                                                                                                                                                               \
+		fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
+		assert(false);                                                                                                                                                                                                \
+	}
 // clang-format on
 #else
 #define ASSERT(condition, message, ...)
@@ -110,14 +125,16 @@ typedef std::atomic<size_t> atomic_size_t;
 
 #ifdef _WIN32
 // TODO(Brandon): Figure out windows production assertions.
-#define PRODUCTION_ASSERT(condition, message)
+#define PRODUCTION_ASSERT(condition, message, ...)
 #elif __linux__
-#define PRODUCTION_ASSERT(condition, message)                                                                                                                                                                         \
+#define PRODUCTION_ASSERT(condition, message, ...)                                                                                                                                                                    \
 	if (!(condition))                                                                                                                                                                                                 \
 	{                                                                                                                                                                                                                 \
-		fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                         \
+		fprintf(stderr, "Assertion '");                                                                                                                                                                               \
+		fprintf(stderr, message __VA_OPT__(, ) __VA_ARGS__);                                                                                                                                                          \
+		fprintf(stderr, "' failed.\n");                                                                                                                                                                               \
 		fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
-		abort();                                                                                                                                                                                                      \
+		assert(false);                                                                                                                                                                                                \
 	}
 #else
 #define PRODUCTION_ASSERT(condition, message)
@@ -127,10 +144,14 @@ typedef std::atomic<size_t> atomic_size_t;
 // TODO(Brandon): Figure out windows assertions.
 #define THROW(message)
 #elif __linux__
-#define THROW(message)                                                                                                                                                                                                \
-	fprintf(stderr, "Assertion '%s' failed.\n", message);                                                                                                                                                             \
-	fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                          \
-	abort();
+#define THROW(message, ...)                                                                                                                                                                                           \
+	{                                                                                                                                                                                                                 \
+		fprintf(stderr, "Error was thrown '");                                                                                                                                                                        \
+		fprintf(stderr, message __VA_OPT__(, ) __VA_ARGS__);                                                                                                                                                          \
+		fprintf(stderr, "' failed.\n");                                                                                                                                                                               \
+		fprintf(stderr, "in %s, line %d\n", __FILE__, __LINE__);                                                                                                                                                      \
+		assert(false);                                                                                                                                                                                                \
+	}
 #else
 #define PRODUCTION_ASSERT(condition, message)
 #endif
@@ -145,56 +166,48 @@ inline constexpr u64 Megabyte(u64 val) { return Kilobyte(val) * 1024; }
 inline constexpr u64 Gigabyte(u64 val) { return Megabyte(val) * 1024; }
 inline constexpr u64 Terabyte(u64 val) { return Gigabyte(val) * 1024; }
 
-struct Buffer
+#ifdef OVERFLOW_CHECK
+struct OverflowCheckInfo
 {
-	u64 count       = 0;
-	u8 *data        = nullptr;
-
-	Buffer()        = default;
-	Buffer &operator=(const Buffer &other) = delete;
-
-	~Buffer()
-	{
-		if (data != nullptr)
-		{
-			// TODO(Brandon): Replace with custom allocator.
-			// free(data);
-		}
-	}
+	void **addr = nullptr;
+	void *data  = nullptr;
 };
 
-typedef Buffer String;
-
-inline u64 str_len(const char *string)
+#define MAX_OVERFLOW_CHECKS 100
+inline OverflowCheckInfo g_overflow_check_infos[MAX_OVERFLOW_CHECKS]{};
+inline void register_overflow_check(void **addr)
 {
-	u32 count = 0;
-	if (string != nullptr)
+	for (u32 i = 0; i < MAX_OVERFLOW_CHECKS; i++)
 	{
-		while (*string++)
+		if (g_overflow_check_infos[i].addr != nullptr)
+			continue;
+
+		g_overflow_check_infos[i].addr = addr;
+		g_overflow_check_infos[i].data = *addr;
+		printf("Registered address overflow check with address %p and data %p\n", addr, *addr);
+		return;
+	}
+}
+inline void deregister_overflow_check(void **addr)
+{
+	for (u32 i = 0; i < MAX_OVERFLOW_CHECKS; i++)
+	{
+		if (g_overflow_check_infos[i].addr == addr)
 		{
-			count++;
+			g_overflow_check_infos[i].addr = nullptr;
+			g_overflow_check_infos[i].data = nullptr;
 		}
 	}
-	return count;
 }
-
-inline u64 str_len(const String &string) { return string.count; }
-
-inline String str_new(const char *string)
-{
-	String result;
-	result.count = str_len(string);
-	// TODO(Brandon): Replace with custom allocator.
-	// result.data  = static_cast<u8 *>(malloc(sizeof(u8) * result.count));
-
-	return result;
-}
-
-inline void str_free(String string)
-{
-	if (string.data != nullptr)
-	{
-		// TODO(Brandon): Replace with custom allocator.
-		// free(string.data);
+#define ASSERT_NO_OVERFLOW()                                                                                                                                                                                          \
+	{                                                                                                                                                                                                                 \
+		for (u32 i = 0; i < MAX_OVERFLOW_CHECKS; i++)                                                                                                                                                                 \
+		{                                                                                                                                                                                                             \
+			if (g_overflow_check_infos[i].addr != nullptr)                                                                                                                                                            \
+			{                                                                                                                                                                                                         \
+				ASSERT(*g_overflow_check_infos[i].addr == g_overflow_check_infos[i].data, "Memory at address %p overflowed! Values is now %p. Calling line is %s:%d", g_overflow_check_infos[i].addr,                 \
+					   *g_overflow_check_infos[i].addr, __FILE__, __LINE__);                                                                                                                                          \
+			}                                                                                                                                                                                                         \
+		}                                                                                                                                                                                                             \
 	}
-}
+#endif

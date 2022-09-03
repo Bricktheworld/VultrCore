@@ -1,185 +1,208 @@
 #pragma once
 #include <types/types.h>
+#include <types/bitfield.h>
+#include <glm/glm.hpp>
 
 namespace Vultr
 {
-	struct Engine;
 	namespace Input
 	{
-		typedef Vec2 MousePos;
-		typedef Vec2 ScrollDir;
-		enum Key : s16
+		typedef Bitfield<128> Key;
+		static constexpr Key KEY_SHIFT         = 0;
+		static constexpr Key KEY_CONTROL       = 1;
+		static constexpr Key KEY_ALT           = 2;
+		static constexpr Key KEY_SUPER         = 3;
+		static constexpr Key KEY_CAPS_LOCK     = 4;
+		static constexpr Key KEY_SPACE         = 5;
+		static constexpr Key KEY_APOSTROPHE    = 6;
+		static constexpr Key KEY_COMMA         = 7;
+		static constexpr Key KEY_MINUS         = 8;
+		static constexpr Key KEY_PERIOD        = 9;
+		static constexpr Key KEY_SLASH         = 10;
+		static constexpr Key KEY_0             = 11;
+		static constexpr Key KEY_1             = 12;
+		static constexpr Key KEY_2             = 13;
+		static constexpr Key KEY_3             = 14;
+		static constexpr Key KEY_4             = 15;
+		static constexpr Key KEY_5             = 16;
+		static constexpr Key KEY_6             = 17;
+		static constexpr Key KEY_7             = 18;
+		static constexpr Key KEY_8             = 19;
+		static constexpr Key KEY_9             = 20;
+		static constexpr Key KEY_SEMICOLON     = 21;
+		static constexpr Key KEY_EQUAL         = 22;
+		static constexpr Key KEY_A             = 23;
+		static constexpr Key KEY_B             = 24;
+		static constexpr Key KEY_C             = 25;
+		static constexpr Key KEY_D             = 26;
+		static constexpr Key KEY_E             = 27;
+		static constexpr Key KEY_F             = 28;
+		static constexpr Key KEY_G             = 29;
+		static constexpr Key KEY_H             = 30;
+		static constexpr Key KEY_I             = 31;
+		static constexpr Key KEY_J             = 32;
+		static constexpr Key KEY_K             = 33;
+		static constexpr Key KEY_L             = 34;
+		static constexpr Key KEY_M             = 35;
+		static constexpr Key KEY_N             = 36;
+		static constexpr Key KEY_O             = 37;
+		static constexpr Key KEY_P             = 38;
+		static constexpr Key KEY_Q             = 39;
+		static constexpr Key KEY_R             = 40;
+		static constexpr Key KEY_S             = 41;
+		static constexpr Key KEY_T             = 42;
+		static constexpr Key KEY_U             = 43;
+		static constexpr Key KEY_V             = 44;
+		static constexpr Key KEY_W             = 45;
+		static constexpr Key KEY_X             = 46;
+		static constexpr Key KEY_Y             = 47;
+		static constexpr Key KEY_Z             = 48;
+		static constexpr Key KEY_LEFT_BRACKET  = 49;
+		static constexpr Key KEY_BACKSLASH     = 50;
+		static constexpr Key KEY_RIGHT_BRACKET = 51;
+		static constexpr Key KEY_GRAVE_ACCENT  = 52;
+		static constexpr Key KEY_ESCAPE        = 53;
+		static constexpr Key KEY_ENTER         = 54;
+		static constexpr Key KEY_TAB           = 55;
+		static constexpr Key KEY_BACKSPACE     = 56;
+		static constexpr Key KEY_INSERT        = 57;
+		static constexpr Key KEY_DELETE        = 58;
+		static constexpr Key KEY_RIGHT         = 59;
+		static constexpr Key KEY_LEFT          = 60;
+		static constexpr Key KEY_DOWN          = 61;
+		static constexpr Key KEY_UP            = 62;
+		static constexpr Key KEY_PAGE_UP       = 63;
+		static constexpr Key KEY_PAGE_DOWN     = 64;
+		static constexpr Key KEY_HOME          = 65;
+		static constexpr Key KEY_END           = 66;
+		static constexpr Key KEY_F1            = 67;
+		static constexpr Key KEY_F2            = 68;
+		static constexpr Key KEY_F3            = 69;
+		static constexpr Key KEY_F4            = 70;
+		static constexpr Key KEY_F5            = 71;
+		static constexpr Key KEY_F6            = 72;
+		static constexpr Key KEY_F7            = 73;
+		static constexpr Key KEY_F8            = 74;
+		static constexpr Key KEY_F9            = 75;
+		static constexpr Key KEY_F10           = 76;
+		static constexpr Key KEY_F11           = 77;
+		static constexpr Key KEY_F12           = 78;
+		static constexpr Key KEY_F13           = 79;
+		static constexpr Key KEY_F14           = 80;
+		static constexpr Key KEY_F15           = 81;
+		static constexpr Key KEY_F16           = 82;
+		static constexpr Key KEY_F17           = 83;
+		static constexpr Key KEY_F18           = 84;
+		static constexpr Key KEY_F19           = 85;
+		static constexpr Key KEY_F20           = 86;
+		static constexpr Key KEY_F21           = 87;
+		static constexpr Key KEY_F22           = 88;
+		static constexpr Key KEY_F23           = 89;
+		static constexpr Key KEY_F24           = 90;
+		static constexpr Key KEY_F25           = 91;
+
+		typedef Bitfield<64> MouseButton;
+		static constexpr MouseButton MOUSE_LEFT   = 0;
+		static constexpr MouseButton MOUSE_RIGHT  = 1;
+		static constexpr MouseButton MOUSE_MIDDLE = 2;
+
+		//		static constexpr Key MOUSE_BUTTON_4 = 3;
+		//		static constexpr Key MOUSE_BUTTON_5 = 4;
+		//		static constexpr Key MOUSE_BUTTON_6 = 5;
+		//		static constexpr Key MOUSE_BUTTON_7 = 6;
+		//		static constexpr Key MOUSE_BUTTON_8 = 7;
+
+		typedef u8 Action;
+		static constexpr Action ACTION_RELEASE = 0; // When an input is released
+		static constexpr Action ACTION_PRESS   = 1; // When an input is down
+		static constexpr Action ACTION_REPEAT  = 2;
+
+		struct InputManager
 		{
-			KEY_SPACE         = 32,
-			KEY_APOSTROPHE    = 39,
-			KEY_COMMA         = 44,
-			KEY_MINUS         = 45,
-			KEY_PERIOD        = 46,
-			KEY_SLASH         = 47,
-			KEY_0             = 48,
-			KEY_1             = 49,
-			KEY_2             = 50,
-			KEY_3             = 51,
-			KEY_4             = 52,
-			KEY_5             = 53,
-			KEY_6             = 54,
-			KEY_7             = 55,
-			KEY_8             = 56,
-			KEY_9             = 57,
-			KEY_SEMICOLON     = 59,
-			KEY_EQUAL         = 61,
-			KEY_A             = 65,
-			KEY_B             = 66,
-			KEY_C             = 67,
-			KEY_D             = 68,
-			KEY_E             = 69,
-			KEY_F             = 70,
-			KEY_G             = 71,
-			KEY_H             = 72,
-			KEY_I             = 73,
-			KEY_J             = 74,
-			KEY_K             = 75,
-			KEY_L             = 76,
-			KEY_M             = 77,
-			KEY_N             = 78,
-			KEY_O             = 79,
-			KEY_P             = 80,
-			KEY_Q             = 81,
-			KEY_R             = 82,
-			KEY_S             = 83,
-			KEY_T             = 84,
-			KEY_U             = 85,
-			KEY_V             = 86,
-			KEY_W             = 87,
-			KEY_X             = 88,
-			KEY_Y             = 89,
-			KEY_Z             = 90,
-			KEY_LEFT_BRACKET  = 91,
-			KEY_BACKSLASH     = 92,
-			KEY_RIGHT_BRACKET = 93,
-			KEY_GRAVE_ACCENT  = 96,
-			KEY_ESCAPE        = 256,
-			KEY_ENTER         = 257,
-			KEY_TAB           = 258,
-			KEY_BACKSPACE     = 259,
-			KEY_INSERT        = 260,
-			KEY_DELETE        = 261,
-			KEY_RIGHT         = 262,
-			KEY_LEFT          = 263,
-			KEY_DOWN          = 264,
-			KEY_UP            = 265,
-			KEY_PAGE_UP       = 266,
-			KEY_PAGE_DOWN     = 267,
-			KEY_HOME          = 268,
-			KEY_END           = 269,
-			KEY_CAPS_LOCK     = 280,
-			KEY_SCROLL_LOCK   = 281,
-			KEY_NUM_LOCK      = 282,
-			KEY_PRINT_SCREEN  = 283,
-			KEY_PAUSE         = 284,
-			KEY_F1            = 290,
-			KEY_F2            = 291,
-			KEY_F3            = 292,
-			KEY_F4            = 293,
-			KEY_F5            = 294,
-			KEY_F6            = 295,
-			KEY_F7            = 296,
-			KEY_F8            = 297,
-			KEY_F9            = 298,
-			KEY_F10           = 299,
-			KEY_F11           = 300,
-			KEY_F12           = 301,
-			KEY_F13           = 302,
-			KEY_F14           = 303,
-			KEY_F15           = 304,
-			KEY_F16           = 305,
-			KEY_F17           = 306,
-			KEY_F18           = 307,
-			KEY_F19           = 308,
-			KEY_F20           = 309,
-			KEY_F21           = 310,
-			KEY_F22           = 311,
-			KEY_F23           = 312,
-			KEY_F24           = 313,
-			KEY_F25           = 314,
-			KEY_KP_0          = 320,
-			KEY_KP_1          = 321,
-			KEY_KP_2          = 322,
-			KEY_KP_3          = 323,
-			KEY_KP_4          = 324,
-			KEY_KP_5          = 325,
-			KEY_KP_6          = 326,
-			KEY_KP_7          = 327,
-			KEY_KP_8          = 328,
-			KEY_KP_9          = 329,
-			KEY_KP_DECIMAL    = 330,
-			KEY_KP_DIVIDE     = 331,
-			KEY_KP_MULTIPLY   = 332,
-			KEY_KP_SUBTRACT   = 333,
-			KEY_KP_ADD        = 334,
-			KEY_KP_ENTER      = 335,
-			KEY_KP_EQUAL      = 336,
-			KEY_LEFT_SHIFT    = 340,
-			KEY_LEFT_CONTROL  = 341,
-			KEY_LEFT_ALT      = 342,
-			KEY_LEFT_SUPER    = 343,
-			KEY_RIGHT_SHIFT   = 344,
-			KEY_RIGHT_CONTROL = 345,
-			KEY_RIGHT_ALT     = 346,
-			KEY_RIGHT_SUPER   = 347,
-			KEY_SHIFT         = 348,
-			KEY_CONTROL       = 349,
-			KEY_ALT           = 350,
-			KEY_SUPER         = 351,
+			Key keys{};
+			MouseButton mouse_buttons{};
+
+			Vec2 current_mouse_pos  = Vec2(0);
+			Vec2 raw_last_mouse_pos = Vec2(0);
+			Vec2 mouse_delta        = Vec2(0);
+			bool mouse_locked       = false;
+			bool mouse_on_screen    = false;
+			bool focused            = false;
 		};
 
-		enum MouseButton : s16
+		void update_input(InputManager *manager, Vec2 window_offset = Vec2(0), Vec2 window_size = Vec2(0));
+
+		void lock_mouse(InputManager *manager);
+		void unlock_mouse(InputManager *manager);
+		bool is_mouse_locked(InputManager *manager);
+
+		bool mouse_down(const InputManager *manager, const MouseButton &mouse_button);
+		bool mouse_down_strict(const InputManager *manager, const MouseButton &mouse_button);
+
+		bool key_down(const InputManager *manager, const Key &key);
+		bool key_down_strict(const InputManager *manager, const Key &key);
+
+		Vec2 mouse_position(const InputManager *manager);
+		Vec2 mouse_delta(const InputManager *manager);
+
+		typedef void (*KeyInputCallback)(void *data, Input::Key key, Input::Action action, Input::Key modifiers);
+		struct CallbackHandle
 		{
-			MOUSE_LEFT     = 0,
-			MOUSE_RIGHT    = 1,
-			MOUSE_MIDDLE   = 2,
-			MOUSE_BUTTON_4 = 3,
-			MOUSE_BUTTON_5 = 4,
-			MOUSE_BUTTON_6 = 5,
-			MOUSE_BUTTON_7 = 6,
-			MOUSE_BUTTON_8 = 7,
+			CallbackHandle() = default;
+			CallbackHandle(KeyInputCallback callback, void *data);
+			CallbackHandle(const CallbackHandle &other)
+			{
+				if (count() != 0)
+					decr();
+
+				counter_ptr = other.counter_ptr;
+				data        = other.data;
+				callback    = other.callback;
+				incr();
+			}
+
+			CallbackHandle &operator=(const CallbackHandle &other)
+			{
+				if (&other == this)
+					return *this;
+
+				if (count() != 0)
+					decr();
+
+				counter_ptr = other.counter_ptr;
+				data        = other.data;
+				callback    = other.callback;
+				incr();
+				return *this;
+			}
+
+			~CallbackHandle();
+
+			void call(Input::Key key, Input::Action action, Input::Key modifiers)
+			{
+				ASSERT(count() != 0, "Attempting to call handle that no longer has any references.");
+				callback(data, key, action, modifiers);
+			}
+
+			u32 count()
+			{
+				if (counter_ptr == nullptr)
+					return 0;
+				return *counter_ptr;
+			}
+
+		  private:
+			void incr() { (*counter_ptr)++; }
+			void decr()
+			{
+				ASSERT(count() != 0, "Decrementing past 0");
+				(*counter_ptr)--;
+			}
+			u32 *counter_ptr          = nullptr;
+			KeyInputCallback callback = nullptr;
+			void *data                = nullptr;
 		};
 
-		enum Action : s16
-		{
-			RELEASE = 0, // When an input is released
-			PRESS   = 1, // When an input is first pressed
-			REPEAT  = 2,
-		};
+		CallbackHandle register_key_callback(void *data, KeyInputCallback callback);
 	} // namespace Input
-
-	struct MousePositionEvent
-	{
-		Input::MousePos pos;
-	};
-	typedef std::function<void(Vultr::Engine *, MousePositionEvent)> OnMousePositionChange;
-
-	struct MouseButtonEvent
-	{
-		Input::MousePos pos;
-		Input::MouseButton button;
-		Input::Action action;
-	};
-	typedef std::function<void(Vultr::Engine *, MouseButtonEvent)> OnMouseButton;
-
-	struct ScrollEvent
-	{
-		Input::MousePos pos;
-		Input::ScrollDir scroll_dir;
-	};
-	typedef std::function<void(Vultr::Engine *, ScrollEvent)> OnScroll;
-
-	struct KeyEvent
-	{
-		Input::Key key;
-		Input::Action action;
-	};
-	typedef std::function<void(Vultr::Engine *e, KeyEvent)> OnKey;
-
-	typedef std::function<void(Vultr::Engine *e, u32)> OnCharacter;
 } // namespace Vultr

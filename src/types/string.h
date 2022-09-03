@@ -1,0 +1,158 @@
+#pragma once
+#include "buffer.h"
+#include "optional.h"
+#include "string_view.h"
+#include "iterator.h"
+#include <utils/traits.h>
+
+namespace Vultr
+{
+	struct String : public BufferT<char>
+	{
+		String() : BufferT<char>(1) { storage[0] = '\0'; }
+		explicit String(StringView string) : BufferT<char>(string.length() + 1)
+		{
+			if (string.length() > 0)
+				fill(string.c_str(), string.length());
+			storage[string.length()] = '\0';
+			ASSERT(size() > 0, "String buffer size should never be less than 1 because of null terminator.");
+		}
+		String(str string, size_t length) : String(StringView(string, length)) {}
+		String(u32 number)
+		{
+			char temp[12]{};
+			snprintf(temp, 11, "%u", number);
+
+			size_t len = strlen(temp);
+			resize(len + 1);
+
+			fill(temp, len);
+
+			storage[len] = '\0';
+		}
+
+		String &operator=(StringView other)
+		{
+			flush();
+			size_t size = other.length() + 1;
+			resize(size);
+			fill(other, size);
+
+			return *this;
+		}
+
+		String &operator+=(StringView other)
+		{
+			concat(other);
+			return *this;
+		}
+
+		String &operator+=(const String &other)
+		{
+			concat(StringView(other.storage, other.length()));
+			return *this;
+		}
+		operator StringView() const
+		{
+			if (is_empty())
+				return {};
+			return {storage, length()};
+		}
+
+		bool operator==(const String &other) const { return *this == other.storage; }
+		bool operator==(StringView other) const
+		{
+			if (other == nullptr && is_empty())
+				return true;
+
+			if (is_empty())
+				return false;
+
+			if (other == nullptr)
+				return false;
+
+			if (other.length() != length())
+				return false;
+
+			return strncasecmp(other, storage, other.length()) == 0;
+		}
+		bool operator==(str other) const { return *this == StringView(other); }
+
+		constexpr char operator[](size_t index) const
+		{
+			ASSERT(index <= length(), "Index out of bounds!");
+
+			// Convenient null terminator.
+			if (index == length())
+				return '\0';
+			return c_str()[index];
+		}
+
+		constexpr u32 hash() const
+		{
+			if (is_empty())
+				return 0;
+			return string_hash(c_str(), length());
+		}
+
+		constexpr str c_str() const { return storage; }
+		operator str() { return storage; }
+		constexpr size_t length() const
+		{
+			if (size() == 0)
+				return 0;
+			return size() - 1;
+		}
+		constexpr size_t is_empty() const { return length() == 0; }
+		constexpr char last() const
+		{
+			ASSERT(length() != 0, "Cannot get last of empty string!");
+			return c_str()[length() - 1];
+		}
+
+		using SIterator = Iterator<String, char>;
+		SIterator begin() { return SIterator::begin(this); }
+		SIterator end() { return SIterator::end(this); }
+
+		using SCIterator = Iterator<const String, const char>;
+		SCIterator begin() const { return SCIterator::begin(this); }
+		SCIterator end() const { return SCIterator::end(this); }
+
+	  private:
+		void clear()
+		{
+			flush();
+			m_size     = 1;
+			storage[0] = '\0';
+		}
+
+		void concat(StringView other)
+		{
+			if (other == nullptr)
+				return;
+			auto old_len = size() - 1;
+			resize(other.length() + size());
+			memcpy(storage + old_len, other, other.length());
+			storage[length()] = '\0';
+		}
+	};
+
+	inline String operator+(StringView a, StringView b)
+	{
+		auto new_len = a.length() + b.length();
+		char buf[new_len + 1];
+		memcpy(buf, a.c_str(), a.length());
+		memcpy(buf + a.length(), b.c_str(), b.length());
+		buf[new_len] = '\0';
+
+		return String(StringView(buf, new_len));
+	}
+
+	template <>
+	struct Traits<String> : public GenericTraits<String>
+	{
+		static u32 hash(const String &s) { return s.hash(); }
+		static bool equals(const String &a, const String &b) { return a == b; }
+		static bool equals(const String &a, str b) { return a == b; }
+	};
+} // namespace Vultr

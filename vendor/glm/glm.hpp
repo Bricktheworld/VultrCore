@@ -134,6 +134,7 @@
 #include "matrix.hpp"
 #include "vector_relational.hpp"
 #include "integer.hpp"
+#include "detail/type_quat.hpp"
 
 typedef glm::vec2 Vec2;
 typedef glm::vec3 Vec3;

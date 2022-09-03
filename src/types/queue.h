@@ -1,158 +1,253 @@
-// TODO(Brandon): Replace with custom allocator.
 #pragma once
-#include "thread.h"
 #include "types.h"
+#include "error_or.h"
+#include <platform/platform.h>
+#include <utils/transfer.h>
 
-namespace vtl
+namespace Vultr
 {
-	template <typename T, size_t reserved = 10, u32 growth_numerator = 3, u32 growth_denominator = 2, u32 decay_percent_threshold = 30, bool threaded = false>
+	template <typename T, ssize_t capacity = 256>
+		requires(capacity > 0)
 	struct Queue
 	{
-		Queue()
+		Queue()  = default;
+		~Queue() = default;
+
+		Queue(const Queue &other)
 		{
-			_size = reserved;
-			len   = 0;
-			if (reserved > 0)
-			{
-				// _array = static_cast<T *>(malloc(_size * sizeof(T)));
-			}
-		}
+			clear();
+			memcpy(storage(), other.storage(), capacity * sizeof(T));
+			m_front = other.m_front;
+			m_rear  = other.m_rear;
 
-		~Queue()
-		{
-			if (_array != nullptr)
-			{
-				// free(_array);
-				_array = nullptr;
-			}
-		}
-
-		Queue(const Queue &) = delete;
-		Queue &operator=(const Queue &) = delete;
-
-		T *front()
-		{
-			if (threaded)
-				queue_mutex.lock();
-			assert(len > 0 && "No _array in queue!");
-			T *item = &_array[len - 1];
-			if (threaded)
-				queue_mutex.unlock();
-			return item;
-		}
-
-		void push(const T &item)
-		{
-			if (threaded)
-				queue_mutex.lock();
-			len++;
-			_reallocate();
-			for (s32 i = len - 1; i >= 1; i--)
-			{
-				_array[i] = _array[i - 1];
-			}
-
-			_array[0] = item;
-
-			if (threaded)
-			{
-				queue_mutex.unlock();
+			if (!empty())
 				queue_cond.notify_one();
+		}
+
+		Queue(Queue &&other)
+		{
+			clear();
+			memmove(storage(), other.storage(), capacity * sizeof(T));
+			m_front = other.m_front;
+			m_rear  = other.m_rear;
+
+			if (!empty())
+				queue_cond.notify_one();
+		}
+
+		// TODO(Brandon): Fix these move operators because they are not thread safe and they are not correct.
+		Queue &operator=(const Queue &other)
+		{
+			clear();
+			memcpy(storage(), other.storage(), capacity * sizeof(T));
+			m_front = other.m_front;
+			m_rear  = other.m_rear;
+
+			if (!empty())
+				queue_cond.notify_one();
+			return *this;
+		}
+
+		Queue &operator=(Queue &&other)
+		{
+			clear();
+			memmove(storage(), other.storage(), capacity * sizeof(T));
+			m_front = other.m_front;
+			m_rear  = other.m_rear;
+
+			if (!empty())
+				queue_cond.notify_one();
+			return *this;
+		}
+
+		bool full() const { return (m_front == 0 && m_rear == capacity - 1) || (m_rear == (m_front - 1) % (capacity - 1)); }
+		bool empty() const { return m_front == -1; }
+
+		ErrorOr<void> try_push(T &&element)
+		{
+			{
+				Platform::Lock lock(mutex);
+				TRY_UNWRAP(auto buf, try_push_impl());
+				new (buf) T(move(element));
 			}
+			queue_cond.notify_one();
+			return None;
 		}
 
-		void pop()
+		void push(T &&element)
 		{
-			assert(!empty() && "No elements to pop!");
-			len--;
-			_reallocate();
+			{
+				Platform::Lock lock(mutex);
+				auto res = try_push_impl();
+				ASSERT(res.has_value(), "%s", res.get_error().message.c_str());
+				new (res.value()) T(move(element));
+			}
+			queue_cond.notify_one();
 		}
 
-		void pop_wait()
+		ErrorOr<void> try_push(const T &element)
 		{
-			assert(threaded && "Queue must be threaded before you can pop wait!");
-			std::unique_lock<vtl::mutex> lock(queue_mutex);
+			{
+				Platform::Lock lock(mutex);
+				TRY_UNWRAP(auto buf, try_push_impl());
+				new (buf) T(element);
+			}
+			queue_cond.notify_one();
+			return None;
+		}
+
+		void push(const T &element)
+		{
+			{
+				Platform::Lock lock(mutex);
+				auto res = try_push_impl();
+				ASSERT(res.has_value(), "%s", res.get_error().message.c_str());
+				new (res.value()) T(element);
+			}
+			queue_cond.notify_one();
+		}
+
+		Option<T &> try_front()
+		{
+			Platform::Lock lock(mutex);
+			if (empty())
+				return None;
+
+			return storage()[m_front];
+		}
+
+		T &front()
+		{
+			Platform::Lock lock(mutex);
+			ASSERT(!empty(), "Queue is empty!");
+
+			return storage()[m_front];
+		}
+
+		ErrorOr<T> try_pop()
+		{
+			Platform::Lock lock(mutex);
+			if (empty())
+				return Error("Queue is empty!");
+
+			auto data = storage()[m_front];
+			storage()[m_front].~T();
+
+			if (m_front == m_rear)
+			{
+				m_front = -1;
+				m_rear  = -1;
+			}
+			else if (m_front == capacity - 1)
+			{
+				m_front = 0;
+			}
+			else
+			{
+				m_front++;
+			}
+
+			queue_cond.notify_one();
+
+			return data;
+		}
+
+		T pop()
+		{
+			auto res = try_pop();
+			ASSERT(res.has_value(), "%s", res.get_error().message.c_str());
+			return res.value();
+		}
+
+		T pop_wait()
+		{
+			Platform::Lock lock(mutex);
 			while (empty())
 			{
 				queue_cond.wait(lock);
 			}
-			pop();
-		}
 
-		bool empty() const { return len == 0; }
+			auto data = storage()[m_front];
+			storage()[m_front].~T();
+
+			if (m_front == m_rear)
+			{
+				m_front = -1;
+				m_rear  = -1;
+			}
+			else if (m_front == capacity - 1)
+			{
+				m_front = 0;
+			}
+			else
+			{
+				m_front++;
+			}
+
+			queue_cond.notify_one();
+
+			return data;
+		}
 
 		void clear()
 		{
-			len   = 0;
-			_size = reserved;
-			if (reserved > 0)
+			while (!empty())
 			{
-				if (_array == nullptr)
-				{
-					// _array = (T *)malloc(_size * sizeof(T));
-				}
-				else
-				{
-					// _array = (T *)realloc(_array, _size * sizeof(T));
-				}
+				pop();
 			}
 		}
 
-		void _reallocate()
+		T *storage() { return reinterpret_cast<T *>(m_storage); }
+		const T *storage() const { return reinterpret_cast<const T *>(m_storage); }
+
+		bool contains(const T &needle) const
 		{
-			// Only reallocate and expand the array if we need to
-			if (len > _size)
+			ssize_t front = m_front;
+			while (front != -1 && front != m_rear)
 			{
-				_size = len * growth_factor;
-			}
-			else if ((f64)len / (f64)_size < (f64)decay_percent_threshold / 100.0)
-			{
-				_size = len * growth_factor;
-			}
-			else
-			{
-				return;
-			}
-
-			if (_size < reserved)
-			{
-				_size = reserved;
-			}
-
-			if (_size == 0)
-			{
-				if (_array != nullptr)
+				if (storage()[front] == needle)
 				{
-					// free(_array);
-					_array = nullptr;
+					return true;
 				}
-			}
-			else
-			{
-				if (_array == nullptr)
+				if (front == capacity - 1)
 				{
-					_array = (T *)malloc(_size * sizeof(T));
+					front = 0;
 				}
 				else
 				{
-					// _array = (T *)realloc(_array, _size * sizeof(T));
+					front++;
 				}
 			}
+			return false;
 		}
 
-		// The internal array
-		T *_array = nullptr;
+		Platform::ConditionVar queue_cond{};
 
-		// Spaces len (not bytes)
-		size_t len = 0;
+	  private:
+		alignas(T) byte m_storage[capacity * sizeof(T)]{};
+		s64 m_front = -1;
+		s64 m_rear  = -1;
+		Platform::Mutex mutex{};
 
-		// Space in _array (not bytes)
-		size_t _size = reserved;
+		ErrorOr<T *> try_push_impl()
+		{
+			if (full())
+				return Error("Queue is full!");
 
-		// To make sure that the buffer expansion is geometric
-		f64 growth_factor = (f64)growth_numerator / (f64)growth_denominator;
-
-		vtl::mutex queue_mutex;
-		vtl::condition_variable queue_cond;
+			if (m_front == -1)
+			{
+				m_front = 0;
+				m_rear  = 0;
+			}
+			else if (m_rear == capacity - 1 && m_front != 0)
+			{
+				m_rear = 0;
+			}
+			else
+			{
+				m_rear++;
+			}
+			return &storage()[m_rear];
+		}
 	};
-} // namespace vtl
+} // namespace Vultr

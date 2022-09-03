@@ -144,42 +144,6 @@ namespace Vultr
 		return nullptr;
 	}
 
-	void *pool_realloc(PoolAllocator *allocator, void *data, size_t size)
-	{
-		auto *segment = get_segment(allocator, data);
-
-		// If this block already has room for this type then we can just return, and there is nothing to do.
-		if (size <= segment->size)
-		{
-			return data;
-		}
-		// Otherwise we will find a new block to fit this data and copy the memory there.
-		else
-		{
-			// Find a new memory block.
-			void *new_data = pool_alloc(allocator, size);
-
-			// If none was found, then there simply isn't enough memory in this allocator to complete, so we will do nothing.
-			if (new_data == nullptr)
-			{
-				return nullptr;
-			}
-			else
-			{
-				// Copy the old bytes to the new location.
-				memcpy(new_data, data, segment->size);
-
-				// Free the memory block of the old location.
-				auto *memory_block = reinterpret_cast<PoolMemoryBlock *>(data);
-				memory_block->next = segment->free_head;
-				segment->free_head = memory_block;
-
-				// Return the data.
-				return new_data;
-			}
-		}
-	}
-
 	// TODO(Brandon): Add double free detection, because right now that is not implemented!
 	void pool_free(PoolAllocator *allocator, void *data)
 	{
