@@ -19,4 +19,5 @@ Features:
 
 # Demo
 
+![Image](/documentation/vultr_demo_image.png)
 ![Demo](/documentation/vultr_demo.mp4)
