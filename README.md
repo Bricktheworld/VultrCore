@@ -23,8 +23,7 @@ Features:
 Why bother creating another game engine if you can just Unity or Unreal or \<insert favorite engine here\>? I really love game development, specifically computer graphics and I think it's a really useful exercise to build one yourself. By doing so, you can gain a better insight into how other game engines (and even other games) _really_ work. Plus it's way more fun for me to build things from scratch!
 
 # Demo
-![Demo](/documentation/vultr_demo.mp4)
-
+![Demo](https://www.youtube.com/watch?v=cie9Fgr2ft8)
 
 # Architecture
 
