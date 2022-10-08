@@ -1,6 +1,8 @@
 # Vultr Game Engine
 [![Image](/documentation/vultr_demo_image.png)](https://www.youtube.com/watch?v=cie9Fgr2ft8)
 
+[Video demo](https://www.youtube.com/watch?v=cie9Fgr2ft8)
+
 This is my homebrewed custom game engine. It has support for basic 3D rendering with PBR and a suite of editor features that allow for basic scene editing.
 
 This is NOT meant to create actual games, it is a hobby engine that I made for fun and learning purposes.
